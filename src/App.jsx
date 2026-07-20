@@ -500,14 +500,6 @@ export default function App() {
     }));
   }, [configuration]);
 
-  useEffect(() => {
-    if (!selected?.market) return;
-    setForm((previous) => {
-      if (previous.market === selected.market) return previous;
-      return { ...previous, market: selected.market };
-    });
-  }, [selected?.id, selected?.market]);
-
   const selectedProfile = useMemo(
     () => configuration?.trading_profiles?.find((item) => item.code === form.trading_profile) || null,
     [configuration, form.trading_profile],
@@ -578,19 +570,6 @@ export default function App() {
     }
   };
 
-  const stopExperiment = async () => {
-    if (!selected) return;
-    setSaving(true);
-    try {
-      await api(`/api/v1/experiments/${selected.id}/stop`, { method: "POST" });
-      await refresh();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const selectExperiment = async (id) => {
     selectedIdRef.current = id;
     activeStrategyRef.current = "CURRENT_HYBRID";
@@ -619,7 +598,7 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <div className="brand-block">
-            <img className="brand-mark" src="/app-icon.png" alt="" aria-hidden="true" />
+            <div className="brand-mark" aria-hidden="true">C</div>
             <div>
               <span className="eyebrow">{t("Strategy simulation and market research")}</span>
               <div className="brand-title-row">
@@ -822,11 +801,6 @@ export default function App() {
                 </div>
                 <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
                 <div className="experiment-actions">
-                  {selected.status === "RUNNING" && (
-                    <button type="button" className="secondary-button danger" onClick={stopExperiment} disabled={saving}>
-                      {t("Stop and consolidate")}
-                    </button>
-                  )}
                   <span className="export-action">
                     <a className="secondary-button" href={`${API_URL}/api/v1/experiments/${selected.id}/export-bundle`}>
                       {t("Download current data")}
