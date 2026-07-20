@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { API_URL, buildApiUrl, JSON_HEADERS } from "./api";
 import { detectInitialLanguage, INTL_LOCALES, LANGUAGE_OPTIONS, translate, translateDynamicText } from "./i18n";
 const APP_VERSION = __APP_VERSION__;
+const SELECTED_EXPERIMENT_STORAGE_KEY = "crypto-paper-trader-selected-experiment";
 const REFRESH_SECONDS = 15;
 const STRATEGY_ORDER = [
   "CURRENT_HYBRID",
@@ -155,7 +156,9 @@ async function api(path, options = {}) {
     } catch {
       // Keep generic detail.
     }
-    throw new Error(detail);
+    const error = new Error(detail);
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 }
@@ -489,7 +492,9 @@ export default function App() {
   const [error, setError] = useState("");
   const [lastFrontendRefresh, setLastFrontendRefresh] = useState(null);
   const [activeTable, setActiveTable] = useState("market");
-  const selectedIdRef = useRef(null);
+  const selectedIdRef = useRef(
+    window.localStorage.getItem(SELECTED_EXPERIMENT_STORAGE_KEY) || null,
+  );
   const activeStrategyRef = useRef("CURRENT_HYBRID");
   const refreshInFlightRef = useRef(false);
   const mountedRef = useRef(true);
@@ -563,6 +568,7 @@ export default function App() {
       const currentId = selectedIdRef.current || list[0]?.id;
       if (currentId) {
         selectedIdRef.current = currentId;
+        window.localStorage.setItem(SELECTED_EXPERIMENT_STORAGE_KEY, currentId);
         const [detail, strategyRows] = await Promise.all([
           api(`/api/v1/experiments/${currentId}`),
           api(`/api/v1/experiments/${currentId}/strategies`),
@@ -582,6 +588,7 @@ export default function App() {
         }
       } else {
         selectedIdRef.current = null;
+        window.localStorage.removeItem(SELECTED_EXPERIMENT_STORAGE_KEY);
         setSelected(null);
         setStrategies([]);
         setDecisions([]);
@@ -592,6 +599,10 @@ export default function App() {
       setLastFrontendRefresh(Date.now());
       setError("");
     } catch (err) {
+      if (err?.status === 404 && selectedIdRef.current) {
+        selectedIdRef.current = null;
+        window.localStorage.removeItem(SELECTED_EXPERIMENT_STORAGE_KEY);
+      }
       if (mountedRef.current) setError(err.message);
     } finally {
       refreshInFlightRef.current = false;
@@ -686,6 +697,7 @@ export default function App() {
         }),
       });
       selectedIdRef.current = created.id;
+      window.localStorage.setItem(SELECTED_EXPERIMENT_STORAGE_KEY, created.id);
       activeStrategyRef.current = "CURRENT_HYBRID";
       setActiveStrategyCode("CURRENT_HYBRID");
       setSelected(created);
@@ -700,6 +712,7 @@ export default function App() {
 
   const selectExperiment = async (id) => {
     selectedIdRef.current = id;
+    window.localStorage.setItem(SELECTED_EXPERIMENT_STORAGE_KEY, id);
     activeStrategyRef.current = "CURRENT_HYBRID";
     setActiveStrategyCode("CURRENT_HYBRID");
     setLoading(true);

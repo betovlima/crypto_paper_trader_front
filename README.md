@@ -21,3 +21,9 @@ public browser bundle.
 ## Strategy comparison API
 
 The dashboard reads the latest comparison state from `/strategy-comparison` and recent evolution from `/strategy-comparison/history`. It no longer sends one decision request per strategy during the general refresh.
+
+## Deployment recovery
+
+The dashboard persists the selected experiment id in browser local storage. During an
+API redeploy it keeps the current screen state, retries on the normal refresh cycle,
+and restores the same experiment automatically when the API is available again.
