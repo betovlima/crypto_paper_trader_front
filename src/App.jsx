@@ -500,6 +500,14 @@ export default function App() {
     }));
   }, [configuration]);
 
+  useEffect(() => {
+    if (!selected?.market) return;
+    setForm((previous) => {
+      if (previous.market === selected.market) return previous;
+      return { ...previous, market: selected.market };
+    });
+  }, [selected?.id, selected?.market]);
+
   const selectedProfile = useMemo(
     () => configuration?.trading_profiles?.find((item) => item.code === form.trading_profile) || null,
     [configuration, form.trading_profile],
