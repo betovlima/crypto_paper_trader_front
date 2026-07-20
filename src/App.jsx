@@ -521,17 +521,29 @@ export default function App() {
   }, []);
 
 
-  const loadAllStrategyDecisions = useCallback(async (experimentId) => {
-    const entries = await Promise.all(
-      STRATEGY_ORDER.map(async (strategyCode) => {
-        const rows = await api(
-          `/api/v1/experiments/${experimentId}/strategy-decisions?strategy_code=${encodeURIComponent(strategyCode)}&limit=12`,
-        );
+  const loadStrategyComparison = useCallback(async (experimentId) => {
+    const [currentPayload, historyPayload] = await Promise.all([
+      api(`/api/v1/experiments/${experimentId}/strategy-comparison`),
+      api(`/api/v1/experiments/${experimentId}/strategy-comparison/history?limit=4`),
+    ]);
+    if (!mountedRef.current) return;
+
+    const currentByCode = Object.fromEntries(
+      (currentPayload.strategies || []).map((item) => [item.strategy_code, item.latest_decision]),
+    );
+    const historyByCode = Object.fromEntries(
+      (historyPayload.strategies || []).map((item) => [item.strategy_code, item.decisions || []]),
+    );
+    const next = Object.fromEntries(
+      STRATEGY_ORDER.map((strategyCode) => {
+        const rows = historyByCode[strategyCode] || [];
+        const latest = currentByCode[strategyCode];
+        if (latest && !rows.some((row) => row.id === latest.id)) {
+          return [strategyCode, [latest, ...rows].slice(0, 4)];
+        }
         return [strategyCode, rows];
       }),
     );
-    if (!mountedRef.current) return;
-    const next = Object.fromEntries(entries);
     setStrategyDecisionMap((previous) => (JSON.stringify(previous) === JSON.stringify(next) ? previous : next));
   }, []);
 
@@ -565,7 +577,7 @@ export default function App() {
           setActiveStrategyCode(strategyCode);
           await Promise.all([
             loadStrategyData(currentId, strategyCode),
-            loadAllStrategyDecisions(currentId),
+            loadStrategyComparison(currentId),
           ]);
         }
       } else {
@@ -585,7 +597,7 @@ export default function App() {
       refreshInFlightRef.current = false;
       if (mountedRef.current) setLoading(false);
     }
-  }, [loadAllStrategyDecisions, loadStrategyData]);
+  }, [loadStrategyComparison, loadStrategyData]);
 
   useEffect(() => {
     mountedRef.current = true;

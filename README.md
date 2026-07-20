@@ -17,3 +17,7 @@ and contains no administrative token. Manual stop/consolidation is available onl
 direct API request using the backend `ADMIN_API_KEY` through the `X-Admin-Key` header.
 Never add that secret to a `VITE_*` variable because Vite values are exposed in the
 public browser bundle.
+
+## Strategy comparison API
+
+The dashboard reads the latest comparison state from `/strategy-comparison` and recent evolution from `/strategy-comparison/history`. It no longer sends one decision request per strategy during the general refresh.
