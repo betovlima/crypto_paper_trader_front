@@ -619,7 +619,7 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <div className="brand-block">
-            <div className="brand-mark" aria-hidden="true">C</div>
+            <img className="brand-mark" src="/app-icon.png" alt="" aria-hidden="true" />
             <div>
               <span className="eyebrow">{t("Strategy simulation and market research")}</span>
               <div className="brand-title-row">
