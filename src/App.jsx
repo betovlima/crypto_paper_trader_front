@@ -380,6 +380,94 @@ const EquityChart = memo(function EquityChart({ rows, initialCapital, t }) {
   );
 });
 
+
+function decisionStatusText(code, decision, strategy, t, language) {
+  if (!decision) return t("Waiting for the first closed-candle analysis.");
+  if (decision.final_signal === "BUY") return t("Entry conditions satisfied.");
+  if (decision.final_signal === "SELL") return t("Exit conditions satisfied.");
+  if (code === "EMA9_SETUP_91_COST_AWARE") {
+    return setupStatusExplanation(strategy || {}, t, language);
+  }
+  return translateDynamicText(language, decision.decision_reason) || t("Waiting for the next valid setup.");
+}
+
+function StrategyMonitoringPanel({ t, language, strategies, decisionMap, activeCode, onSelect }) {
+  return (
+    <section className="surface strategy-monitor">
+      <div className="surface-heading">
+        <div>
+          <span className="section-kicker">{t("Setup monitoring")}</span>
+          <h2>{t("Latest state of all strategies")}</h2>
+          <p className="strategy-description">{t("Compare the latest closed-candle decision and the conditions still missing for each setup.")}</p>
+        </div>
+      </div>
+      <div className="strategy-monitor-grid">
+        {STRATEGY_ORDER.map((code) => {
+          const strategy = strategies.find((item) => item.strategy_code === code);
+          const rows = decisionMap[code] || [];
+          const latest = rows[0] || null;
+          const recent = rows.slice(0, 4);
+          const signal = latest?.final_signal || "—";
+          return (
+            <article key={code} className={`strategy-monitor-card ${activeCode === code ? "active" : ""}`}>
+              <button type="button" className="strategy-monitor-select" onClick={() => onSelect(code)}>
+                <span>{strategyShortName(code, t)}</span>
+                <strong>{t(strategy?.display_name || code)}</strong>
+                <em className={`signal-chip signal-${String(signal).toLowerCase()}`}>{signal}</em>
+              </button>
+
+              {code === "CURRENT_HYBRID" && (
+                <div className="strategy-monitor-metrics">
+                  <span><small>{t("Probability up")}</small><strong>{formatPercent(latest?.upward_probability, 2)}</strong></span>
+                  <span><small>{t("Expected return")}</small><strong>{formatPercent(latest?.expected_return, 3)}</strong></span>
+                  <span><small>{t("Confirmations")}</small><strong>{latest?.technical_confirmations ?? "—"}/7</strong></span>
+                  <span><small>{t("RSI / ADX")}</small><strong>{formatNumber(latest?.rsi_14, 2)} / {formatNumber(latest?.adx_14, 2)}</strong></span>
+                </div>
+              )}
+
+              {code === "EMA_CROSSOVER_COST_AWARE" && (
+                <div className="strategy-monitor-metrics">
+                  <span><small>{t("Fast / slow EMA")}</small><strong>{formatPrice(latest?.fast_ema_value)} / {formatPrice(latest?.slow_ema_value)}</strong></span>
+                  <span><small>{t("Regime EMA")}</small><strong>{formatPrice(latest?.regime_ema_value)}</strong></span>
+                  <span><small>{t("Confirmations")}</small><strong>{latest?.technical_confirmations ?? "—"}/7</strong></span>
+                  <span><small>{t("Potential return")}</small><strong>{formatPercent(latest?.potential_gross_return, 3)}</strong></span>
+                </div>
+              )}
+
+              {code === "EMA9_SETUP_91_COST_AWARE" && (
+                <div className="strategy-monitor-metrics">
+                  <span><small>{t("Setup")}</small><strong>{t(latest?.setup_status || strategy?.setup_status || "IDLE")}</strong></span>
+                  <span><small>{t("EMA9")}</small><strong>{formatPrice(latest?.ema_9 ?? strategy?.ema_9)}</strong></span>
+                  <span><small>{t("Direction")}</small><strong>{t(strategy?.ema_9_direction || "UNKNOWN")}</strong></span>
+                  <span><small>{t("Entry trigger")}</small><strong>{formatPrice(latest?.entry_trigger_price ?? strategy?.entry_trigger_price)}</strong></span>
+                </div>
+              )}
+
+              <div className="strategy-monitor-reason">
+                <small>{t("Current explanation")}</small>
+                <p>{decisionStatusText(code, latest, strategy, t, language)}</p>
+              </div>
+
+              <div className="strategy-mini-history">
+                <small>{t("Recent evolution")}</small>
+                {recent.length === 0 ? (
+                  <p>{t("No closed-candle decisions yet.")}</p>
+                ) : recent.map((row) => (
+                  <div key={row.id}>
+                    <time>{formatTime(row.candle_timestamp)}</time>
+                    <span className={`signal-${String(row.final_signal || "hold").toLowerCase()}`}>{row.final_signal}</span>
+                    <b>{code === "CURRENT_HYBRID" ? formatPercent(row.upward_probability, 1) : code === "EMA_CROSSOVER_COST_AWARE" ? `${formatPrice(row.fast_ema_value)} / ${formatPrice(row.slow_ema_value)}` : t(row.setup_status || "IDLE")}</b>
+                  </div>
+                ))}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [language, setLanguage] = useState(() => {
     const initial = detectInitialLanguage();
@@ -395,6 +483,7 @@ export default function App() {
   const [decisions, setDecisions] = useState([]);
   const [trades, setTrades] = useState([]);
   const [marketSnapshots, setMarketSnapshots] = useState([]);
+  const [strategyDecisionMap, setStrategyDecisionMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -431,6 +520,21 @@ export default function App() {
     setStable(setMarketSnapshots, snapshotRows, sameRows);
   }, []);
 
+
+  const loadAllStrategyDecisions = useCallback(async (experimentId) => {
+    const entries = await Promise.all(
+      STRATEGY_ORDER.map(async (strategyCode) => {
+        const rows = await api(
+          `/api/v1/experiments/${experimentId}/strategy-decisions?strategy_code=${encodeURIComponent(strategyCode)}&limit=12`,
+        );
+        return [strategyCode, rows];
+      }),
+    );
+    if (!mountedRef.current) return;
+    const next = Object.fromEntries(entries);
+    setStrategyDecisionMap((previous) => (JSON.stringify(previous) === JSON.stringify(next) ? previous : next));
+  }, []);
+
   const refresh = useCallback(async ({ includeConfiguration = false } = {}) => {
     if (refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
@@ -459,7 +563,10 @@ export default function App() {
         if (strategyCode) {
           activeStrategyRef.current = strategyCode;
           setActiveStrategyCode(strategyCode);
-          await loadStrategyData(currentId, strategyCode);
+          await Promise.all([
+            loadStrategyData(currentId, strategyCode),
+            loadAllStrategyDecisions(currentId),
+          ]);
         }
       } else {
         selectedIdRef.current = null;
@@ -468,6 +575,7 @@ export default function App() {
         setDecisions([]);
         setTrades([]);
         setMarketSnapshots([]);
+        setStrategyDecisionMap({});
       }
       setLastFrontendRefresh(Date.now());
       setError("");
@@ -477,7 +585,7 @@ export default function App() {
       refreshInFlightRef.current = false;
       if (mountedRef.current) setLoading(false);
     }
-  }, [loadStrategyData]);
+  }, [loadAllStrategyDecisions, loadStrategyData]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -889,57 +997,15 @@ export default function App() {
                     </article>
                   </section>
 
-                  {activeStrategyCode === "CURRENT_HYBRID" ? (
-                    <section className="surface method-card">
-                      <div className="surface-heading">
-                        <div><span className="section-kicker">{t("Hybrid + machine learning")}</span><h2>{t("Latest technical and model state")}</h2></div>
-                      </div>
-                      <div className="method-grid hybrid-grid">
-                        <span><small><LabelWithHint hint={t(HINTS.finalSignal)}>{t("Final signal")}</LabelWithHint></small><strong className={`signal-${String(latestDecision?.final_signal || "hold").toLowerCase()}`}>{latestDecision?.final_signal || "—"}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.emaStructure)}>{t("EMA structure")}</LabelWithHint></small><strong>{latestDecision?.fast_ema_period || "—"}/{latestDecision?.slow_ema_period || "—"}/{latestDecision?.regime_ema_period || "—"}</strong></span>
-                        <span><small><LabelWithHint hint={`${t(HINTS.fastEma)} ${t(HINTS.slowEma)}`}>{t("Fast / slow EMA")}</LabelWithHint></small><strong>{formatPrice(latestDecision?.fast_ema_value)} / {formatPrice(latestDecision?.slow_ema_value)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.probability)}>{t("Probability up")}</LabelWithHint></small><strong>{formatPercent(latestDecision?.upward_probability, 2)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.expectedReturn)}>{t("Expected return")}</LabelWithHint></small><strong>{formatPercent(latestDecision?.expected_return, 3)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.costs)}>{t("Estimated costs")}</LabelWithHint></small><strong>{formatPercent(latestDecision?.estimated_round_trip_cost_rate ?? latestDecision?.required_gross_return, 3)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.confirmations)}>{t("Confirmations")}</LabelWithHint></small><strong>{latestDecision?.technical_confirmations ?? "—"}/7</strong></span>
-                        <span><small><LabelWithHint hint={`${t(HINTS.rsi)} ${t(HINTS.adx)}`}>{t("RSI / ADX")}</LabelWithHint></small><strong>{formatNumber(latestDecision?.rsi_14, 2)} / {formatNumber(latestDecision?.adx_14, 2)}</strong></span>
-                      </div>
-                    </section>
-                  ) : activeStrategyCode === "EMA_CROSSOVER_COST_AWARE" ? (
-                    <section className="surface method-card">
-                      <div className="surface-heading">
-                        <div><span className="section-kicker">{t("EMA crossover")}</span><h2>{t("Fresh crossover and trend confirmation")}</h2></div>
-                      </div>
-                      <div className="method-grid">
-                        <span><small><LabelWithHint hint={t(HINTS.finalSignal)}>{t("Final signal")}</LabelWithHint></small><strong className={`signal-${String(latestDecision?.final_signal || "hold").toLowerCase()}`}>{latestDecision?.final_signal || "—"}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.emaStructure)}>{t("EMA structure")}</LabelWithHint></small><strong>{latestDecision?.fast_ema_period || "—"}/{latestDecision?.slow_ema_period || "—"}/{latestDecision?.regime_ema_period || "—"}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.fastEma)}>{t("Fast EMA")}</LabelWithHint></small><strong>{formatPrice(latestDecision?.fast_ema_value)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.slowEma)}>{t("Slow EMA")}</LabelWithHint></small><strong>{formatPrice(latestDecision?.slow_ema_value)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.regimeEma)}>{t("Regime EMA")}</LabelWithHint></small><strong>{formatPrice(latestDecision?.regime_ema_value)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.potentialReturn)}>{t("Potential return")}</LabelWithHint></small><strong>{formatPercent(latestDecision?.potential_gross_return, 3)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.costs)}>{t("Estimated costs")}</LabelWithHint></small><strong>{formatPercent(latestDecision?.estimated_round_trip_cost_rate ?? latestDecision?.required_gross_return, 3)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.confirmations)}>{t("Confirmations")}</LabelWithHint></small><strong>{latestDecision?.technical_confirmations ?? "—"}/7</strong></span>
-                      </div>
-                    </section>
-                  ) : (
-                    <section className="surface method-card">
-                      <div className="surface-heading">
-                        <div><span className="section-kicker">{t("Larry Williams Setup 9.1")} <Hint text={t(HINTS.setup91)} /></span><h2>{t("EMA 9 reversal and breakout state")}</h2></div>
-                        <span className={`setup-badge setup-${String(activeStrategy.setup_status || "idle").toLowerCase()}`}>{activeStrategy.setup_status}</span>
-                      </div>
-                      <div className="method-grid">
-                        <span><small><LabelWithHint hint={t(HINTS.ema9)}>{t("EMA9")}</LabelWithHint></small><strong>{formatPrice(activeStrategy.ema_9)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.emaDirection)}>{t("Direction")}</LabelWithHint></small><strong>{t(activeStrategy.ema_9_direction)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.setupHigh)}>{t("Setup candle high")}</LabelWithHint></small><strong>{formatPrice(activeStrategy.setup_candle_high)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.setupLow)}>{t("Setup candle low")}</LabelWithHint></small><strong>{formatPrice(activeStrategy.setup_candle_low)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.entryTrigger)}>{t("Entry trigger")}</LabelWithHint></small><strong>{formatPrice(activeStrategy.entry_trigger_price)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.initialStop)}>{t("Initial stop")}</LabelWithHint></small><strong>{formatPrice(activeStrategy.initial_setup_stop_price)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.setupTime)}>{t("Setup candle time")}</LabelWithHint></small><strong>{formatDate(activeStrategy.setup_candle_timestamp)}</strong></span>
-                        <span><small><LabelWithHint hint={t(HINTS.setupEvent)}>{t("Last setup event")}</LabelWithHint></small><strong>{t(activeStrategy.last_setup_event || "WAITING")}</strong></span>
-                      </div>
-                      <p className="method-message">{setupStatusExplanation(activeStrategy, t, language)}</p>
-                    </section>
-                  )}
+                  <StrategyMonitoringPanel
+                    t={t}
+                    language={language}
+                    strategies={strategies}
+                    decisionMap={strategyDecisionMap}
+                    activeCode={activeStrategyCode}
+                    onSelect={selectStrategy}
+                  />
+
 
                   <section className="surface cost-policy-card">
                     <div>
