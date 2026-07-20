@@ -1,3 +1,7 @@
+# Release 0.10.0 — Four-strategy comparison
+
+The dashboard now compares Hybrid + ML, EMA Crossover, Larry Williams 9.1 Classic, and Larry Williams 9.1 Trend Follower. The two Larry cards show their independent stop mode, active stop, entry trigger, and classical exit trigger. The collapsible configuration panel from v0.9.8 is preserved.
+
 # Crypto Paper Trader Front
 
 Public React/Vite dashboard for Crypto Paper Trader.
@@ -33,3 +37,8 @@ and restores the same experiment automatically when the API is available again.
 Market symbols returned by the API remain in CoinEx compact format, such as `PENDLEUSDT`.
 The dashboard displays them as `PENDLE/USDT`, accepts either format in the form, and
 normalizes the value back to `PENDLEUSDT` before creating an experiment.
+
+
+## v0.10.0 layout
+
+The experiment configuration and history area now appears as a collapsible full-width block above the active experiment. The analysis dashboard uses the full page width, giving the strategy indicators and comparison cards more horizontal space.

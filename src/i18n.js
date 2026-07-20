@@ -18,6 +18,8 @@ const pt = {
   "Paper only": "Somente simulação",
   "Language": "Idioma",
   "Configuration": "Configuração",
+  "Hide configuration": "Recolher configuração",
+  "Show configuration": "Mostrar configuração",
   "New experiment": "Novo experimento",
   "Market": "Mercado",
   "Duration": "Duração",
@@ -287,6 +289,8 @@ const es = {
   "Paper only": "Solo simulación",
   "Language": "Idioma",
   "Configuration": "Configuración",
+  "Hide configuration": "Ocultar configuración",
+  "Show configuration": "Mostrar configuración",
   "New experiment": "Nuevo experimento",
   "Market": "Mercado",
   "Duration": "Duración",
@@ -547,6 +551,61 @@ const es = {
   "A small simulated price worsening that represents execution uncertainty.": "Un pequeño empeoramiento simulado del precio que representa la incertidumbre de ejecución."
 
 };
+
+
+Object.assign(pt, {
+  "Four independent techniques": "Quatro técnicas independentes",
+  "Hybrid + ML, EMA Crossover, Larry Williams 9.1 Classic and Larry Williams 9.1 Trend Follower. Technical rules create signals; CoinEx fees and execution costs are applied only after simulated trades.": "Híbrida + ML, Cruzamento de EMA, Larry Williams 9.1 Clássico e Larry Williams 9.1 Seguidor de Tendência. As regras técnicas geram os sinais; as taxas da CoinEx e os custos de execução são aplicados somente após as operações simuladas.",
+  "All four strategies receive the same CoinEx candles. Costs are charged after simulated execution and never veto technical signals.": "As quatro estratégias recebem os mesmos candles da CoinEx. Os custos são cobrados após a execução simulada e nunca vetam os sinais técnicos.",
+  "Larry 9.1 Classic": "Larry 9.1 Clássico",
+  "Larry 9.1 Trend": "Larry 9.1 Seguidor",
+  "Larry Williams 9.1 Classic": "Larry Williams 9.1 Clássico",
+  "Larry Williams 9.1 Trend Follower": "Larry Williams 9.1 Seguidor de Tendência",
+  "EXIT ARMED": "SAÍDA ARMADA",
+  "CLASSIC": "CLÁSSICO",
+  "TREND_FOLLOWER": "SEGUIDOR DE TENDÊNCIA",
+  "Active stop": "Stop ativo",
+  "Exit trigger": "Gatilho de saída",
+  "Stop mode": "Modo do stop",
+  "Previous candle low": "Mínima do candle anterior",
+  "Initial stop": "Stop inicial",
+  "Classic EMA9 exit trigger": "Gatilho clássico de saída da EMA9",
+  "Recovered classic EMA9 exit": "Saída clássica da EMA9 recuperada",
+  "EMA 9 turned down. The classic model is waiting for price to break the reversal candle low.": "A EMA 9 virou para baixo. O modelo clássico aguarda o preço perder a mínima do candle de reversão.",
+  "The trend follower raises its stop to the low of each newly closed candle and never moves it down.": "O seguidor de tendência eleva o stop para a mínima de cada novo candle fechado e nunca o move para baixo.",
+  "The classic model keeps the setup stop and waits for a bearish EMA 9 reversal to arm its exit.": "O modelo clássico mantém o stop do setup e aguarda uma reversão baixista da EMA 9 para armar a saída.",
+  "EMA 9 turned strictly upward on a candle crossing the average. Waiting for price to break its high.": "A EMA 9 virou estritamente para cima em um candle que cruzou a média. Aguardando o preço romper sua máxima.",
+  "EMA 9 stopped rising before the breakout.": "A EMA 9 deixou de subir antes do rompimento.",
+  "Waiting for a strict down-to-up EMA 9 turn on a candle crossing the average.": "Aguardando uma virada estrita da EMA 9 de baixa para alta em um candle que cruze a média.",
+  "Classic Setup 9.1: EMA 9 must turn strictly from down to up on a candle that crosses the average. Entry is above that candle's high and the initial stop is at its low. After entry, a down-turn candle arms an exit below its low.": "Setup 9.1 clássico: a EMA 9 deve virar estritamente de baixa para alta em um candle que cruze a média. A entrada fica acima da máxima desse candle e o stop inicial em sua mínima. Após a entrada, um candle de virada para baixo arma a saída abaixo de sua mínima.",
+  "Adapted Setup 9.1 with the same strict reversal entry. After entry, the protective stop follows the low of each newly closed candle, never moves down, and exits on the stop or a bearish EMA 9 reversal.": "Setup 9.1 adaptado com a mesma entrada por reversão estrita. Após a entrada, o stop de proteção acompanha a mínima de cada novo candle fechado, nunca desce e encerra a posição pelo stop ou por uma reversão baixista da EMA 9."
+});
+
+Object.assign(es, {
+  "Four independent techniques": "Cuatro técnicas independientes",
+  "Hybrid + ML, EMA Crossover, Larry Williams 9.1 Classic and Larry Williams 9.1 Trend Follower. Technical rules create signals; CoinEx fees and execution costs are applied only after simulated trades.": "Híbrida + ML, Cruce de EMA, Larry Williams 9.1 Clásico y Larry Williams 9.1 Seguidor de Tendencia. Las reglas técnicas generan señales; las comisiones de CoinEx y los costos de ejecución se aplican solo después de las operaciones simuladas.",
+  "All four strategies receive the same CoinEx candles. Costs are charged after simulated execution and never veto technical signals.": "Las cuatro estrategias reciben las mismas velas de CoinEx. Los costos se aplican después de la ejecución simulada y nunca vetan las señales técnicas.",
+  "Larry 9.1 Classic": "Larry 9.1 Clásico",
+  "Larry 9.1 Trend": "Larry 9.1 Seguidor",
+  "Larry Williams 9.1 Classic": "Larry Williams 9.1 Clásico",
+  "Larry Williams 9.1 Trend Follower": "Larry Williams 9.1 Seguidor de Tendencia",
+  "EXIT ARMED": "SALIDA ARMADA",
+  "CLASSIC": "CLÁSICO",
+  "TREND_FOLLOWER": "SEGUIDOR DE TENDENCIA",
+  "Active stop": "Stop activo",
+  "Exit trigger": "Disparador de salida",
+  "Stop mode": "Modo del stop",
+  "Previous candle low": "Mínimo de la vela anterior",
+  "Initial stop": "Stop inicial",
+  "Classic EMA9 exit trigger": "Disparador clásico de salida EMA9",
+  "Recovered classic EMA9 exit": "Salida clásica EMA9 recuperada",
+  "EMA 9 turned down. The classic model is waiting for price to break the reversal candle low.": "La EMA 9 giró a la baja. El modelo clásico espera que el precio pierda el mínimo de la vela de reversión.",
+  "The trend follower raises its stop to the low of each newly closed candle and never moves it down.": "El seguidor de tendencia eleva el stop al mínimo de cada nueva vela cerrada y nunca lo baja.",
+  "The classic model keeps the setup stop and waits for a bearish EMA 9 reversal to arm its exit.": "El modelo clásico mantiene el stop del setup y espera una reversión bajista de la EMA 9 para armar la salida.",
+  "EMA 9 turned strictly upward on a candle crossing the average. Waiting for price to break its high.": "La EMA 9 giró estrictamente al alza en una vela que cruzó la media. Esperando que el precio rompa su máximo.",
+  "EMA 9 stopped rising before the breakout.": "La EMA 9 dejó de subir antes de la ruptura.",
+  "Waiting for a strict down-to-up EMA 9 turn on a candle crossing the average.": "Esperando un giro estricto de baja a alta de la EMA 9 en una vela que cruce la media."
+});
 
 const dictionaries = { en: {}, pt, es };
 

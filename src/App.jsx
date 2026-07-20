@@ -4,12 +4,20 @@ import { API_URL, buildApiUrl, JSON_HEADERS } from "./api";
 import { detectInitialLanguage, INTL_LOCALES, LANGUAGE_OPTIONS, translate, translateDynamicText } from "./i18n";
 const APP_VERSION = __APP_VERSION__;
 const SELECTED_EXPERIMENT_STORAGE_KEY = "crypto-paper-trader-selected-experiment";
+const CONTROL_RAIL_STORAGE_KEY = "crypto-paper-trader-control-rail";
 const REFRESH_SECONDS = 15;
+const LARRY_CLASSIC_CODE = "EMA9_SETUP_91_COST_AWARE";
+const LARRY_TREND_CODE = "EMA9_SETUP_91_TREND_FOLLOWER";
 const STRATEGY_ORDER = [
   "CURRENT_HYBRID",
   "EMA_CROSSOVER_COST_AWARE",
-  "EMA9_SETUP_91_COST_AWARE",
+  LARRY_CLASSIC_CODE,
+  LARRY_TREND_CODE,
 ];
+
+function isLarryStrategy(code) {
+  return code === LARRY_CLASSIC_CODE || code === LARRY_TREND_CODE;
+}
 
 function parseApiDate(value) {
   if (!value) return null;
@@ -95,6 +103,8 @@ function eventLabel(event, t) {
     ANALYSIS_SELL: "Analysis: SELL",
     ANALYSIS_HOLD: "Analysis: HOLD",
     LIVE_ENTRY_TRIGGER: "EMA9 breakout entry",
+    LIVE_EMA9_CLASSIC_EXIT: "Classic EMA9 exit trigger",
+    RECOVERED_EMA9_CLASSIC_EXIT: "Recovered classic EMA9 exit",
     LIVE_ENTRY_REJECTED: "Entry blocked by portfolio risk rule",
     RECOVERED_ENTRY: "Recovered paper entry",
     RECOVERED_EXIT: "Recovered paper exit",
@@ -116,7 +126,8 @@ function strategyShortName(code, t) {
   const label = {
     CURRENT_HYBRID: "Hybrid + ML",
     EMA_CROSSOVER_COST_AWARE: "EMA Crossover",
-    EMA9_SETUP_91_COST_AWARE: "Larry Williams 9.1",
+    EMA9_SETUP_91_COST_AWARE: "Larry 9.1 Classic",
+    EMA9_SETUP_91_TREND_FOLLOWER: "Larry 9.1 Trend",
   }[code] || code;
   return t(label);
 }
@@ -271,8 +282,9 @@ function LabelWithHint({ children, hint }) {
 }
 
 function strategyRuntimeStatus(strategy, t) {
+  if (strategy.setup_status === "EXIT_ARMED") return t("EXIT ARMED");
   if (strategy.has_open_position) return t("IN POSITION");
-  if (strategy.strategy_code === "EMA9_SETUP_91_COST_AWARE") {
+  if (isLarryStrategy(strategy.strategy_code)) {
     if (strategy.setup_status === "ARMED") return t("SETUP ARMED");
     if (strategy.setup_status === "CANCELLED") return t("SETUP CANCELLED");
     return t("WAITING FOR REVERSAL");
@@ -280,11 +292,18 @@ function strategyRuntimeStatus(strategy, t) {
   return t("MONITORING");
 }
 
-function setupStatusExplanation(strategy, t, language) {
-  if (strategy.has_open_position) return t("Breakout completed; the position is managed by the setup stop and EMA 9 exit.");
-  if (strategy.setup_status === "ARMED") return t("EMA 9 turned upward. Waiting for price to break the setup candle high.");
-  if (strategy.setup_status === "CANCELLED") return translateDynamicText(language, strategy.setup_cancel_reason) || t("EMA 9 turned down before the breakout.");
-  return translateDynamicText(language, strategy.last_setup_event_reason) || t("Waiting for a new down-to-up EMA 9 turn on closed candles.");
+function setupStatusExplanation(code, strategy, t, language) {
+  if (strategy.setup_status === "EXIT_ARMED") {
+    return t("EMA 9 turned down. The classic model is waiting for price to break the reversal candle low.");
+  }
+  if (strategy.has_open_position) {
+    return code === LARRY_TREND_CODE
+      ? t("The trend follower raises its stop to the low of each newly closed candle and never moves it down.")
+      : t("The classic model keeps the setup stop and waits for a bearish EMA 9 reversal to arm its exit.");
+  }
+  if (strategy.setup_status === "ARMED") return t("EMA 9 turned strictly upward on a candle crossing the average. Waiting for price to break its high.");
+  if (strategy.setup_status === "CANCELLED") return translateDynamicText(language, strategy.setup_cancel_reason) || t("EMA 9 stopped rising before the breakout.");
+  return translateDynamicText(language, strategy.last_setup_event_reason) || t("Waiting for a strict down-to-up EMA 9 turn on a candle crossing the average.");
 }
 
 const MetricCard = memo(function MetricCard({ label, value, helper, tone = "neutral", hint }) {
@@ -333,11 +352,11 @@ const StrategyComparison = memo(function StrategyComparison({ strategies, active
                 <span>{t("Gross")} {formatPercent(strategy.gross_return, 3)}</span>
                 <span>{t("Costs")} {formatNumber(strategy.total_transaction_costs, 2)} USDT</span>
               </div>
-              {strategy.strategy_code === "EMA9_SETUP_91_COST_AWARE" && (
+              {isLarryStrategy(strategy.strategy_code) && (
                 <div className="setup-line">
                   <span>EMA 9</span>
                   <strong>{t(strategy.setup_status || "IDLE")}</strong>
-                  <span>{t(strategy.ema_9_direction || "UNKNOWN")}</span>
+                  <span>{t(strategy.stop_management_mode || strategy.ema_9_direction || "UNKNOWN")}</span>
                 </div>
               )}
               {strategy.strategy_code === "EMA_CROSSOVER_COST_AWARE" && (
@@ -417,8 +436,8 @@ function decisionStatusText(code, decision, strategy, t, language) {
   if (!decision) return t("Waiting for the first closed-candle analysis.");
   if (decision.final_signal === "BUY") return t("Entry conditions satisfied.");
   if (decision.final_signal === "SELL") return t("Exit conditions satisfied.");
-  if (code === "EMA9_SETUP_91_COST_AWARE") {
-    return setupStatusExplanation(strategy || {}, t, language);
+  if (isLarryStrategy(code)) {
+    return setupStatusExplanation(code, strategy || {}, t, language);
   }
   return translateDynamicText(language, decision.decision_reason) || t("Waiting for the next valid setup.");
 }
@@ -466,12 +485,12 @@ function StrategyMonitoringPanel({ t, language, strategies, decisionMap, activeC
                 </div>
               )}
 
-              {code === "EMA9_SETUP_91_COST_AWARE" && (
+              {isLarryStrategy(code) && (
                 <div className="strategy-monitor-metrics">
                   <span><small>{t("Setup")}</small><strong>{t(latest?.setup_status || strategy?.setup_status || "IDLE")}</strong></span>
                   <span><small>{t("EMA9")}</small><strong>{formatPrice(latest?.ema_9 ?? strategy?.ema_9)}</strong></span>
-                  <span><small>{t("Direction")}</small><strong>{t(strategy?.ema_9_direction || "UNKNOWN")}</strong></span>
-                  <span><small>{t("Entry trigger")}</small><strong>{formatPrice(latest?.entry_trigger_price ?? strategy?.entry_trigger_price)}</strong></span>
+                  <span><small>{t("Active stop")}</small><strong>{formatPrice(latest?.active_stop_price ?? strategy?.trailing_stop_price ?? strategy?.stop_loss_price)}</strong></span>
+                  <span><small>{t(code === LARRY_CLASSIC_CODE ? "Exit trigger" : "Stop mode")}</small><strong>{code === LARRY_CLASSIC_CODE ? formatPrice(latest?.exit_trigger_price ?? strategy?.exit_trigger_price) : t("Previous candle low")}</strong></span>
                 </div>
               )}
 
@@ -521,6 +540,9 @@ export default function App() {
   const [error, setError] = useState("");
   const [lastFrontendRefresh, setLastFrontendRefresh] = useState(null);
   const [activeTable, setActiveTable] = useState("market");
+  const [isControlRailOpen, setIsControlRailOpen] = useState(
+    () => window.localStorage.getItem(CONTROL_RAIL_STORAGE_KEY) !== "closed",
+  );
   const selectedIdRef = useRef(
     window.localStorage.getItem(SELECTED_EXPERIMENT_STORAGE_KEY) || null,
   );
@@ -765,6 +787,14 @@ export default function App() {
     }
   };
 
+  const toggleControlRail = () => {
+    setIsControlRailOpen((previous) => {
+      const next = !previous;
+      window.localStorage.setItem(CONTROL_RAIL_STORAGE_KEY, next ? "open" : "closed");
+      return next;
+    });
+  };
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -782,7 +812,17 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="topbar-meta">
+          <div className="topbar-actions">
+            <button
+              type="button"
+              className="control-rail-toggle"
+              onClick={toggleControlRail}
+              aria-expanded={isControlRailOpen}
+              aria-controls="setup-configuration-panel"
+            >
+              {t(isControlRailOpen ? "Hide configuration" : "Show configuration")}
+            </button>
+            <div className="topbar-meta">
             <label className="language-select">
               <span>{t("Language")}</span>
               <select value={language} onChange={(event) => {
@@ -800,14 +840,19 @@ export default function App() {
             <span className="context-pill">{t("Market: Spot")}</span>
             <span className="live-pill"><i /> {t("Market every 15s")}</span>
             <span className="safe-pill">{t("Paper only")}</span>
+            </div>
           </div>
         </div>
       </header>
 
       {error && <div className="alert" role="alert">{error}</div>}
 
-      <main className="workspace">
-        <aside className="control-rail">
+      <main className={`workspace ${isControlRailOpen ? "control-rail-open" : "control-rail-collapsed"}`}>
+        <section
+          id="setup-configuration-panel"
+          className="configuration-panel"
+          aria-hidden={!isControlRailOpen}
+        >
           <section className="surface control-card">
             <div className="surface-heading">
               <div>
@@ -892,8 +937,8 @@ export default function App() {
               )}
 
               <div className="strategy-note">
-                <strong>{t("Three independent techniques")}</strong>
-                <span>{t("Hybrid + ML, EMA Crossover and Larry Williams 9.1. Technical rules create signals; CoinEx fees and execution costs are applied only after simulated trades.")}</span>
+                <strong>{t("Four independent techniques")}</strong>
+                <span>{t("Hybrid + ML, EMA Crossover, Larry Williams 9.1 Classic and Larry Williams 9.1 Trend Follower. Technical rules create signals; CoinEx fees and execution costs are applied only after simulated trades.")}</span>
               </div>
               <button className="primary-button" disabled={saving || selected?.status === "RUNNING"}>
                 {saving ? t("Processing...") : t("Start simulation")}
@@ -945,14 +990,14 @@ export default function App() {
               {!experiments.length && <div className="empty-state small">{t("No experiments yet.")}</div>}
             </div>
           </section>
-        </aside>
+        </section>
 
         <section className="dashboard-column">
           {!selected ? (
             <section className="surface welcome-state">
               <span className="section-kicker">{t("Ready")}</span>
               <h2>{t("Create the first multi-strategy experiment")}</h2>
-              <p>{t("All three strategies receive the same CoinEx candles. Costs are charged after simulated execution and never veto technical signals.")}</p>
+              <p>{t("All four strategies receive the same CoinEx candles. Costs are charged after simulated execution and never veto technical signals.")}</p>
             </section>
           ) : (
             <>
@@ -1117,8 +1162,8 @@ export default function App() {
                           </table>
                         ) : (
                           <table>
-                            <thead><tr><th>{t("UTC candle")}</th><th>{t("Signal")}</th><th>{t("Setup")}</th><th>{t("Price")}</th><th>{t("EMA9")}</th><th>{t("Slope")}</th><th>{t("Trigger")}</th><th>{t("Stop")}</th><th>{t("Est. costs")}</th><th>{t("Executed")}</th><th>{t("Recovered")}</th><th>{t("Reason")}</th></tr></thead>
-                            <tbody>{decisions.map((row) => <tr key={row.id}><td>{formatDate(row.candle_timestamp)}</td><td><span className={`signal-chip signal-${String(row.final_signal).toLowerCase()}`}>{row.final_signal}</span></td><td>{row.setup_status || "—"}</td><td>{formatPrice(row.market_price)}</td><td>{formatPrice(row.ema_9)}</td><td>{formatNumber(row.ema_9_slope, 6)}</td><td>{formatPrice(row.entry_trigger_price)}</td><td>{formatPrice(row.initial_stop_price)}</td><td>{formatPercent(row.estimated_round_trip_cost_rate, 3)}</td><td>{t(row.action_executed ? "Yes" : "No")}</td><td>{t(row.is_recovered ? "Yes" : "No")}</td><td className="reason-cell">{translateDynamicText(language, row.decision_reason)}</td></tr>)}</tbody>
+                            <thead><tr><th>{t("UTC candle")}</th><th>{t("Signal")}</th><th>{t("Setup")}</th><th>{t("Stop mode")}</th><th>{t("Price")}</th><th>{t("EMA9")}</th><th>{t("Slope")}</th><th>{t("Entry trigger")}</th><th>{t("Initial stop")}</th><th>{t("Active stop")}</th><th>{t("Exit trigger")}</th><th>{t("Executed")}</th><th>{t("Recovered")}</th><th>{t("Reason")}</th></tr></thead>
+                            <tbody>{decisions.map((row) => <tr key={row.id}><td>{formatDate(row.candle_timestamp)}</td><td><span className={`signal-chip signal-${String(row.final_signal).toLowerCase()}`}>{row.final_signal}</span></td><td>{t(row.setup_status || "—")}</td><td>{t(row.stop_management_mode || "—")}</td><td>{formatPrice(row.market_price)}</td><td>{formatPrice(row.ema_9)}</td><td>{formatNumber(row.ema_9_slope, 6)}</td><td>{formatPrice(row.entry_trigger_price)}</td><td>{formatPrice(row.initial_stop_price)}</td><td>{formatPrice(row.active_stop_price)}</td><td>{formatPrice(row.exit_trigger_price)}</td><td>{t(row.action_executed ? "Yes" : "No")}</td><td>{t(row.is_recovered ? "Yes" : "No")}</td><td className="reason-cell">{translateDynamicText(language, row.decision_reason)}</td></tr>)}</tbody>
                           </table>
                         )}
                       </div>

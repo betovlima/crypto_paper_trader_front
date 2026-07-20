@@ -387,7 +387,7 @@ tbody tr:hover { background: rgba(255,255,255,.025); }
 }
 
 .strategy-monitor { overflow: hidden; }
-.strategy-monitor-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 0 18px 18px; }
+.strategy-monitor-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 0 18px 18px; }
 .strategy-monitor-card { min-width: 0; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,.018); overflow: hidden; }
 .strategy-monitor-card.active { border-color: rgba(110,124,255,.58); box-shadow: inset 0 0 0 1px rgba(110,124,255,.16); }
 .strategy-monitor-select { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center; border: 0; border-bottom: 1px solid var(--border); padding: 14px; text-align: left; color: inherit; cursor: pointer; background: rgba(255,255,255,.02); }
@@ -409,3 +409,219 @@ tbody tr:hover { background: rgba(255,255,255,.025); }
 
 @media (max-width: 1100px) { .strategy-monitor-grid { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .strategy-monitor-grid { padding-inline: 12px; } .strategy-monitor-metrics { grid-template-columns: 1fr; } }
+
+/* v0.9.8 — collapsible setup configuration rail */
+.topbar-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.control-rail-toggle {
+  min-height: 34px;
+  padding: 0 12px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(110,124,255,.34);
+  border-radius: 10px;
+  color: #cbd3ff;
+  background: rgba(110,124,255,.1);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.control-rail-toggle:hover {
+  border-color: rgba(110,124,255,.72);
+  background: rgba(110,124,255,.18);
+  transform: translateY(-1px);
+}
+.control-rail-toggle:focus-visible {
+  outline: 3px solid rgba(110,124,255,.18);
+  outline-offset: 2px;
+}
+.workspace.control-rail-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+.workspace.control-rail-collapsed .control-rail {
+  display: none;
+}
+.workspace.control-rail-collapsed .dashboard-column {
+  width: 100%;
+}
+
+@media (max-width: 840px) {
+  .topbar-actions { margin-left: auto; }
+  .control-rail-toggle { min-height: 32px; padding-inline: 10px; }
+  .workspace.control-rail-open { grid-template-columns: 1fr; }
+  .workspace.control-rail-open .control-rail { display: grid; }
+}
+
+@media (max-width: 560px) {
+  .control-rail-toggle { font-size: 9px; }
+}
+
+/* v0.9.9 — four-strategy Larry Williams comparison */
+@media (max-width: 1450px) and (min-width: 1101px) { .strategy-monitor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* v0.10.0 — full-width configuration block above the analysis dashboard */
+.workspace {
+  width: min(1900px, 100%);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.configuration-panel {
+  position: static;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 2.35fr) minmax(320px, .65fr);
+  gap: 16px;
+  align-items: stretch;
+  max-height: none;
+  overflow: visible;
+}
+
+.configuration-panel > .surface {
+  height: 100%;
+}
+
+.workspace.control-rail-collapsed .configuration-panel {
+  display: none;
+}
+
+.workspace.control-rail-open .configuration-panel {
+  display: grid;
+}
+
+.workspace .dashboard-column {
+  width: 100%;
+  min-width: 0;
+}
+
+.configuration-panel .form-grid {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  align-items: end;
+}
+
+.configuration-panel .form-grid > label:first-child {
+  grid-column: span 2;
+}
+
+.configuration-panel .form-grid > .form-row {
+  grid-column: span 3;
+}
+
+.configuration-panel .form-grid > .profile-fieldset {
+  grid-column: span 5;
+  align-self: stretch;
+}
+
+.configuration-panel .form-grid > .profile-summary {
+  grid-column: span 6;
+  align-self: stretch;
+}
+
+.configuration-panel .form-grid > .strategy-note {
+  grid-column: span 6;
+  align-self: stretch;
+}
+
+.configuration-panel .form-grid > .primary-button {
+  grid-column: span 2;
+  min-height: 42px;
+  align-self: end;
+}
+
+.configuration-panel .profile-selector {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.configuration-panel .profile-option {
+  min-height: 62px;
+}
+
+.configuration-panel .strategy-guide {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.configuration-panel .strategy-guide > .section-kicker {
+  grid-column: 1 / -1;
+}
+
+.configuration-panel .history-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.configuration-panel .history-list {
+  min-height: 0;
+  max-height: 505px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 1350px) {
+  .configuration-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .configuration-panel .form-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .configuration-panel .form-grid > label:first-child,
+  .configuration-panel .form-grid > .form-row,
+  .configuration-panel .form-grid > .profile-fieldset {
+    grid-column: span 2;
+  }
+
+  .configuration-panel .form-grid > .profile-summary,
+  .configuration-panel .form-grid > .strategy-note {
+    grid-column: span 3;
+  }
+
+  .configuration-panel .form-grid > .primary-button {
+    grid-column: 1 / -1;
+  }
+
+  .configuration-panel .history-list {
+    max-height: 270px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 840px) {
+  .configuration-panel,
+  .workspace.control-rail-open .configuration-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .configuration-panel .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .configuration-panel .form-grid > label:first-child,
+  .configuration-panel .form-grid > .form-row,
+  .configuration-panel .form-grid > .profile-fieldset,
+  .configuration-panel .form-grid > .profile-summary,
+  .configuration-panel .form-grid > .strategy-note,
+  .configuration-panel .form-grid > .primary-button {
+    grid-column: 1 / -1;
+  }
+
+  .configuration-panel .strategy-guide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .configuration-panel .form-grid,
+  .configuration-panel .strategy-guide,
+  .configuration-panel .history-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
