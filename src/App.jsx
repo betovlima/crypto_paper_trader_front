@@ -1,8 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { API_URL, buildApiUrl, JSON_HEADERS } from "./api";
 import { detectInitialLanguage, INTL_LOCALES, LANGUAGE_OPTIONS, translate, translateDynamicText } from "./i18n";
-
-const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
 const APP_VERSION = __APP_VERSION__;
 const REFRESH_SECONDS = 15;
 const STRATEGY_ORDER = [
@@ -144,8 +143,8 @@ function setStable(setter, next, comparator = sameRecord) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+  const response = await fetch(buildApiUrl(path), {
+    headers: { ...JSON_HEADERS, ...(options.headers || {}) },
     ...options,
   });
   if (!response.ok) {
