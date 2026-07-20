@@ -27,3 +27,9 @@ The dashboard reads the latest comparison state from `/strategy-comparison` and 
 The dashboard persists the selected experiment id in browser local storage. During an
 API redeploy it keeps the current screen state, retries on the normal refresh cycle,
 and restores the same experiment automatically when the API is available again.
+
+## Market pair display
+
+Market symbols returned by the API remain in CoinEx compact format, such as `PENDLEUSDT`.
+The dashboard displays them as `PENDLE/USDT`, accepts either format in the form, and
+normalizes the value back to `PENDLEUSDT` before creating an experiment.

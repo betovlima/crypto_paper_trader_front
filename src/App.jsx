@@ -121,6 +121,35 @@ function strategyShortName(code, t) {
   return t(label);
 }
 
+const MARKET_QUOTE_ASSETS = [
+  "USDT",
+  "USDC",
+  "FDUSD",
+  "BUSD",
+  "TUSD",
+  "DAI",
+  "BTC",
+  "ETH",
+  "BNB",
+];
+
+function normalizeMarketSymbol(value) {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/[\s/_:-]+/g, "")
+    .trim();
+}
+
+function formatMarketPair(value) {
+  const normalized = normalizeMarketSymbol(value);
+  if (!normalized) return "";
+  const quoteAsset = MARKET_QUOTE_ASSETS.find(
+    (quote) => normalized.endsWith(quote) && normalized.length > quote.length,
+  );
+  if (!quoteAsset) return normalized;
+  return `${normalized.slice(0, -quoteAsset.length)}/${quoteAsset}`;
+}
+
 function sameRecord(previous, next) {
   if (previous === next) return true;
   if (!previous || !next) return previous === next;
@@ -175,7 +204,7 @@ function Countdown({ target, prefix = "" }) {
 
 const HINTS = {
   appVersion: "The currently deployed application release. It comes from frontend/package.json at build time.",
-  market: "The Spot trading pair observed by every simulated strategy, for example BTCUSDT.",
+  market: "The Spot trading pair observed by every simulated strategy, for example BTC/USDT.",
   duration: "How long the research experiment remains active. The worker can recover missed closed candles after a restart.",
   capital: "The simulated starting money assigned independently to each strategy. No real funds are used.",
   profile: "A preset that selects candle intervals, EMA periods and technical risk limits.",
@@ -499,7 +528,7 @@ export default function App() {
   const refreshInFlightRef = useRef(false);
   const mountedRef = useRef(true);
   const [form, setForm] = useState({
-    market: "BTCUSDT",
+    market: "",
     duration_hours: 24,
     initial_capital: 1000,
     trading_profile: "BALANCED_INTRADAY",
@@ -624,7 +653,7 @@ export default function App() {
     if (!configuration) return;
     setForm((previous) => ({
       ...previous,
-      market: previous.market || configuration.default_market,
+      market: previous.market || formatMarketPair(configuration.default_market),
       duration_hours: previous.duration_hours || configuration.default_duration_hours,
       initial_capital: previous.initial_capital || configuration.default_initial_capital,
       trading_profile: previous.trading_profile || "BALANCED_INTRADAY",
@@ -634,8 +663,9 @@ export default function App() {
   useEffect(() => {
     if (!selected?.market) return;
     setForm((previous) => {
-      if (previous.market === selected.market) return previous;
-      return { ...previous, market: selected.market };
+      const formattedMarket = formatMarketPair(selected.market);
+      if (previous.market === formattedMarket) return previous;
+      return { ...previous, market: formattedMarket };
     });
   }, [selected?.id, selected?.market]);
 
@@ -692,6 +722,7 @@ export default function App() {
         method: "POST",
         body: JSON.stringify({
           ...form,
+          market: normalizeMarketSymbol(form.market),
           duration_hours: Number(form.duration_hours),
           initial_capital: Number(form.initial_capital),
         }),
@@ -792,7 +823,11 @@ export default function App() {
                 <input
                   value={form.market}
                   onChange={(event) => setForm({ ...form, market: event.target.value.toUpperCase() })}
-                  placeholder="BTCUSDT"
+                  onBlur={() => setForm((previous) => ({
+                    ...previous,
+                    market: formatMarketPair(previous.market),
+                  }))}
+                  placeholder="BTC/USDT"
                   required
                 />
               </label>
@@ -901,7 +936,7 @@ export default function App() {
                   onClick={() => selectExperiment(item.id)}
                 >
                   <span>
-                    <strong>{item.market}</strong>
+                    <strong>{formatMarketPair(item.market)}</strong>
                     <small>{item.trading_profile?.replaceAll("_", " ")} · {formatDate(item.started_at)}</small>
                   </span>
                   <em className={`status-${String(item.status).toLowerCase()}`}>{statusLabel(item.status, t)}</em>
@@ -925,7 +960,7 @@ export default function App() {
                 <div className="experiment-title">
                   <div>
                     <span className="section-kicker">{t("Active research run")}</span>
-                    <h2>{selected.market} · {t(experimentProfile?.display_name || selected.trading_profile)}</h2>
+                    <h2>{formatMarketPair(selected.market)} · {t(experimentProfile?.display_name || selected.trading_profile)}</h2>
                     <p className="experiment-subtitle">{selected.execution_timeframe} {t("decisions")} · {selected.trend_timeframe} {t("trend confirmation")}</p>
                   </div>
                   <span className={`status-badge status-${String(selected.status).toLowerCase()}`}>
