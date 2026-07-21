@@ -1,7 +1,7 @@
 {
   "name": "crypto-paper-trader-front",
   "private": true,
-  "version": "0.12.0",
+  "version": "0.14.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,10 +11,9 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.6.0",
-    "vite": "^7.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "serve": "^14.2.4"
-  },
-  "devDependencies": {}
+    "serve": "^14.2.4",
+    "vite": "^7.0.0"
+  }
 }

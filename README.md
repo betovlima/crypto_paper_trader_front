@@ -1,14 +1,59 @@
-# Release 0.11.1 — Autonomous AI Pattern Trader
+# Crypto Paper Trader Front — v0.14.2
 
-The dashboard now includes a fifth independent paper portfolio: **AI Pattern Trader**. It learns directly from chronological OHLCV windows, similar historical patterns, unsupervised clusters and market regimes. Its proposed action, final risk-approved signal, confidence, expected net return, delayed outcome and model validation diagnostics are visible in the dashboard. It does not choose among the other strategies.
+React/Vite dashboard for the PAPER_ONLY Crypto Paper Trader research application.
 
-# Release 0.10.0 — Four-strategy comparison
+## Release 0.14.2
 
-The dashboard now compares Hybrid + ML, EMA Crossover, Larry Williams 9.1 Classic, and Larry Williams 9.1 Trend Follower. The two Larry cards show their independent stop mode, active stop, entry trigger, and classical exit trigger. The collapsible configuration panel from v0.9.8 is preserved.
+### Stable Setup popup
 
-# Crypto Paper Trader Front
+- The `Setup` button opens a centered configuration popup with a short entrance delay and smooth animation.
+- Opening or closing the popup no longer changes the horizontal position of the dashboard.
+- The scrollbar width is compensated before page scrolling is locked, preventing the main screen from moving to the right.
+- Scroll locking is applied with `useLayoutEffect`, before the browser paints the modal state.
+- The popup closes with the close button, the `Escape` key or a click outside the dialog.
 
-Public React/Vite dashboard for Crypto Paper Trader.
+### Reset moved into Setup
+
+- The administrative `Reset` button was removed from the application header.
+- Reset is now available inside the Setup popup, next to the simulation action.
+- Clicking Reset opens the existing protected confirmation dialog and requests the `ADMIN_API_KEY` configured in the backend Railway service.
+- The key is sent only in the `X-Admin-Key` request header and is never stored in the browser.
+
+### Multilingual header
+
+- Embedded SVG flag icons are available for Portuguese, English and Spanish.
+- Header controls use stable dimensions so translated labels do not move the layout.
+- The selected language is persisted in browser local storage.
+
+### Dashboard
+
+- Dark interface with every strategy displayed simultaneously.
+- Each strategy card shows market price, net equity, gross result, net result, position, signal and runtime status.
+- No detailed activity table or recent-experiments panel is displayed on the main dashboard.
+- Market and strategy values refresh approximately every 15 seconds without remounting the page.
+
+## Strategies displayed
+
+1. Adaptive Strategy Selector
+2. Profile-Aware Hybrid + ML
+3. EMA Crossover
+4. EMA Pullback
+5. Larry Williams 9.1 Classic
+6. Larry Williams 9.1 Trend Follower
+7. Larry Volatility Breakout
+8. AI Pattern Trader
+
+## Timeframes
+
+The backend profile determines the analysis cadence. The default Balanced Intraday profile uses:
+
+```text
+Decision candle: 30 minutes
+Trend timeframe: 1 hour
+Market refresh: approximately 15 seconds
+```
+
+The Fast profile uses `15min` decisions and the Conservative profile uses `1hour` decisions.
 
 ## Environment
 
@@ -18,44 +63,49 @@ VITE_API_URL=http://127.0.0.1:8000
 
 On Railway, set `VITE_API_URL` to the public backend URL and redeploy the frontend.
 
-## Administrative operations
+Do not create a `VITE_ADMIN_API_KEY` variable. The administrative token must remain only in the API service and is entered manually in the reset dialog when needed.
 
-The public frontend intentionally does not render the **Stop and consolidate** control
-and contains no administrative token. Manual stop/consolidation is available only by
-direct API request using the backend `ADMIN_API_KEY` through the `X-Admin-Key` header.
-Never add that secret to a `VITE_*` variable because Vite values are exposed in the
-public browser bundle.
+## Local execution
 
-## Strategy comparison API
+```powershell
+npm install
+npm run dev
+```
 
-The dashboard reads the latest comparison state from `/strategy-comparison` and recent evolution from `/strategy-comparison/history`. It no longer sends one decision request per strategy during the general refresh.
+Production build:
 
-## Deployment recovery
+```powershell
+npm run build
+```
 
-The dashboard persists the selected experiment id in browser local storage. During an
-API redeploy it keeps the current screen state, retries on the normal refresh cycle,
-and restores the same experiment automatically when the API is available again.
+## Market symbols
 
-## Market pair display
+The API uses compact MEXC symbols such as `PENDLEUSDT`. The interface displays `PENDLE/USDT` and normalizes form input before sending it to the backend.
 
-Market symbols returned by the API remain in CoinEx compact format, such as `PENDLEUSDT`.
-The dashboard displays them as `PENDLE/USDT`, accepts either format in the form, and
-normalizes the value back to `PENDLEUSDT` before creating an experiment.
+## Persistence
 
-
-## v0.10.0 layout
-
-The experiment configuration and history area now appears as a collapsible full-width block above the active experiment. The analysis dashboard uses the full page width, giving the strategy indicators and comparison cards more horizontal space.
+The selected experiment id and selected language are stored in browser local storage. Durable experiment data remains in the backend SQLite database.
 
 
-## API client responsibilities
+## Strategy card enhancements in v0.14.2
 
-Frontend HTTP calls are split by responsibility under `src/api/`:
+- Each strategy card has a subtle individual accent color.
+- Strategy cards can be reordered by dragging the six-dot handle.
+- The chosen order is persisted in browser local storage.
+- Keyboard users can focus the drag handle and use Left/Right arrows to reorder.
+- The `?` hint beside each strategy name shows a short explanation and a simple example in Portuguese, English, or Spanish.
 
-- `systemApi.js`;
-- `experimentsApi.js`;
-- `strategyApi.js`;
-- `aiPatternApi.js`;
-- `client.js` for shared transport and error handling.
 
-The dashboard has no CSV/ZIP download action. All displayed state is read from dedicated JSON API endpoints backed by SQLite. The "Latest state of all strategies" panel always includes AI Pattern Trader.
+## 0.14.2
+
+- Pointer-based strategy card reordering with a dynamic placeholder.
+- Cards reflow while dragging across rows.
+- Auto-scroll near the viewport edges.
+- Dragging from the final row to the first row is supported.
+
+
+## 0.14.2
+
+- Added FLIP-based card movement animations during strategy reordering.
+- Reduced visual jumps while the dynamic placeholder moves across rows.
+- Preserved drag-and-drop, keyboard reordering, and stored card order.
