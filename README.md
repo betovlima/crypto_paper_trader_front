@@ -1,3 +1,7 @@
+# Release 0.11.0 — Autonomous AI Pattern Trader
+
+The dashboard now includes a fifth independent paper portfolio: **AI Pattern Trader**. It learns directly from chronological OHLCV windows, similar historical patterns, unsupervised clusters and market regimes. Its proposed action, final risk-approved signal, confidence, expected net return, delayed outcome and model validation diagnostics are visible in the dashboard. It does not choose among the other strategies.
+
 # Release 0.10.0 — Four-strategy comparison
 
 The dashboard now compares Hybrid + ML, EMA Crossover, Larry Williams 9.1 Classic, and Larry Williams 9.1 Trend Follower. The two Larry cards show their independent stop mode, active stop, entry trigger, and classical exit trigger. The collapsible configuration panel from v0.9.8 is preserved.

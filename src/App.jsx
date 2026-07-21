@@ -8,11 +8,13 @@ const CONTROL_RAIL_STORAGE_KEY = "crypto-paper-trader-control-rail";
 const REFRESH_SECONDS = 15;
 const LARRY_CLASSIC_CODE = "EMA9_SETUP_91_COST_AWARE";
 const LARRY_TREND_CODE = "EMA9_SETUP_91_TREND_FOLLOWER";
+const AI_PATTERN_CODE = "AI_PATTERN_TRADER";
 const STRATEGY_ORDER = [
   "CURRENT_HYBRID",
   "EMA_CROSSOVER_COST_AWARE",
   LARRY_CLASSIC_CODE,
   LARRY_TREND_CODE,
+  AI_PATTERN_CODE,
 ];
 
 function isLarryStrategy(code) {
@@ -128,6 +130,7 @@ function strategyShortName(code, t) {
     EMA_CROSSOVER_COST_AWARE: "EMA Crossover",
     EMA9_SETUP_91_COST_AWARE: "Larry 9.1 Classic",
     EMA9_SETUP_91_TREND_FOLLOWER: "Larry 9.1 Trend",
+    AI_PATTERN_TRADER: "AI Pattern",
   }[code] || code;
   return t(label);
 }
@@ -284,6 +287,12 @@ function LabelWithHint({ children, hint }) {
 function strategyRuntimeStatus(strategy, t) {
   if (strategy.setup_status === "EXIT_ARMED") return t("EXIT ARMED");
   if (strategy.has_open_position) return t("IN POSITION");
+  if (strategy.strategy_code === AI_PATTERN_CODE) {
+    if (strategy.ai_risk_status === "LEARNING") return t("LEARNING");
+    if (strategy.ai_risk_status === "BLOCKED") return t("RISK BLOCKED");
+    if (strategy.ai_risk_status === "OBSERVATION") return t("OBSERVATION");
+    return t("AUTONOMOUS");
+  }
   if (isLarryStrategy(strategy.strategy_code)) {
     if (strategy.setup_status === "ARMED") return t("SETUP ARMED");
     if (strategy.setup_status === "CANCELLED") return t("SETUP CANCELLED");
@@ -366,6 +375,13 @@ const StrategyComparison = memo(function StrategyComparison({ strategies, active
                   <span>{t("Signal-first")}</span>
                 </div>
               )}
+              {strategy.strategy_code === AI_PATTERN_CODE && (
+                <div className="setup-line ai-setup-line">
+                  <span>{t(strategy.ai_regime || "LEARNING")}</span>
+                  <strong>{strategy.ai_pattern_cluster === null || strategy.ai_pattern_cluster === undefined ? t("Pattern memory") : `${t("Cluster")} ${strategy.ai_pattern_cluster}`}</strong>
+                  <span>{formatPercent(strategy.ai_confidence, 1)}</span>
+                </div>
+              )}
             </button>
           );
         })}
@@ -439,6 +455,11 @@ function decisionStatusText(code, decision, strategy, t, language) {
   if (isLarryStrategy(code)) {
     return setupStatusExplanation(code, strategy || {}, t, language);
   }
+  if (code === AI_PATTERN_CODE) {
+    return translateDynamicText(language, decision.ai_risk_reason)
+      || translateDynamicText(language, decision.decision_reason)
+      || t("Waiting for the next autonomous pattern decision.");
+  }
   return translateDynamicText(language, decision.decision_reason) || t("Waiting for the next valid setup.");
 }
 
@@ -494,6 +515,15 @@ function StrategyMonitoringPanel({ t, language, strategies, decisionMap, activeC
                 </div>
               )}
 
+              {code === AI_PATTERN_CODE && (
+                <div className="strategy-monitor-metrics">
+                  <span><small>{t("Regime")}</small><strong>{t(latest?.ai_regime || strategy?.ai_regime || "LEARNING")}</strong></span>
+                  <span><small>{t("Pattern cluster")}</small><strong>{latest?.ai_pattern_cluster ?? strategy?.ai_pattern_cluster ?? "—"}</strong></span>
+                  <span><small>{t("Confidence")}</small><strong>{formatPercent(latest?.ai_confidence ?? strategy?.ai_confidence, 1)}</strong></span>
+                  <span><small>{t("Expected net return")}</small><strong>{formatPercent(latest?.ai_expected_net_return ?? strategy?.ai_expected_net_return, 3)}</strong></span>
+                </div>
+              )}
+
               <div className="strategy-monitor-reason">
                 <small>{t("Current explanation")}</small>
                 <p>{decisionStatusText(code, latest, strategy, t, language)}</p>
@@ -507,13 +537,75 @@ function StrategyMonitoringPanel({ t, language, strategies, decisionMap, activeC
                   <div key={row.id}>
                     <time>{formatTime(row.candle_timestamp)}</time>
                     <span className={`signal-${String(row.final_signal || "hold").toLowerCase()}`}>{row.final_signal}</span>
-                    <b>{code === "CURRENT_HYBRID" ? formatPercent(row.upward_probability, 1) : code === "EMA_CROSSOVER_COST_AWARE" ? `${formatPrice(row.fast_ema_value)} / ${formatPrice(row.slow_ema_value)}` : t(row.setup_status || "IDLE")}</b>
+                    <b>{code === "CURRENT_HYBRID"
+                      ? formatPercent(row.upward_probability, 1)
+                      : code === "EMA_CROSSOVER_COST_AWARE"
+                        ? `${formatPrice(row.fast_ema_value)} / ${formatPrice(row.slow_ema_value)}`
+                        : code === AI_PATTERN_CODE
+                          ? `${t(row.ai_regime || "LEARNING")} · ${formatPercent(row.ai_confidence, 0)}`
+                          : t(row.setup_status || "IDLE")}</b>
                   </div>
                 ))}
               </div>
             </article>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+
+function AIPatternDetail({ t, language, strategy, decisions }) {
+  const latest = decisions[0] || null;
+  const resolved = decisions.filter((row) => row.ai_outcome_resolved);
+  const correct = resolved.filter((row) => row.ai_direction_correct).length;
+  const averageNet = resolved.length
+    ? resolved.reduce((total, row) => total + Number(row.ai_realized_net_return || 0), 0) / resolved.length
+    : null;
+  const averageReward = resolved.length
+    ? resolved.reduce((total, row) => total + Number(row.ai_realized_reward || 0), 0) / resolved.length
+    : null;
+  const confidence = latest?.ai_confidence ?? strategy?.ai_confidence;
+  const riskReason = latest?.ai_risk_reason || strategy?.ai_risk_reason;
+
+  return (
+    <section className="surface ai-pattern-detail">
+      <div className="surface-heading">
+        <div>
+          <span className="section-kicker">{t("Autonomous pattern intelligence")}</span>
+          <h2>{t("AI Pattern Trader diagnostics")}</h2>
+          <p className="strategy-description">{t("The model learns directly from chronological OHLCV windows, similar historical patterns and market regimes. It does not select one of the other strategies.")}</p>
+        </div>
+        <span className={`ai-risk-badge ai-risk-${String(latest?.ai_risk_status || strategy?.ai_risk_status || "learning").toLowerCase()}`}>
+          {t(latest?.ai_risk_status || strategy?.ai_risk_status || "LEARNING")}
+        </span>
+      </div>
+      <div className="ai-pattern-grid">
+        <span><small>{t("Mode")}</small><strong>{t(latest?.ai_mode || strategy?.ai_mode || "PAPER_AUTONOMOUS")}</strong></span>
+        <span><small>{t("Model version")}</small><strong>{latest?.ai_model_version || strategy?.ai_model_version || "—"}</strong></span>
+        <span><small>{t("Proposed action")}</small><strong className={`signal-${String(latest?.ai_proposed_action || "hold").toLowerCase()}`}>{latest?.ai_proposed_action || "—"}</strong></span>
+        <span><small>{t("Final signal")}</small><strong className={`signal-${String(latest?.final_signal || "hold").toLowerCase()}`}>{latest?.final_signal || "—"}</strong></span>
+        <span><small>{t("Regime")}</small><strong>{t(latest?.ai_regime || strategy?.ai_regime || "LEARNING")}</strong></span>
+        <span><small>{t("Pattern cluster")}</small><strong>{latest?.ai_pattern_cluster ?? strategy?.ai_pattern_cluster ?? "—"}</strong></span>
+        <span><small>{t("Confidence")}</small><strong>{formatPercent(confidence, 2)}</strong></span>
+        <span><small>{t("Probability up")}</small><strong>{formatPercent(latest?.ai_upward_probability ?? latest?.upward_probability ?? strategy?.ai_upward_probability, 2)}</strong></span>
+        <span><small>{t("Expected gross return")}</small><strong>{formatPercent(latest?.ai_expected_gross_return, 3)}</strong></span>
+        <span><small>{t("Expected net return")}</small><strong>{formatPercent(latest?.ai_expected_net_return ?? strategy?.ai_expected_net_return, 3)}</strong></span>
+        <span><small>{t("Similar patterns")}</small><strong>{latest?.ai_neighbor_count ?? strategy?.ai_similar_patterns ?? "—"}</strong></span>
+        <span><small>{t("Positive similar patterns")}</small><strong>{formatPercent(latest?.ai_positive_neighbor_rate, 1)}</strong></span>
+        <span><small>{t("Prediction horizon")}</small><strong>{latest?.ai_horizon_candles ? `${latest.ai_horizon_candles} ${t("candles")}` : "—"}</strong></span>
+        <span><small>{t("Training samples")}</small><strong>{latest?.ai_training_samples ?? "—"}</strong></span>
+        <span><small>{t("Validation accuracy")}</small><strong>{formatPercent(latest?.ai_validation_accuracy, 1)}</strong></span>
+        <span><small>{t("Validation MAE")}</small><strong>{formatPercent(latest?.ai_validation_mae, 3)}</strong></span>
+        <span><small>{t("Resolved predictions")}</small><strong>{resolved.length}</strong></span>
+        <span><small>{t("Direction accuracy")}</small><strong>{resolved.length ? formatPercent(correct / resolved.length, 1) : "—"}</strong></span>
+        <span><small>{t("Average net outcome")}</small><strong>{formatPercent(averageNet, 3)}</strong></span>
+        <span><small>{t("Average reward")}</small><strong>{formatPercent(averageReward, 3)}</strong></span>
+      </div>
+      <div className="ai-risk-explanation">
+        <small>{t("Risk governor")}</small>
+        <p>{translateDynamicText(language, riskReason) || t("Waiting for the first autonomous pattern analysis.")}</p>
       </div>
     </section>
   );
@@ -937,8 +1029,8 @@ export default function App() {
               )}
 
               <div className="strategy-note">
-                <strong>{t("Four independent techniques")}</strong>
-                <span>{t("Hybrid + ML, EMA Crossover, Larry Williams 9.1 Classic and Larry Williams 9.1 Trend Follower. Technical rules create signals; CoinEx fees and execution costs are applied only after simulated trades.")}</span>
+                <strong>{t("Five independent strategies")}</strong>
+                <span>{t("Hybrid + ML, EMA Crossover, Larry Williams 9.1 Classic, Larry Williams 9.1 Trend Follower and an autonomous AI Pattern Trader. CoinEx fees and execution costs are applied only after simulated trades.")}</span>
               </div>
               <button className="primary-button" disabled={saving || selected?.status === "RUNNING"}>
                 {saving ? t("Processing...") : t("Start simulation")}
@@ -997,7 +1089,7 @@ export default function App() {
             <section className="surface welcome-state">
               <span className="section-kicker">{t("Ready")}</span>
               <h2>{t("Create the first multi-strategy experiment")}</h2>
-              <p>{t("All four strategies receive the same CoinEx candles. Costs are charged after simulated execution and never veto technical signals.")}</p>
+              <p>{t("All five strategies receive the same CoinEx candles. The AI Pattern Trader learns directly from chronological market patterns, while the other strategies remain independent benchmarks.")}</p>
             </section>
           ) : (
             <>
@@ -1102,6 +1194,15 @@ export default function App() {
                     </article>
                   </section>
 
+                  {activeStrategyCode === AI_PATTERN_CODE && (
+                    <AIPatternDetail
+                      t={t}
+                      language={language}
+                      strategy={activeStrategy}
+                      decisions={decisions}
+                    />
+                  )}
+
                   <StrategyMonitoringPanel
                     t={t}
                     language={language}
@@ -1115,13 +1216,13 @@ export default function App() {
                   <section className="surface cost-policy-card">
                     <div>
                       <span className="section-kicker">{t("Execution accounting")} <Hint text={t(HINTS.costs)} /></span>
-                      <h2>{t("Setups create signals; costs only change the result")}</h2>
+                      <h2>{t("Handcrafted setups remain signal-first; AI evaluates net edge")}</h2>
                     </div>
                     <div className="cost-policy-values">
                       <span><small><LabelWithHint hint={t(HINTS.fee)}>{t("CoinEx taker fee")}</LabelWithHint></small><strong>{formatPercent(selected.taker_fee_rate, 2)} {t("per side")}</strong></span>
                       <span><small><LabelWithHint hint={t(HINTS.spread)}>{t("Observed spread")}</LabelWithHint></small><strong>{formatPercent(selected.last_spread_rate, 4)}</strong></span>
                       <span><small><LabelWithHint hint={t(HINTS.slippage)}>{t("Simulated slippage")}</LabelWithHint></small><strong>{formatPercent(configuration?.slippage_rate, 3)} {t("per side")}</strong></span>
-                      <span><small><LabelWithHint hint={t(HINTS.costs)}>{t("Signal veto by fees")}</LabelWithHint></small><strong>{t("No")}</strong></span>
+                      <span><small><LabelWithHint hint={t(HINTS.costs)}>{t("Cost policy")}</LabelWithHint></small><strong>{t("Classic: accounting only · AI: net-edge aware")}</strong></span>
                       <span><small><LabelWithHint hint={t(HINTS.storage)}>{t("Persistent storage")}</LabelWithHint></small><strong>{t("SQLite only")}</strong></span>
                     </div>
                   </section>
@@ -1159,6 +1260,11 @@ export default function App() {
                           <table>
                             <thead><tr><th>{t("UTC candle")}</th><th>{t("Signal")}</th><th>{t("Price")}</th><th>{t("EMA structure")}</th><th>{t("Fast EMA")}</th><th>{t("Slow EMA")}</th><th>{t("Regime EMA")}</th><th>{t("RSI")}</th><th>{t("ADX")}</th><th>{t("Rel. volume")}</th><th>{t("Technical target")}</th><th>{t("Est. costs")}</th><th>{t("Executed")}</th><th>{t("Recovered")}</th><th>{t("Reason")}</th></tr></thead>
                             <tbody>{decisions.map((row) => <tr key={row.id}><td>{formatDate(row.candle_timestamp)}</td><td><span className={`signal-chip signal-${String(row.final_signal).toLowerCase()}`}>{row.final_signal}</span></td><td>{formatPrice(row.market_price)}</td><td>{row.fast_ema_period}/{row.slow_ema_period}/{row.regime_ema_period}</td><td>{formatPrice(row.fast_ema_value)}</td><td>{formatPrice(row.slow_ema_value)}</td><td>{formatPrice(row.regime_ema_value)}</td><td>{formatNumber(row.rsi_14, 2)}</td><td>{formatNumber(row.adx_14, 2)}</td><td>{formatNumber(row.relative_volume, 2)}</td><td>{formatPercent(row.potential_gross_return, 3)}</td><td>{formatPercent(row.estimated_round_trip_cost_rate ?? row.required_gross_return, 3)}</td><td>{t(row.action_executed ? "Yes" : "No")}</td><td>{t(row.is_recovered ? "Yes" : "No")}</td><td className="reason-cell">{translateDynamicText(language, row.decision_reason)}</td></tr>)}</tbody>
+                          </table>
+                        ) : activeStrategyCode === AI_PATTERN_CODE ? (
+                          <table className="ai-decisions-table">
+                            <thead><tr><th>{t("UTC candle")}</th><th>{t("Proposed")}</th><th>{t("Final")}</th><th>{t("Regime")}</th><th>{t("Cluster")}</th><th>{t("Confidence")}</th><th>{t("P(up)")}</th><th>{t("Expected gross")}</th><th>{t("Expected net")}</th><th>{t("Similar patterns")}</th><th>{t("Risk")}</th><th>{t("Validation accuracy")}</th><th>{t("Resolved")}</th><th>{t("Actual net")}</th><th>{t("Reward")}</th><th>{t("Correct")}</th><th>{t("Executed")}</th><th>{t("Reason")}</th></tr></thead>
+                            <tbody>{decisions.map((row) => <tr key={row.id}><td>{formatDate(row.candle_timestamp)}</td><td><span className={`signal-chip signal-${String(row.ai_proposed_action || "hold").toLowerCase()}`}>{row.ai_proposed_action || "—"}</span></td><td><span className={`signal-chip signal-${String(row.final_signal || "hold").toLowerCase()}`}>{row.final_signal}</span></td><td>{t(row.ai_regime || "—")}</td><td>{row.ai_pattern_cluster ?? "—"}</td><td>{formatPercent(row.ai_confidence, 2)}</td><td>{formatPercent(row.ai_upward_probability ?? row.upward_probability, 2)}</td><td>{formatPercent(row.ai_expected_gross_return, 3)}</td><td>{formatPercent(row.ai_expected_net_return, 3)}</td><td>{row.ai_neighbor_count ?? "—"}</td><td>{t(row.ai_risk_status || "—")}</td><td>{formatPercent(row.ai_validation_accuracy, 1)}</td><td>{t(row.ai_outcome_resolved ? "Yes" : "No")}</td><td>{formatPercent(row.ai_realized_net_return, 3)}</td><td>{formatPercent(row.ai_realized_reward, 3)}</td><td>{row.ai_outcome_resolved ? t(row.ai_direction_correct ? "Yes" : "No") : "—"}</td><td>{t(row.action_executed ? "Yes" : "No")}</td><td className="reason-cell">{translateDynamicText(language, row.ai_risk_reason || row.decision_reason)}</td></tr>)}</tbody>
                           </table>
                         ) : (
                           <table>
