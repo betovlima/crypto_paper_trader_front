@@ -4,15 +4,17 @@ import {
   createExperiment as createExperimentRequest,
   getExperiment,
   listExperimentHistory,
+  stopRunningExperiment,
 } from "./api/experimentsApi";
 import {
   getStrategyComparison,
   listStrategyAccounts,
 } from "./api/strategyApi";
+import { getPublicConfiguration } from "./api/systemApi";
 import {
-  getPublicConfiguration,
-  resetApplication,
-} from "./api/systemApi";
+  getAIOpportunityScannerStatus,
+  listLatestAIOpportunities,
+} from "./api/aiOpportunitiesApi";
 import {
   detectInitialLanguage,
   INTL_LOCALES,
@@ -26,6 +28,30 @@ const SELECTED_EXPERIMENT_STORAGE_KEY = "crypto-paper-trader-selected-experiment
 const LANGUAGE_STORAGE_KEY = "crypto-paper-trader-language";
 const STRATEGY_ORDER_STORAGE_KEY = "crypto-paper-trader-strategy-card-order";
 const REFRESH_SECONDS = 15;
+const AI_SCANNER_REFRESH_MS = 2000;
+const AI_SCANNER_DELAY_THRESHOLD_MS = 90000;
+
+const AI_SCANNER_PROCESSING_STATES = new Set([
+  "STARTING",
+  "SELECTING_MARKETS",
+  "FILTERING_MARKETS",
+  "DOWNLOADING_CANDLES",
+  "TRAINING_MODELS",
+  "RANKING_OPPORTUNITIES",
+]);
+
+const AI_SCANNER_STATUS_MESSAGES = {
+  STARTING: "Starting the AI opportunity scanner",
+  SELECTING_MARKETS: "Selecting the most liquid MEXC markets",
+  FILTERING_MARKETS: "Filtering pairs by liquidity, price and market quality",
+  DOWNLOADING_CANDLES: "Downloading closed candles and current market depth",
+  TRAINING_MODELS: "Training and validating the adaptive model",
+  RANKING_OPPORTUNITIES: "Ranking the strongest entry opportunities",
+  READY: "Opportunity ranking ready",
+  ERROR: "The AI scanner could not complete the current scan",
+  DISABLED: "The AI opportunity scanner is disabled",
+  STOPPED: "The AI opportunity scanner is stopped",
+};
 
 const STRATEGY_LABELS = {
   ADAPTIVE_STRATEGY_SELECTOR: "Adaptive Strategy Selector",
@@ -43,8 +69,8 @@ const MARKET_QUOTE_ASSETS = ["USDT", "USDC", "FDUSD", "BUSD", "TUSD", "DAI", "BT
 const STRATEGY_VISUALS = {
   ADAPTIVE_STRATEGY_SELECTOR: {
     accent: "#a78bfa",
-    summary: "Evaluates every enabled strategy and selects the candidate with the best market fit, expected net return and risk score.",
-    example: "If the market is trending and EMA Pullback has the strongest approved score, the selector chooses EMA Pullback; otherwise it can choose HOLD.",
+    summary: "Detects the market regime, researches executable strategy hypotheses, backtests them with costs and activates only a generated strategy that passes walk-forward and risk validation.",
+    example: "In a strong uptrend, the system can research and generate an ATR-adjusted pullback strategy, validate it on chronological windows and activate it only when the results remain stable after costs.",
   },
   CURRENT_HYBRID: {
     accent: "#60a5fa",
@@ -143,15 +169,30 @@ function formatTime(value, language = "en") {
   }).format(date);
 }
 
+function formatDateTime(value, language = "en") {
+  const date = parseApiDate(value);
+  if (!date) return "—";
+  return new Intl.DateTimeFormat(INTL_LOCALES[language] || "en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  }).format(date);
+}
+
 function formatDuration(milliseconds) {
   if (!Number.isFinite(milliseconds)) return "—";
-  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
-  return `${minutes}m`;
+  const seconds = totalSeconds % 60;
+  if (days > 0) return `${days}d ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  if (hours > 0) return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function normalizeMarketSymbol(value) {
@@ -194,6 +235,7 @@ function statusLabel(status, t = (value) => value) {
     STOP_REQUESTED: "Stopping",
     FINISHED: "Finished",
     MANUALLY_STOPPED: "Stopped",
+    STOPPED: "Stopped",
     FAILED: "Failed",
     ACTIVE: "Active",
   }[status] || status || "Unknown");
@@ -221,6 +263,95 @@ function decisionSignal(decision) {
   return String(decision?.final_signal || decision?.ai_proposed_action || "HOLD").toUpperCase();
 }
 
+function strategyAutomationState(strategy, decision, t = (value) => value) {
+  const signal = decisionSignal(decision);
+
+  if (strategy?.has_open_position) {
+    return {
+      label: t("ACTIVE POSITION"),
+      tone: "active",
+      title: t("The system opened a simulated buy position and is now managing the trade automatically."),
+    };
+  }
+
+  if (signal === "BUY") {
+    return {
+      label: t("ENTERING MARKET"),
+      tone: "buy",
+      title: t("The system selected a buy entry and is executing the simulated position."),
+    };
+  }
+
+  if (signal === "SELL") {
+    return {
+      label: t("EXITING MARKET"),
+      tone: "sell",
+      title: t("The system selected an exit and is closing or avoiding the simulated position."),
+    };
+  }
+
+  if (strategy?.setup_status === "ARMED") {
+    return {
+      label: t("ENTRY ARMED"),
+      tone: "armed",
+      title: t("The system found a valid setup and is waiting for the final entry trigger."),
+    };
+  }
+
+  return {
+    label: t("WAITING"),
+    tone: "waiting",
+    title: t("The system evaluated the market and decided not to open or close a position yet."),
+  };
+}
+
+function strategyAutomaticPriority(strategy, decision) {
+  const signal = decisionSignal(decision);
+
+  if (strategy?.has_open_position) return 0;
+  if (signal === "BUY" || signal === "SELL") return 1;
+  if (strategy?.setup_status === "ARMED" || strategy?.setup_status === "EXIT_ARMED") return 2;
+  return 3;
+}
+
+function selectedStrategyLabel(strategy, decision, t = (value) => value) {
+  if (strategy?.strategy_code !== "ADAPTIVE_STRATEGY_SELECTOR") return null;
+
+  const activeName = (
+    strategy?.selector_active_strategy_name
+    || decision?.selector_active_strategy_name
+    || null
+  );
+  if (activeName) return activeName;
+
+  const selectedCode = (
+    strategy?.selector_selected_strategy
+    || decision?.selector_selected_strategy
+    || null
+  );
+  if (!selectedCode || selectedCode === "UNDEFINED") return t("No validated strategy yet");
+  return selectedCode;
+}
+
+function parseStringArray(value) {
+  if (Array.isArray(value)) return value.filter((item) => typeof item === "string");
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function sourceLabel(value) {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "");
+  } catch {
+    return value;
+  }
+}
+
 function pnlTone(value) {
   const numeric = Number(value || 0);
   if (numeric > 0) return "positive";
@@ -228,16 +359,151 @@ function pnlTone(value) {
   return "neutral";
 }
 
-function Countdown({ target, language }) {
+function useLiveNow(enabled = true) {
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const update = () => setNow(Date.now());
+    update();
+    if (!enabled) return undefined;
+    const timer = window.setInterval(update, 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [enabled]);
 
+  return now;
+}
+
+function Countdown({ target }) {
+  const now = useLiveNow(Boolean(target));
   const targetDate = parseApiDate(target);
-  return <>{targetDate ? formatDuration(targetDate.getTime() - now) : "—"}</>;
+
+  return (
+    <span className="live-countdown" aria-live="off" aria-atomic="true">
+      {targetDate ? formatDuration(targetDate.getTime() - now) : "—"}
+    </span>
+  );
+}
+
+
+function AdaptiveResearchPanel({ strategy, decision, language, t }) {
+  if (strategy?.strategy_code !== "ADAPTIVE_STRATEGY_SELECTOR") return null;
+
+  const value = (key) => strategy?.[key] ?? decision?.[key] ?? null;
+  const activeName = value("selector_active_strategy_name");
+  const activeCode = value("selector_selected_strategy");
+  const origin = value("selector_strategy_origin");
+  const researchStatus = value("selector_research_status") || "WAITING_FOR_VALID_STRATEGY";
+  const summary = value("selector_research_summary");
+  const regime = value("selector_market_regime");
+  const sources = parseStringArray(value("selector_source_urls_json"));
+  const score = value("selector_validation_score");
+  const profitFactor = value("selector_profit_factor");
+  const drawdown = value("selector_max_drawdown_pct");
+  const tradeCount = value("selector_trade_count");
+  const nextResearchAt = value("selector_next_research_at");
+  const aiProvider = value("selector_ai_provider");
+  const aiModel = value("selector_ai_model");
+  const aiReviewStatus = value("selector_ai_review_status");
+  const aiReviewScore = value("selector_ai_review_score");
+
+  const positionCode = value("selector_position_strategy_code")
+    || (strategy?.has_open_position ? activeCode : null);
+  const positionName = value("selector_position_strategy_name")
+    || (strategy?.has_open_position ? activeName : null)
+    || (positionCode ? t(STRATEGY_LABELS[positionCode] || positionCode) : null);
+  const positionOrigin = value("selector_position_strategy_origin")
+    || (strategy?.has_open_position ? origin : null);
+  const positionValidationScore = value("selector_position_validation_score")
+    ?? (strategy?.has_open_position ? score : null);
+  const positionOpenedAt = value("selector_position_opened_at")
+    || (strategy?.has_open_position ? strategy?.entry_time : null);
+  const providerLabel = aiProvider
+    ? `${aiProvider}${aiModel ? ` · ${aiModel}` : ""}`
+    : t("Local quantitative engine");
+  const candidateName = activeName || (activeCode ? t(STRATEGY_LABELS[activeCode] || activeCode) : null);
+  const compactSummary = summary
+    || (candidateName
+      ? t("The selector validated a candidate strategy for the current regime.")
+      : t("The selector is still validating candidates for the current regime."));
+
+  return (
+    <section className="adaptive-research-strip" aria-label={t("Adaptive strategy research details")}>
+      <div className="adaptive-strip-main">
+        <small>{strategy?.has_open_position ? t("Current position strategy") : t("Adaptive selector status")}</small>
+        <div className="adaptive-strip-main-row">
+          <strong>
+            {strategy?.has_open_position
+              ? (positionName || t("Legacy strategy attribution unavailable"))
+              : (candidateName || t("No validated strategy yet"))}
+          </strong>
+          <span className={`adaptive-research-status ${strategy?.has_open_position ? "status-active" : `status-${String(researchStatus).toLowerCase()}`}`}>
+            {strategy?.has_open_position ? t("POSITION LOCKED") : t(researchStatus)}
+          </span>
+        </div>
+        <p>
+          {strategy?.has_open_position
+            ? t("This strategy is permanently attached to the open position and will remain unchanged until the trade is closed.")
+            : compactSummary}
+        </p>
+        {strategy?.has_open_position && (
+          <div className="adaptive-position-meta">
+            <span>{t("Origin")}: {positionOrigin ? t(positionOrigin) : t("Legacy selector position")}</span>
+            <span>{t("Opened at")}: {positionOpenedAt ? formatDateTime(positionOpenedAt, language) : "—"}</span>
+            <span>{t("Entry validation")}: {positionValidationScore == null ? "—" : `${formatNumber(positionValidationScore, 1, language)}/100`}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="adaptive-strip-facts">
+        <div className="adaptive-strip-fact">
+          <small>{t("Regime")}</small>
+          <strong>{regime ? t(regime) : "—"}</strong>
+          <span>{t("Current market context")}</span>
+        </div>
+
+        <div className="adaptive-strip-fact">
+          <small>{t("Next operation candidate")}</small>
+          <strong>{candidateName || t("None yet")}</strong>
+          <span>{strategy?.has_open_position ? t("Research applies only after the current position closes") : t(researchStatus)}</span>
+        </div>
+
+        <div className="adaptive-strip-fact">
+          <small>{t("AI layer")}</small>
+          <strong>{providerLabel}</strong>
+          <span>
+            {t(aiReviewStatus || "NOT_USED")}
+            {aiReviewScore == null ? "" : ` · ${formatNumber(aiReviewScore, 1, language)}/100`}
+          </span>
+        </div>
+
+        <div className="adaptive-strip-fact">
+          <small>{t("Candidate validation")}</small>
+          <strong>{score == null ? "—" : `${formatNumber(score, 1, language)}/100`}</strong>
+          <span>{t("Profit factor")}: {profitFactor == null ? "—" : formatNumber(profitFactor, 2, language)}</span>
+        </div>
+
+        <div className="adaptive-strip-fact">
+          <small>{t("Candidate risk")}</small>
+          <strong>{drawdown == null ? "—" : formatPercent(-Math.abs(Number(drawdown)), 2, language)}</strong>
+          <span>{t("Validated trades")}: {tradeCount == null ? "—" : formatNumber(tradeCount, 0, language)}</span>
+        </div>
+
+        <div className="adaptive-strip-fact">
+          <small>{t("Next review")}</small>
+          <strong><Countdown target={nextResearchAt} /></strong>
+          <span>{strategy?.has_open_position ? t("Starts after position close") : t("Automatic reassessment")}</span>
+        </div>
+      </div>
+
+      {sources.length > 0 && (
+        <div className="adaptive-strip-sources">
+          {sources.slice(0, 4).map((url) => (
+            <a key={url} href={url} target="_blank" rel="noreferrer">{sourceLabel(url)}</a>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 function StrategyHelp({ strategyCode, t }) {
@@ -310,6 +576,7 @@ const StrategyCard = memo(function StrategyCard({
   );
   const equity = Number(strategy.current_equity ?? strategy.initial_capital);
   const signal = decisionSignal(decision);
+  const automationState = strategyAutomationState(strategy, decision, t);
   const positionLabel = strategy.has_open_position ? t("LONG") : t("NO POSITION");
   const entryPrice = Number(
     strategy.entry_execution_price
@@ -322,10 +589,11 @@ const StrategyCard = memo(function StrategyCard({
     : 0;
 
   const visual = STRATEGY_VISUALS[strategy.strategy_code] || { accent: "#7182ff" };
+  const adaptiveSelection = selectedStrategyLabel(strategy, decision, t);
 
   return (
     <article
-      className={`strategy-card card-${pnlTone(netPnl)}${dragging ? " is-dragging" : ""}`}
+      className={`strategy-card${strategy.strategy_code === "ADAPTIVE_STRATEGY_SELECTOR" ? " is-adaptive-selector" : ""} card-${pnlTone(netPnl)}${dragging ? " is-dragging" : ""}`}
       style={{ "--strategy-accent": visual.accent }}
       data-strategy-code={strategy.strategy_code}
       data-strategy-key={strategy.strategy_code}
@@ -341,7 +609,14 @@ const StrategyCard = memo(function StrategyCard({
         </div>
         <div className="strategy-state">
           <div className="strategy-state-top">
-            <span className={`signal-badge signal-${signal.toLowerCase()}`}>{t(signal)}</span>
+            <span
+              className={`signal-badge automation-${automationState.tone}`}
+              title={`${automationState.title} ${t("Technical decision")}: ${t(signal)}.`}
+              aria-label={`${automationState.label}. ${automationState.title}`}
+            >
+              <i className="signal-badge-dot" aria-hidden="true" />
+              {automationState.label}
+            </span>
             <DragHandle
               strategyCode={strategy.strategy_code}
               dragging={dragging}
@@ -351,8 +626,21 @@ const StrategyCard = memo(function StrategyCard({
             />
           </div>
           <small>{strategyRuntimeStatus(strategy, t)}</small>
+          {adaptiveSelection && strategy.strategy_code !== "ADAPTIVE_STRATEGY_SELECTOR" && (
+            <span className="selected-strategy-chip" title={`${t("Active generated strategy")}: ${adaptiveSelection}`}>
+              <small>{t("Active generated strategy")}</small>
+              <strong>{adaptiveSelection}</strong>
+            </span>
+          )}
         </div>
       </header>
+
+      <AdaptiveResearchPanel
+        strategy={strategy}
+        decision={decision}
+        language={language}
+        t={t}
+      />
 
       <div className="strategy-metrics">
         <div className="strategy-metric metric-wide">
@@ -389,15 +677,279 @@ const StrategyCard = memo(function StrategyCard({
   );
 });
 
+
+function isRankedOpportunity(opportunity) {
+  if (!opportunity) return false;
+  const action = String(opportunity.action || "").toUpperCase();
+  const score = Number(opportunity.score || 0);
+  const confidence = Number(opportunity.confidence || 0);
+  const upwardProbability = Number(opportunity.upward_probability || 0);
+  const expectedNetReturn = opportunity.expected_net_return;
+
+  return (
+    action !== "LEARNING"
+    && score > 0
+    && confidence > 0
+    && upwardProbability > 0
+    && expectedNetReturn !== null
+    && expectedNetReturn !== undefined
+  );
+}
+
+function AIOpportunityScore({ opportunity, language, t }) {
+  const confidence = Math.max(0, Math.min(Number(opportunity.confidence) || 0, 1));
+  const upwardProbability = Math.max(0, Math.min(Number(opportunity.upward_probability) || 0, 1));
+  const expectedNetReturn = Number(opportunity.expected_net_return) || 0;
+  const expectedReturnComponent = Math.max(0, Math.min(expectedNetReturn / 0.03, 1));
+  const confidencePoints = 45 * confidence;
+  const probabilityPoints = 35 * upwardProbability;
+  const expectedReturnPoints = 20 * expectedReturnComponent;
+  const tooltipId = `opportunity-score-${String(opportunity.market).replace(/[^a-z0-9]/gi, "-")}-${opportunity.rank}`;
+
+  return (
+    <div className="ai-opportunity-score-wrap">
+      <strong className="ai-opportunity-score-value">
+        {formatNumber(opportunity.score, 1, language)}<small>/100</small>
+      </strong>
+      <button
+        type="button"
+        className="ai-opportunity-score-help"
+        aria-label={t("Explain opportunity score")}
+        aria-describedby={tooltipId}
+      >
+        ?
+      </button>
+      <div id={tooltipId} role="tooltip" className="ai-opportunity-score-tooltip">
+        <strong>{t("Opportunity score")}</strong>
+        <p>{t("Overall ranking from 0 to 100. A higher score means the market currently has a stronger AI-detected entry opportunity.")}</p>
+
+        <div className="ai-score-formula">
+          <span>{t("Calculation used")}</span>
+          <code>100 × (0.45 × C + 0.35 × P + 0.20 × R)</code>
+        </div>
+
+        <dl>
+          <div>
+            <dt>{t("Confidence (C)")}</dt>
+            <dd>{formatPercent(confidence, 1, language)} × 45% = {formatNumber(confidencePoints, 1, language)} {t("points")}</dd>
+          </div>
+          <div>
+            <dt>{t("Upward probability (P)")}</dt>
+            <dd>{formatPercent(upwardProbability, 1, language)} × 35% = {formatNumber(probabilityPoints, 1, language)} {t("points")}</dd>
+          </div>
+          <div>
+            <dt>{t("Expected return component (R)")}</dt>
+            <dd>{formatPercent(expectedReturnComponent, 1, language)} × 20% = {formatNumber(expectedReturnPoints, 1, language)} {t("points")}</dd>
+          </div>
+        </dl>
+
+        <p className="ai-score-note">
+          {t("R equals expected net return divided by 3%, limited to the 0%–100% range. Negative expected returns contribute zero points.")}
+        </p>
+        <p className="ai-score-total">
+          {t("Card total")}: {formatNumber(confidencePoints, 1, language)} + {formatNumber(probabilityPoints, 1, language)} + {formatNumber(expectedReturnPoints, 1, language)} = <strong>{formatNumber(opportunity.score, 1, language)}/100</strong>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+function AIOpportunityScannerPanel({ status, opportunities, language, t }) {
+  const statusKey = String(status?.status || (status?.running ? "STARTING" : "STOPPED"));
+  const processing = AI_SCANNER_PROCESSING_STATES.has(statusKey);
+  const now = useLiveNow(processing);
+  const progressPercent = Math.max(0, Math.min(Number(status?.progress_percent) || 0, 100));
+  const lastActivity = parseApiDate(status?.last_activity_at);
+  const scanStarted = parseApiDate(status?.scan_started_at || status?.last_scan_started_at);
+  const activityAgeMs = lastActivity ? Math.max(0, now - lastActivity.getTime()) : null;
+  const delayed = processing
+    && activityAgeMs !== null
+    && activityAgeMs > AI_SCANNER_DELAY_THRESHOLD_MS;
+  const hasError = statusKey === "ERROR" || Boolean(status?.last_error);
+  const visualStatus = hasError
+    ? "ERROR"
+    : delayed
+      ? "DELAYED"
+      : processing
+        ? "PROCESSING"
+        : statusKey;
+  const stateLabel = t(visualStatus);
+  const progressMessage = t(
+    AI_SCANNER_STATUS_MESSAGES[statusKey]
+      || AI_SCANNER_STATUS_MESSAGES.STARTING,
+  );
+  const analyzedMarkets = status?.analyzed_markets ?? status?.scanned_markets ?? 0;
+  const totalMarkets = status?.total_markets || status?.universe_size || 0;
+  const learningMarkets = Number(status?.learning_markets ?? 0);
+  const qualifiedMarkets = Number(
+    status?.eligible_markets
+      ?? status?.classified_opportunities
+      ?? status?.opportunity_count
+      ?? 0,
+  );
+  const displayOpportunities = opportunities.filter(isRankedOpportunity);
+  const showProgress = processing || (!displayOpportunities.length && !hasError && !status?.last_scan_completed_at);
+  const elapsed = scanStarted ? formatDuration(now - scanStarted.getTime()) : "—";
+  const activitySeconds = activityAgeMs === null ? null : Math.floor(activityAgeMs / 1000);
+  const showEmptyState = !showProgress && !hasError && !displayOpportunities.length;
+
+  return (
+    <section className="ai-scanner-panel" aria-labelledby="ai-scanner-title">
+      <div className="ai-scanner-header">
+        <div>
+          <span>{t("Independent AI service")}</span>
+          <h2 id="ai-scanner-title">{t("AI Opportunity Scanner")}</h2>
+          <p>{t("The scanner builds a liquid MEXC market universe, filters low-quality pairs, analyzes recent price, volume, volatility and trend data, trains and validates an adaptive model for each eligible coin, estimates upward probability and expected net return, and ranks the strongest entry zones.")}</p>
+          <div className="ai-scanner-process" aria-label={t("Opportunity selection process")}>
+            <span><b>1</b>{t("Liquidity and spread filter")}</span>
+            <span><b>2</b>{t("Price, volume and volatility analysis")}</span>
+            <span><b>3</b>{t("Adaptive model training and validation")}</span>
+            <span><b>4</b>{t("Entry score and opportunity ranking")}</span>
+          </div>
+        </div>
+        <div className="ai-scanner-status-block">
+          <span className={`ai-scanner-status is-${visualStatus.toLowerCase()}`}>
+            <i /> {stateLabel}
+          </span>
+          <small>
+            {t("Last scan")}: {status?.last_scan_completed_at ? `${formatTime(status.last_scan_completed_at, language)} UTC` : "—"}
+          </small>
+          <small>
+            {t("Last activity")}: {lastActivity ? `${formatTime(lastActivity, language)} UTC` : "—"}
+          </small>
+        </div>
+      </div>
+
+      <div className="ai-scanner-summary">
+        <span><small>{t("Markets in universe")}</small><strong>{totalMarkets}</strong></span>
+        <span><small>{t("Markets analyzed")}</small><strong>{analyzedMarkets}</strong></span>
+        <span><small>{t("Markets learning")}</small><strong>{learningMarkets}</strong></span>
+        <span><small>{t("Ranked opportunities")}</small><strong>{qualifiedMarkets}</strong></span>
+        <span className="ai-next-scan">
+          <small>{t("Next scan countdown")}</small>
+          <strong>{processing ? t("After current scan") : <Countdown target={status?.next_scan_at} />}</strong>
+          <em>{t("Second-by-second countdown")}</em>
+        </span>
+      </div>
+
+      {showProgress && (
+        <div className={`ai-training-progress is-${visualStatus.toLowerCase()}`}>
+          <div className="ai-training-progress-header">
+            <div>
+              <span>{t("Current AI process")}</span>
+              <strong>{progressMessage}</strong>
+            </div>
+            <b>{formatNumber(progressPercent, 0, language)}%</b>
+          </div>
+
+          <div
+            className="ai-training-progress-track"
+            role="progressbar"
+            aria-label={t("AI scan progress")}
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={progressPercent}
+          >
+            <span style={{ width: `${progressPercent}%` }} />
+          </div>
+
+          <div className="ai-training-progress-details">
+            <span>
+              <small>{t("Step")}</small>
+              <strong>{status?.current_step || 0}/{status?.total_steps || 5}</strong>
+            </span>
+            <span>
+              <small>{t("Current market")}</small>
+              <strong>{status?.current_market ? formatMarketPair(status.current_market) : "—"}</strong>
+            </span>
+            <span>
+              <small>{t("Market progress")}</small>
+              <strong>{status?.current_market_index || analyzedMarkets}/{totalMarkets || "—"}</strong>
+            </span>
+            <span>
+              <small>{t("Training window")}</small>
+              <strong>{status?.training_window ? `${status.training_window} ${t("candles")}` : "—"}</strong>
+            </span>
+            <span>
+              <small>{t("Elapsed time")}</small>
+              <strong>{elapsed}</strong>
+            </span>
+            <span>
+              <small>{t("Activity heartbeat")}</small>
+              <strong>{activitySeconds === null ? "—" : t("{seconds}s ago").replace("{seconds}", String(activitySeconds))}</strong>
+            </span>
+          </div>
+
+          {delayed && (
+            <div className="ai-scanner-warning">
+              <strong>{t("Processing appears delayed")}</strong>
+              <span>{t("No scanner activity was detected for more than 90 seconds. Check the API logs if the timer continues increasing.")}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasError && (
+        <div className="ai-scanner-error">
+          <strong>{t("AI scanner error")}</strong>
+          <span>{translateDynamicText(language, status?.last_error || progressMessage)}</span>
+          {status?.next_scan_at && (
+            <small>{t("A new attempt is scheduled in")} <Countdown target={status.next_scan_at} />.</small>
+          )}
+        </div>
+      )}
+
+      <div className="ai-opportunity-grid">
+        {displayOpportunities.length ? displayOpportunities.map((opportunity) => (
+          <article key={`${opportunity.market}-${opportunity.rank}`} className="ai-opportunity-card">
+            <div className="ai-opportunity-card-header">
+              <div>
+                <span>#{opportunity.rank}</span>
+                <h3>{formatMarketPair(opportunity.market)}</h3>
+              </div>
+              <AIOpportunityScore opportunity={opportunity} language={language} t={t} />
+            </div>
+            <span className={`ai-opportunity-action action-${String(opportunity.action).toLowerCase()}`}>
+              {t(opportunity.action)}
+            </span>
+            <dl>
+              <div><dt>{t("Market price")}</dt><dd>{formatPrice(opportunity.market_price, language)} USDT</dd></div>
+              <div><dt>{t("Entry zone")}</dt><dd>{formatPrice(opportunity.entry_zone_low, language)} – {formatPrice(opportunity.entry_zone_high, language)}</dd></div>
+              <div><dt>{t("Confidence")}</dt><dd>{formatPercent(opportunity.confidence, 1, language)}</dd></div>
+              <div><dt>{t("Expected net return")}</dt><dd>{formatPercent(opportunity.expected_net_return, 2, language)}</dd></div>
+              <div><dt>{t("Regime")}</dt><dd>{t(opportunity.regime || "Unknown")}</dd></div>
+            </dl>
+          </article>
+        )) : showEmptyState ? (
+          <div className="ai-opportunity-empty">
+            <strong>
+              {learningMarkets > 0
+                ? t("No ranked opportunities yet.")
+                : t("No market passed the latest ranking filters.")}
+            </strong>
+            <span>
+              {learningMarkets > 0
+                ? t("The latest scan finished successfully, but the eligible markets are still training. Ranked cards will appear only after the model produces a valid score.")
+                : t("The latest scan finished successfully, but no market reached the minimum quality required to appear in the ranking.")}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 function SetupDialog({
   configuration,
   form,
   setForm,
   selected,
+  hasRunningExperiment,
   saving,
   onSubmit,
   onSelectProfile,
-  onReset,
+  onStop,
   onClose,
   language,
   t,
@@ -499,12 +1051,12 @@ function SetupDialog({
           <button
             type="button"
             className="reset-button setup-reset-button"
-            onClick={onReset}
-            disabled={saving}
+            onClick={onStop}
+            disabled={saving || !hasRunningExperiment}
           >
-            {t("Reset")}
+            {t("Stop experiment")}
           </button>
-          <button className="primary-button" disabled={saving || selected?.status === "RUNNING"}>
+          <button className="primary-button" disabled={saving || hasRunningExperiment}>
             {saving ? t("Starting…") : t("Start simulation")}
           </button>
           {configuration && (
@@ -526,22 +1078,53 @@ function SetupDialog({
   );
 }
 
-function ResetDialog({ open, adminKey, setAdminKey, error, resetting, onClose, onConfirm, t }) {
+function StopDialog({
+  open,
+  adminKey,
+  setAdminKey,
+  closeOpenPositions,
+  setCloseOpenPositions,
+  error,
+  stopping,
+  onClose,
+  onConfirm,
+  t,
+}) {
   if (!open) return null;
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget && !resetting) onClose();
+      if (event.target === event.currentTarget && !stopping) onClose();
     }}>
-      <section className="reset-dialog" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+      <section className="reset-dialog stop-dialog" role="dialog" aria-modal="true" aria-labelledby="stop-title">
         <div className="reset-icon" aria-hidden="true">!</div>
         <span>{t("Administrative action")}</span>
-        <h2 id="reset-title">{t("Reset paper-trading data?")}</h2>
-        <p>
-          {t("This permanently removes every experiment and simulated result. The AI market-history cache is preserved.")}
-        </p>
+        <h2 id="stop-title">{t("Stop running experiment?")}</h2>
+        <p>{t("The latest running experiment will stop immediately. All experiment data will be preserved, and the AI Opportunity Scanner will remain active.")}</p>
 
         <form onSubmit={onConfirm}>
+          <fieldset className="stop-position-options">
+            <legend>{t("Open positions")}</legend>
+            <label>
+              <input
+                type="radio"
+                name="close-open-positions"
+                checked={closeOpenPositions}
+                onChange={() => setCloseOpenPositions(true)}
+              />
+              <span>{t("Close open positions at the current market price")}</span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="close-open-positions"
+                checked={!closeOpenPositions}
+                onChange={() => setCloseOpenPositions(false)}
+              />
+              <span>{t("Keep open positions frozen without further experiment analysis")}</span>
+            </label>
+          </fieldset>
+
           <label htmlFor="admin-api-key">ADMIN_API_KEY</label>
           <input
             id="admin-api-key"
@@ -554,9 +1137,9 @@ function ResetDialog({ open, adminKey, setAdminKey, error, resetting, onClose, o
           />
           {error && <div className="modal-error" role="alert">{error}</div>}
           <div className="modal-actions">
-            <button type="button" className="secondary-button" onClick={onClose} disabled={resetting}>{t("Cancel")}</button>
-            <button type="submit" className="danger-button" disabled={resetting || !adminKey.trim()}>
-              {resetting ? t("Resetting…") : t("Reset data")}
+            <button type="button" className="secondary-button" onClick={onClose} disabled={stopping}>{t("Cancel")}</button>
+            <button type="submit" className="danger-button" disabled={stopping || !adminKey.trim()}>
+              {stopping ? t("Stopping…") : t("Stop experiment")}
             </button>
           </div>
         </form>
@@ -639,10 +1222,13 @@ export default function App() {
   const [error, setError] = useState("");
   const [lastFrontendRefresh, setLastFrontendRefresh] = useState(null);
   const [isConfigurationOpen, setIsConfigurationOpen] = useState(false);
-  const [isResetOpen, setIsResetOpen] = useState(false);
+  const [isStopOpen, setIsStopOpen] = useState(false);
   const [adminKey, setAdminKey] = useState("");
-  const [resetError, setResetError] = useState("");
-  const [resetting, setResetting] = useState(false);
+  const [stopError, setStopError] = useState("");
+  const [stopping, setStopping] = useState(false);
+  const [closeOpenPositions, setCloseOpenPositions] = useState(true);
+  const [aiScannerStatus, setAiScannerStatus] = useState(null);
+  const [aiOpportunities, setAiOpportunities] = useState([]);
   const [form, setForm] = useState({
     market: "",
     duration_hours: 24,
@@ -652,6 +1238,8 @@ export default function App() {
 
   const selectedIdRef = useRef(window.localStorage.getItem(SELECTED_EXPERIMENT_STORAGE_KEY) || null);
   const refreshInFlightRef = useRef(false);
+  const scannerRefreshInFlightRef = useRef(false);
+  const lastScannerCompletionRef = useRef(null);
   const mountedRef = useRef(true);
   const strategiesGridRef = useRef(null);
   const dragSessionRef = useRef(null);
@@ -672,17 +1260,29 @@ export default function App() {
     refreshInFlightRef.current = true;
 
     try {
-      const requests = [listExperimentHistory({ page: 1, page_size: 20, sort_direction: "desc" })];
+      const requests = [
+        listExperimentHistory({ page: 1, page_size: 20, sort_direction: "desc" }),
+        getAIOpportunityScannerStatus(),
+        listLatestAIOpportunities(5),
+      ];
       if (includeConfiguration) requests.unshift(getPublicConfiguration());
 
       const payload = await Promise.all(requests);
+      const offset = includeConfiguration ? 1 : 0;
       const config = includeConfiguration ? payload[0] : null;
-      const historyPayload = includeConfiguration ? payload[1] : payload[0];
+      const historyPayload = payload[offset];
+      const scannerStatus = payload[offset + 1];
+      const opportunityRows = payload[offset + 2] || [];
       const list = historyPayload.items || [];
 
       if (!mountedRef.current) return;
       if (config) setStable(setConfiguration, config);
       setStable(setExperiments, list, sameRows);
+      setStable(setAiScannerStatus, scannerStatus);
+      setStable(setAiOpportunities, opportunityRows, sameRows);
+      if (scannerStatus?.last_scan_completed_at) {
+        lastScannerCompletionRef.current = scannerStatus.last_scan_completed_at;
+      }
 
       let currentId = selectedIdRef.current;
       if (currentId && !list.some((item) => item.id === currentId)) currentId = null;
@@ -727,6 +1327,35 @@ export default function App() {
       if (mountedRef.current) setLoading(false);
     }
   }, [language]);
+
+  const refreshScannerStatus = useCallback(async () => {
+    if (scannerRefreshInFlightRef.current || document.hidden) return;
+    scannerRefreshInFlightRef.current = true;
+
+    try {
+      const scannerStatus = await getAIOpportunityScannerStatus();
+      if (!mountedRef.current) return;
+      setStable(setAiScannerStatus, scannerStatus);
+
+      const completedAt = scannerStatus?.last_scan_completed_at || null;
+      if (completedAt && completedAt !== lastScannerCompletionRef.current) {
+        const opportunityRows = await listLatestAIOpportunities(5);
+        if (!mountedRef.current) return;
+        lastScannerCompletionRef.current = completedAt;
+        setStable(setAiOpportunities, opportunityRows || [], sameRows);
+      }
+    } catch {
+      // The regular application refresh displays connection errors. This short
+      // polling loop remains silent to avoid flashing the whole dashboard.
+    } finally {
+      scannerRefreshInFlightRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(refreshScannerStatus, AI_SCANNER_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [refreshScannerStatus]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -779,11 +1408,22 @@ export default function App() {
   const orderedStrategies = useMemo(() => {
     const orderIndex = new Map(effectiveStrategyOrder.map((code, index) => [code, index]));
     return [...strategies].sort((left, right) => {
+      const leftPriority = strategyAutomaticPriority(
+        left,
+        decisionsByStrategy[left.strategy_code],
+      );
+      const rightPriority = strategyAutomaticPriority(
+        right,
+        decisionsByStrategy[right.strategy_code],
+      );
+
+      if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+
       const leftIndex = orderIndex.get(left.strategy_code) ?? Number.MAX_SAFE_INTEGER;
       const rightIndex = orderIndex.get(right.strategy_code) ?? Number.MAX_SAFE_INTEGER;
       return leftIndex - rightIndex;
     });
-  }, [strategies, effectiveStrategyOrder]);
+  }, [strategies, decisionsByStrategy, effectiveStrategyOrder]);
 
   const persistStrategyOrder = useCallback((nextOrder) => {
     setStrategyOrder(nextOrder);
@@ -1096,38 +1736,37 @@ export default function App() {
     setIsConfigurationOpen(false);
   };
 
-  const openResetDialog = () => {
+  const openStopDialog = () => {
     setAdminKey("");
-    setResetError("");
-    setIsResetOpen(true);
+    setStopError("");
+    setCloseOpenPositions(true);
+    setIsStopOpen(true);
   };
 
-  const closeResetDialog = () => {
-    if (resetting) return;
+  const closeStopDialog = () => {
+    if (stopping) return;
     setAdminKey("");
-    setResetError("");
-    setIsResetOpen(false);
+    setStopError("");
+    setCloseOpenPositions(true);
+    setIsStopOpen(false);
   };
 
-  const confirmReset = async (event) => {
+  const confirmStop = async (event) => {
     event.preventDefault();
-    setResetting(true);
-    setResetError("");
+    setStopping(true);
+    setStopError("");
     try {
-      await resetApplication(adminKey.trim());
-      selectedIdRef.current = null;
-      window.localStorage.removeItem(SELECTED_EXPERIMENT_STORAGE_KEY);
-      setSelected(null);
-      setExperiments([]);
-      setStrategies([]);
-      setDecisionsByStrategy({});
-      setIsResetOpen(false);
+      await stopRunningExperiment({
+        adminKey: adminKey.trim(),
+        closeOpenPositions,
+      });
+      setIsStopOpen(false);
       setAdminKey("");
       await refresh({ includeConfiguration: true });
     } catch (err) {
-      setResetError(translateDynamicText(language, err.message || "Unable to reset the application."));
+      setStopError(translateDynamicText(language, err.message || "Unable to stop the running experiment."));
     } finally {
-      setResetting(false);
+      setStopping(false);
     }
   };
 
@@ -1152,13 +1791,13 @@ export default function App() {
   }, [isConfigurationOpen]);
 
   useEffect(() => {
-    if (!isConfigurationOpen && !isResetOpen) return undefined;
+    if (!isConfigurationOpen && !isStopOpen) return undefined;
 
     const handleKeyDown = (event) => {
       if (event.key !== "Escape") return;
 
-      if (isResetOpen && !resetting) {
-        closeResetDialog();
+      if (isStopOpen && !stopping) {
+        closeStopDialog();
         return;
       }
 
@@ -1169,7 +1808,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isConfigurationOpen, isResetOpen, resetting, saving]);
+  }, [isConfigurationOpen, isStopOpen, stopping, saving]);
 
   return (
     <div className="app-shell">
@@ -1204,6 +1843,13 @@ export default function App() {
 
       <main className="workspace">
         <section className="dashboard-column">
+          <AIOpportunityScannerPanel
+            status={aiScannerStatus}
+            opportunities={aiOpportunities}
+            language={language}
+            t={t}
+          />
+
           {!selected ? (
             <section className="welcome-card">
               <span>{t("Ready")}</span>
@@ -1279,24 +1925,27 @@ export default function App() {
           form={form}
           setForm={setForm}
           selected={selected}
+          hasRunningExperiment={experiments.some((item) => item.status === "RUNNING")}
           saving={saving}
           onSubmit={createExperiment}
           onSelectProfile={selectProfile}
-          onReset={openResetDialog}
+          onStop={openStopDialog}
           onClose={closeConfiguration}
           language={language}
           t={t}
         />
       )}
 
-      <ResetDialog
-        open={isResetOpen}
+      <StopDialog
+        open={isStopOpen}
         adminKey={adminKey}
         setAdminKey={setAdminKey}
-        error={resetError}
-        resetting={resetting}
-        onClose={closeResetDialog}
-        onConfirm={confirmReset}
+        closeOpenPositions={closeOpenPositions}
+        setCloseOpenPositions={setCloseOpenPositions}
+        error={stopError}
+        stopping={stopping}
+        onClose={closeStopDialog}
+        onConfirm={confirmStop}
         t={t}
       />
     </div>

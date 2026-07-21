@@ -26,3 +26,11 @@ export function createExperiment(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function stopRunningExperiment({ adminKey, closeOpenPositions = true }) {
+  return requestJson("/api/v1/experiments/stop-running", {
+    method: "POST",
+    headers: { "X-Admin-Key": adminKey },
+    body: JSON.stringify({ close_open_positions: closeOpenPositions }),
+  });
+}

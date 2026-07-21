@@ -1,59 +1,49 @@
-# Crypto Paper Trader Front — v0.14.2
+# Crypto Paper Trader Front — v0.16.1
 
 React/Vite dashboard for the PAPER_ONLY Crypto Paper Trader research application.
 
-## Release 0.14.2
+## Adaptive Strategy Research Selector
 
-### Stable Setup popup
+The selector card now describes a generated and validated strategy instead of displaying one of the fixed strategy cards as its delegated choice.
 
-- The `Setup` button opens a centered configuration popup with a short entrance delay and smooth animation.
-- Opening or closing the popup no longer changes the horizontal position of the dashboard.
-- The scrollbar width is compensated before page scrolling is locked, preventing the main screen from moving to the right.
-- Scroll locking is applied with `useLayoutEffect`, before the browser paints the modal state.
-- The popup closes with the close button, the `Escape` key or a click outside the dialog.
+It shows:
 
-### Reset moved into Setup
+- detected market regime;
+- active generated strategy;
+- strategy origin (`WEB_RESEARCHED` or `SYSTEM_GENERATED`);
+- research and validation status;
+- reason for selection;
+- validation score;
+- profit factor;
+- maximum drawdown;
+- validated net return;
+- validated trade count;
+- second-by-second countdown to the next reassessment;
+- research source domains when web research was used.
 
-- The administrative `Reset` button was removed from the application header.
-- Reset is now available inside the Setup popup, next to the simulation action.
-- Clicking Reset opens the existing protected confirmation dialog and requests the `ADMIN_API_KEY` configured in the backend Railway service.
-- The key is sent only in the `X-Admin-Key` request header and is never stored in the browser.
+The help hint explains that the system researches hypotheses, converts them into executable rules and activates a strategy only after cost-adjusted chronological validation.
 
-### Multilingual header
+## Automatic strategy-card status
 
-- Embedded SVG flag icons are available for Portuguese, English and Spanish.
-- Header controls use stable dimensions so translated labels do not move the layout.
-- The selected language is persisted in browser local storage.
+The top-right badge describes the action taken by the system:
 
-### Dashboard
+- `ACTIVE POSITION`
+- `ENTERING MARKET`
+- `EXITING MARKET`
+- `ENTRY ARMED`
+- `WAITING`
 
-- Dark interface with every strategy displayed simultaneously.
-- Each strategy card shows market price, net equity, gross result, net result, position, signal and runtime status.
-- No detailed activity table or recent-experiments panel is displayed on the main dashboard.
-- Market and strategy values refresh approximately every 15 seconds without remounting the page.
+Cards with active positions remain automatically prioritized. Manual drag ordering is preserved inside each automatic priority group.
 
-## Strategies displayed
+## AI Opportunity Scanner
 
-1. Adaptive Strategy Selector
-2. Profile-Aware Hybrid + ML
-3. EMA Crossover
-4. EMA Pullback
-5. Larry Williams 9.1 Classic
-6. Larry Williams 9.1 Trend Follower
-7. Larry Volatility Breakout
-8. AI Pattern Trader
+The independent scanner panel includes:
 
-## Timeframes
-
-The backend profile determines the analysis cadence. The default Balanced Intraday profile uses:
-
-```text
-Decision candle: 30 minutes
-Trend timeframe: 1 hour
-Market refresh: approximately 15 seconds
-```
-
-The Fast profile uses `15min` decisions and the Conservative profile uses `1hour` decisions.
+- real progress states and colored progress bar;
+- current market and training phase;
+- activity heartbeat and delayed-state warning;
+- ranked opportunity cards and score calculation hint;
+- second-by-second countdown to the next scan.
 
 ## Environment
 
@@ -61,14 +51,12 @@ The Fast profile uses `15min` decisions and the Conservative profile uses `1hour
 VITE_API_URL=http://127.0.0.1:8000
 ```
 
-On Railway, set `VITE_API_URL` to the public backend URL and redeploy the frontend.
-
-Do not create a `VITE_ADMIN_API_KEY` variable. The administrative token must remain only in the API service and is entered manually in the reset dialog when needed.
+Only the API URL belongs in the frontend. Never create `VITE_ADMIN_API_KEY` or `VITE_OPENAI_API_KEY`.
 
 ## Local execution
 
 ```powershell
-npm install
+npm ci
 npm run dev
 ```
 
@@ -78,34 +66,15 @@ Production build:
 npm run build
 ```
 
-## Market symbols
 
-The API uses compact MEXC symbols such as `PENDLEUSDT`. The interface displays `PENDLE/USDT` and normalizes form input before sending it to the backend.
+## 0.16.1 - Hybrid AI transparency
 
-## Persistence
-
-The selected experiment id and selected language are stored in browser local storage. Durable experiment data remains in the backend SQLite database.
-
-
-## Strategy card enhancements in v0.14.2
-
-- Each strategy card has a subtle individual accent color.
-- Strategy cards can be reordered by dragging the six-dot handle.
-- The chosen order is persisted in browser local storage.
-- Keyboard users can focus the drag handle and use Left/Right arrows to reorder.
-- The `?` hint beside each strategy name shows a short explanation and a simple example in Portuguese, English, or Spanish.
+- Shows whether the adaptive researcher used OpenAI or only the local quantitative engine.
+- Shows the configured OpenAI model and the advisory review status.
+- Displays the OpenAI suitability score and explanation without replacing local validation metrics.
 
 
-## 0.14.2
+## v0.16.4
 
-- Pointer-based strategy card reordering with a dynamic placeholder.
-- Cards reflow while dragging across rows.
-- Auto-scroll near the viewport edges.
-- Dragging from the final row to the first row is supported.
-
-
-## 0.14.2
-
-- Added FLIP-based card movement animations during strategy reordering.
-- Reduced visual jumps while the dynamic placeholder moves across rows.
-- Preserved drag-and-drop, keyboard reordering, and stored card order.
+- Running and active-position status dots now share the same green pulsing animation.
+- BUY execution status uses the same live green indicator.
