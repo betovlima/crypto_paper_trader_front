@@ -1,6 +1,16 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { API_URL, buildApiUrl, JSON_HEADERS } from "./api";
+import { getAIPatternStatus, listAIPatternPredictions } from "./api/aiPatternApi";
+import { createExperiment as createExperimentRequest, getExperiment, listExperiments } from "./api/experimentsApi";
+import {
+  getStrategyComparison,
+  getStrategyComparisonHistory,
+  listStrategyAccounts,
+  listStrategyDecisions,
+  listStrategyMarketSnapshots,
+  listStrategyTrades,
+} from "./api/strategyApi";
+import { getPublicConfiguration } from "./api/systemApi";
 import { detectInitialLanguage, INTL_LOCALES, LANGUAGE_OPTIONS, translate, translateDynamicText } from "./i18n";
 const APP_VERSION = __APP_VERSION__;
 const SELECTED_EXPERIMENT_STORAGE_KEY = "crypto-paper-trader-selected-experiment";
@@ -186,26 +196,6 @@ function setStable(setter, next, comparator = sameRecord) {
   setter((previous) => (comparator(previous, next) ? previous : next));
 }
 
-async function api(path, options = {}) {
-  const response = await fetch(buildApiUrl(path), {
-    headers: { ...JSON_HEADERS, ...(options.headers || {}) },
-    ...options,
-  });
-  if (!response.ok) {
-    let detail = `HTTP ${response.status}`;
-    try {
-      const payload = await response.json();
-      detail = payload.detail || detail;
-    } catch {
-      // Keep generic detail.
-    }
-    const error = new Error(detail);
-    error.status = response.status;
-    throw error;
-  }
-  return response.json();
-}
-
 function Countdown({ target, prefix = "" }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -265,7 +255,6 @@ const HINTS = {
   setupEvent: "The most recent Setup 9.1 state change, such as armed, recovered, cancelled or entered.",
   benchmark: "Buy and Hold buys at the experiment start and shows the current liquidation value after costs.",
   recovery: "When the worker restarts, missed closed candles are replayed in chronological order. Recovered trades remain paper-only.",
-  export: "The ZIP is created only when you click download. Its CSV and JSON content is read from SQLite, streamed from memory and not stored on the server.",
   storage: "SQLite is the only persistent experiment storage. No folder is created for an experiment.",
   fee: "The CoinEx trading fee charged on the simulated execution. It affects net result only.",
   slippage: "A small simulated price worsening that represents execution uncertainty.",
@@ -463,7 +452,8 @@ function decisionStatusText(code, decision, strategy, t, language) {
   return translateDynamicText(language, decision.decision_reason) || t("Waiting for the next valid setup.");
 }
 
-function StrategyMonitoringPanel({ t, language, strategies, decisionMap, activeCode, onSelect }) {
+function StrategyMonitoringPanel({ t, language, strategies, decisionMap, strategyCodes, activeCode, onSelect }) {
+  const visibleCodes = Array.from(new Set([...(strategyCodes || STRATEGY_ORDER), AI_PATTERN_CODE]));
   return (
     <section className="surface strategy-monitor">
       <div className="surface-heading">
@@ -474,17 +464,17 @@ function StrategyMonitoringPanel({ t, language, strategies, decisionMap, activeC
         </div>
       </div>
       <div className="strategy-monitor-grid">
-        {STRATEGY_ORDER.map((code) => {
+        {visibleCodes.map((code) => {
           const strategy = strategies.find((item) => item.strategy_code === code);
           const rows = decisionMap[code] || [];
           const latest = rows[0] || null;
           const recent = rows.slice(0, 4);
-          const signal = latest?.final_signal || "—";
+          const signal = latest?.final_signal || "HOLD";
           return (
             <article key={code} className={`strategy-monitor-card ${activeCode === code ? "active" : ""}`}>
               <button type="button" className="strategy-monitor-select" onClick={() => onSelect(code)}>
                 <span>{strategyShortName(code, t)}</span>
-                <strong>{t(strategy?.display_name || code)}</strong>
+                <strong>{t(strategy?.display_name || (code === AI_PATTERN_CODE ? "AI Pattern Trader" : code))}</strong>
                 <em className={`signal-chip signal-${String(signal).toLowerCase()}`}>{signal}</em>
               </button>
 
@@ -516,9 +506,9 @@ function StrategyMonitoringPanel({ t, language, strategies, decisionMap, activeC
               )}
 
               {code === AI_PATTERN_CODE && (
-                <div className="strategy-monitor-metrics">
+                <div className="strategy-monitor-metrics ai-monitor-metrics">
+                  <span><small>{t("Proposed action")}</small><strong className={`signal-${String(latest?.ai_proposed_action || "hold").toLowerCase()}`}>{latest?.ai_proposed_action || "HOLD"}</strong></span>
                   <span><small>{t("Regime")}</small><strong>{t(latest?.ai_regime || strategy?.ai_regime || "LEARNING")}</strong></span>
-                  <span><small>{t("Pattern cluster")}</small><strong>{latest?.ai_pattern_cluster ?? strategy?.ai_pattern_cluster ?? "—"}</strong></span>
                   <span><small>{t("Confidence")}</small><strong>{formatPercent(latest?.ai_confidence ?? strategy?.ai_confidence, 1)}</strong></span>
                   <span><small>{t("Expected net return")}</small><strong>{formatPercent(latest?.ai_expected_net_return ?? strategy?.ai_expected_net_return, 3)}</strong></span>
                 </div>
@@ -556,9 +546,10 @@ function StrategyMonitoringPanel({ t, language, strategies, decisionMap, activeC
 }
 
 
-function AIPatternDetail({ t, language, strategy, decisions }) {
-  const latest = decisions[0] || null;
-  const resolved = decisions.filter((row) => row.ai_outcome_resolved);
+function AIPatternDetail({ t, language, strategy, decisions, status, predictions }) {
+  const diagnosticRows = predictions?.length ? predictions : decisions;
+  const latest = status?.latest_decision || diagnosticRows[0] || null;
+  const resolved = diagnosticRows.filter((row) => row.ai_outcome_resolved);
   const correct = resolved.filter((row) => row.ai_direction_correct).length;
   const averageNet = resolved.length
     ? resolved.reduce((total, row) => total + Number(row.ai_realized_net_return || 0), 0) / resolved.length
@@ -598,10 +589,10 @@ function AIPatternDetail({ t, language, strategy, decisions }) {
         <span><small>{t("Training samples")}</small><strong>{latest?.ai_training_samples ?? "—"}</strong></span>
         <span><small>{t("Validation accuracy")}</small><strong>{formatPercent(latest?.ai_validation_accuracy, 1)}</strong></span>
         <span><small>{t("Validation MAE")}</small><strong>{formatPercent(latest?.ai_validation_mae, 3)}</strong></span>
-        <span><small>{t("Resolved predictions")}</small><strong>{resolved.length}</strong></span>
-        <span><small>{t("Direction accuracy")}</small><strong>{resolved.length ? formatPercent(correct / resolved.length, 1) : "—"}</strong></span>
-        <span><small>{t("Average net outcome")}</small><strong>{formatPercent(averageNet, 3)}</strong></span>
-        <span><small>{t("Average reward")}</small><strong>{formatPercent(averageReward, 3)}</strong></span>
+        <span><small>{t("Resolved predictions")}</small><strong>{status?.performance?.resolved_count ?? resolved.length}</strong></span>
+        <span><small>{t("Direction accuracy")}</small><strong>{formatPercent(status?.performance?.direction_accuracy ?? (resolved.length ? correct / resolved.length : null), 1)}</strong></span>
+        <span><small>{t("Average net outcome")}</small><strong>{formatPercent(status?.performance?.average_realized_net_return ?? averageNet, 3)}</strong></span>
+        <span><small>{t("Average reward")}</small><strong>{formatPercent(status?.performance?.average_reward ?? averageReward, 3)}</strong></span>
       </div>
       <div className="ai-risk-explanation">
         <small>{t("Risk governor")}</small>
@@ -627,6 +618,8 @@ export default function App() {
   const [trades, setTrades] = useState([]);
   const [marketSnapshots, setMarketSnapshots] = useState([]);
   const [strategyDecisionMap, setStrategyDecisionMap] = useState({});
+  const [aiPatternStatus, setAiPatternStatus] = useState(null);
+  const [aiPatternPredictions, setAiPatternPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -656,23 +649,30 @@ export default function App() {
   }, [language]);
 
   const loadStrategyData = useCallback(async (experimentId, strategyCode) => {
-    const query = `strategy_code=${encodeURIComponent(strategyCode)}`;
-    const [decisionRows, tradeRows, snapshotRows] = await Promise.all([
-      api(`/api/v1/experiments/${experimentId}/strategy-decisions?${query}&limit=80`),
-      api(`/api/v1/experiments/${experimentId}/strategy-trades?${query}`),
-      api(`/api/v1/experiments/${experimentId}/strategy-market-snapshots?${query}&limit=120`),
-    ]);
+    const requests = [
+      listStrategyDecisions(experimentId, strategyCode, 80),
+      listStrategyTrades(experimentId, strategyCode),
+      listStrategyMarketSnapshots(experimentId, strategyCode, 120),
+    ];
+    if (strategyCode === AI_PATTERN_CODE) {
+      requests.push(listAIPatternPredictions(experimentId, 80));
+    }
+    const [decisionRows, tradeRows, snapshotRows, aiRows] = await Promise.all(requests);
     if (!mountedRef.current || activeStrategyRef.current !== strategyCode) return;
     setStable(setDecisions, decisionRows, sameRows);
     setStable(setTrades, tradeRows, sameRows);
     setStable(setMarketSnapshots, snapshotRows, sameRows);
+    if (strategyCode === AI_PATTERN_CODE) {
+      setStable(setAiPatternPredictions, aiRows || [], sameRows);
+    }
   }, []);
 
 
   const loadStrategyComparison = useCallback(async (experimentId) => {
-    const [currentPayload, historyPayload] = await Promise.all([
-      api(`/api/v1/experiments/${experimentId}/strategy-comparison`),
-      api(`/api/v1/experiments/${experimentId}/strategy-comparison/history?limit=4`),
+    const [currentPayload, historyPayload, aiStatusPayload] = await Promise.all([
+      getStrategyComparison(experimentId),
+      getStrategyComparisonHistory(experimentId, 4),
+      getAIPatternStatus(experimentId),
     ]);
     if (!mountedRef.current) return;
 
@@ -693,14 +693,15 @@ export default function App() {
       }),
     );
     setStrategyDecisionMap((previous) => (JSON.stringify(previous) === JSON.stringify(next) ? previous : next));
+    setStable(setAiPatternStatus, aiStatusPayload);
   }, []);
 
   const refresh = useCallback(async ({ includeConfiguration = false } = {}) => {
     if (refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
     try {
-      const requests = [api("/api/v1/experiments?limit=20")];
-      if (includeConfiguration) requests.unshift(api("/api/v1/config"));
+      const requests = [listExperiments(20)];
+      if (includeConfiguration) requests.unshift(getPublicConfiguration());
       const payload = await Promise.all(requests);
       const config = includeConfiguration ? payload[0] : null;
       const list = includeConfiguration ? payload[1] : payload[0];
@@ -713,8 +714,8 @@ export default function App() {
         selectedIdRef.current = currentId;
         window.localStorage.setItem(SELECTED_EXPERIMENT_STORAGE_KEY, currentId);
         const [detail, strategyRows] = await Promise.all([
-          api(`/api/v1/experiments/${currentId}`),
-          api(`/api/v1/experiments/${currentId}/strategies`),
+          getExperiment(currentId),
+          listStrategyAccounts(currentId),
         ]);
         if (!mountedRef.current) return;
         setStable(setSelected, detail);
@@ -738,6 +739,8 @@ export default function App() {
         setTrades([]);
         setMarketSnapshots([]);
         setStrategyDecisionMap({});
+        setAiPatternStatus(null);
+        setAiPatternPredictions([]);
       }
       setLastFrontendRefresh(Date.now());
       setError("");
@@ -832,14 +835,11 @@ export default function App() {
     event.preventDefault();
     setSaving(true);
     try {
-      const created = await api("/api/v1/experiments", {
-        method: "POST",
-        body: JSON.stringify({
-          ...form,
-          market: normalizeMarketSymbol(form.market),
-          duration_hours: Number(form.duration_hours),
-          initial_capital: Number(form.initial_capital),
-        }),
+      const created = await createExperimentRequest({
+        ...form,
+        market: normalizeMarketSymbol(form.market),
+        duration_hours: Number(form.duration_hours),
+        initial_capital: Number(form.initial_capital),
       });
       selectedIdRef.current = created.id;
       window.localStorage.setItem(SELECTED_EXPERIMENT_STORAGE_KEY, created.id);
@@ -1113,14 +1113,6 @@ export default function App() {
                   <span title={translateDynamicText(language, selected.recovery_message) || t("No recovery event has been recorded.")}><small><LabelWithHint hint={t(HINTS.recovery)}>{t("Recovery")}</LabelWithHint></small><strong>{selected.recovery_status || "IDLE"} · {selected.recovered_candle_count || 0} {t("candles")} · {selected.recovered_trade_count || 0} {t("trades")}</strong></span>
                 </div>
                 <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
-                <div className="experiment-actions">
-                  <span className="export-action">
-                    <a className="secondary-button" href={`${API_URL}/api/v1/experiments/${selected.id}/export-bundle`}>
-                      {t("Download current data")}
-                    </a>
-                    <Hint text={t(HINTS.export)} />
-                  </span>
-                </div>
               </section>
 
               <StrategyComparison
@@ -1200,6 +1192,8 @@ export default function App() {
                       language={language}
                       strategy={activeStrategy}
                       decisions={decisions}
+                      status={aiPatternStatus}
+                      predictions={aiPatternPredictions}
                     />
                   )}
 
@@ -1208,6 +1202,7 @@ export default function App() {
                     language={language}
                     strategies={strategies}
                     decisionMap={strategyDecisionMap}
+                    strategyCodes={configuration?.active_strategy_codes || STRATEGY_ORDER}
                     activeCode={activeStrategyCode}
                     onSelect={selectStrategy}
                   />

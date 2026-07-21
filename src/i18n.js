@@ -56,7 +56,6 @@ const pt = {
   "candles": "candles",
   "trades": "operações",
   "Stop and consolidate": "Encerrar e consolidar",
-  "Download current data": "Baixar dados atuais",
   "Independent paper portfolios": "Carteiras simuladas independentes",
   "Strategy comparison": "Comparação de estratégias",
   "strategies": "estratégias",
@@ -275,7 +274,6 @@ const pt = {
   "The most recent Setup 9.1 state change, such as armed, recovered, cancelled or entered.": "A mudança de estado mais recente do Setup 9.1, como armado, recuperado, cancelado ou com entrada.",
   "Buy and Hold buys at the experiment start and shows the current liquidation value after costs.": "Comprar e Manter compra no início do experimento e mostra o valor atual de liquidação após os custos.",
   "When the worker restarts, missed closed candles are replayed in chronological order. Recovered trades remain paper-only.": "Quando o worker reinicia, os candles fechados perdidos são reproduzidos em ordem cronológica. As operações recuperadas continuam somente simuladas.",
-  "The ZIP is created only when you click download. Its CSV and JSON content is read from SQLite, streamed from memory and not stored on the server.": "O ZIP é criado somente quando você clica em baixar. Seu conteúdo CSV e JSON é lido do SQLite, transmitido da memória e não armazenado no servidor.",
   "SQLite is the only persistent experiment storage. No folder is created for an experiment.": "O SQLite é o único armazenamento persistente do experimento. Nenhuma pasta é criada para um experimento.",
   "The CoinEx trading fee charged on the simulated execution. It affects net result only.": "A taxa de negociação da CoinEx cobrada na execução simulada. Ela afeta apenas o resultado líquido.",
   "A small simulated price worsening that represents execution uncertainty.": "Uma pequena piora simulada no preço que representa a incerteza de execução."
@@ -321,7 +319,6 @@ const es = {
   "Copy": "Copiar",
   "Recovery": "Recuperación",
   "Stop and consolidate": "Detener y consolidar",
-  "Download current data": "Descargar datos actuales",
   "Independent paper portfolios": "Carteras simuladas independientes",
   "Strategy comparison": "Comparación de estrategias",
   "strategies": "estrategias",
@@ -545,7 +542,6 @@ const es = {
   "The most recent Setup 9.1 state change, such as armed, recovered, cancelled or entered.": "El cambio de estado más reciente del Setup 9.1, como armado, recuperado, cancelado o con entrada.",
   "Buy and Hold buys at the experiment start and shows the current liquidation value after costs.": "Comprar y Mantener compra al inicio del experimento y muestra el valor actual de liquidación después de costos.",
   "When the worker restarts, missed closed candles are replayed in chronological order. Recovered trades remain paper-only.": "Cuando el worker se reinicia, las velas cerradas perdidas se reproducen en orden cronológico. Las operaciones recuperadas siguen siendo solo simuladas.",
-  "The ZIP is created only when you click download. Its CSV and JSON content is read from SQLite, streamed from memory and not stored on the server.": "El ZIP se crea solo cuando haces clic en descargar. Su contenido CSV y JSON se lee desde SQLite, se transmite desde memoria y no se guarda en el servidor.",
   "SQLite is the only persistent experiment storage. No folder is created for an experiment.": "SQLite es el único almacenamiento persistente del experimento. No se crea ninguna carpeta para un experimento.",
   "The CoinEx trading fee charged on the simulated execution. It affects net result only.": "La comisión de trading de CoinEx aplicada a la ejecución simulada. Solo afecta el resultado neto.",
   "A small simulated price worsening that represents execution uncertainty.": "Un pequeño empeoramiento simulado del precio que representa la incertidumbre de ejecución."

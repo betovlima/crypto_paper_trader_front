@@ -739,3 +739,15 @@ tbody tr:hover { background: rgba(255,255,255,.025); }
   .ai-pattern-grid { padding-inline: 14px; grid-template-columns: 1fr; }
   .ai-risk-explanation { margin-inline: 14px; }
 }
+
+/* v0.11.1 — five-strategy monitoring and autonomous AI visibility */
+@media (min-width: 1650px) {
+  .strategy-monitor-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.ai-monitor-metrics span:first-child {
+  border-color: rgba(110, 124, 255, .28);
+  background: rgba(110, 124, 255, .055);
+}

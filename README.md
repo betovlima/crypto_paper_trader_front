@@ -1,4 +1,4 @@
-# Release 0.11.0 — Autonomous AI Pattern Trader
+# Release 0.11.1 — Autonomous AI Pattern Trader
 
 The dashboard now includes a fifth independent paper portfolio: **AI Pattern Trader**. It learns directly from chronological OHLCV windows, similar historical patterns, unsupervised clusters and market regimes. Its proposed action, final risk-approved signal, confidence, expected net return, delayed outcome and model validation diagnostics are visible in the dashboard. It does not choose among the other strategies.
 
@@ -46,3 +46,16 @@ normalizes the value back to `PENDLEUSDT` before creating an experiment.
 ## v0.10.0 layout
 
 The experiment configuration and history area now appears as a collapsible full-width block above the active experiment. The analysis dashboard uses the full page width, giving the strategy indicators and comparison cards more horizontal space.
+
+
+## API client responsibilities
+
+Frontend HTTP calls are split by responsibility under `src/api/`:
+
+- `systemApi.js`;
+- `experimentsApi.js`;
+- `strategyApi.js`;
+- `aiPatternApi.js`;
+- `client.js` for shared transport and error handling.
+
+The dashboard has no CSV/ZIP download action. All displayed state is read from dedicated JSON API endpoints backed by SQLite. The "Latest state of all strategies" panel always includes AI Pattern Trader.
