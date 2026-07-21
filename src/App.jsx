@@ -587,6 +587,10 @@ function AIPatternDetail({ t, language, strategy, decisions, status, predictions
         <span><small>{t("Positive similar patterns")}</small><strong>{formatPercent(latest?.ai_positive_neighbor_rate, 1)}</strong></span>
         <span><small>{t("Prediction horizon")}</small><strong>{latest?.ai_horizon_candles ? `${latest.ai_horizon_candles} ${t("candles")}` : "—"}</strong></span>
         <span><small>{t("Training samples")}</small><strong>{latest?.ai_training_samples ?? "—"}</strong></span>
+        <span><small>{t("Historical candles")}</small><strong>{status?.history?.stored_candles ?? "—"}</strong></span>
+        <span><small>{t("History target")}</small><strong>{status?.history?.target_candles ?? "—"}</strong></span>
+        <span><small>{t("History coverage")}</small><strong>{status?.history?.first_candle_at ? `${formatDateTime(status.history.first_candle_at, language)} → ${formatDateTime(status.history.last_candle_at, language)}` : "—"}</strong></span>
+        <span><small>{t("AI database")}</small><strong>{status?.history?.database || "ai_pattern_trader.db"}</strong></span>
         <span><small>{t("Validation accuracy")}</small><strong>{formatPercent(latest?.ai_validation_accuracy, 1)}</strong></span>
         <span><small>{t("Validation MAE")}</small><strong>{formatPercent(latest?.ai_validation_mae, 3)}</strong></span>
         <span><small>{t("Resolved predictions")}</small><strong>{status?.performance?.resolved_count ?? resolved.length}</strong></span>
