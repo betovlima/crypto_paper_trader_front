@@ -1,3 +1,11 @@
+## v0.18.7 — pinned automatic strategy selector
+
+- Keeps the Automatic Strategy Selection card permanently in the first full-width position.
+- Prevents the selector card from being dragged or moved by keyboard.
+- Prevents other strategy cards from being placed before the selector.
+- Removes the drag handle from the pinned selector card.
+- Preserves automatic prioritization and manual reordering for the remaining strategies.
+
 ## v0.18.6 — hint clipping and accent-dot alignment
 
 - Repositions the help popover so it opens fully inside the viewport.

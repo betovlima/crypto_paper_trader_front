@@ -2674,3 +2674,18 @@ a:focus-visible {
     left: 82px;
   }
 }
+
+
+/* v0.18.7: pin the automatic strategy selector */
+.strategy-card.is-adaptive-selector {
+  grid-column: 1 / -1;
+  order: -1000;
+}
+
+.strategy-card.is-adaptive-selector .strategy-card-header {
+  cursor: default;
+}
+
+.strategy-card.is-adaptive-selector .strategy-state-top {
+  justify-content: flex-end;
+}

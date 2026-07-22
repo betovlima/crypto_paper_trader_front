@@ -30,6 +30,7 @@ const STRATEGY_ORDER_STORAGE_KEY = "crypto-paper-trader-strategy-card-order";
 const REFRESH_SECONDS = 15;
 const AI_SCANNER_REFRESH_MS = 2000;
 const AI_OPPORTUNITY_CARD_LIMIT = 10;
+const PINNED_STRATEGY_CODE = "ADAPTIVE_STRATEGY_SELECTOR";
 const AI_SCANNER_DELAY_THRESHOLD_MS = 90000;
 
 const AI_SCANNER_PROCESSING_STATES = new Set([
@@ -329,6 +330,8 @@ function strategyAutomationState(strategy, decision, t = (value) => value) {
 }
 
 function strategyAutomaticPriority(strategy, decision) {
+  if (strategy?.strategy_code === PINNED_STRATEGY_CODE) return -1;
+
   const signal = decisionSignal(decision);
 
   if (strategy?.has_open_position) return 0;
@@ -651,13 +654,15 @@ const StrategyCard = memo(function StrategyCard({
               <i className="signal-badge-dot" aria-hidden="true" />
               {automationState.label}
             </span>
-            <DragHandle
-              strategyCode={strategy.strategy_code}
-              dragging={dragging}
-              onPointerDown={onPointerDown}
-              onMove={onMove}
-              t={t}
-            />
+            {strategy.strategy_code !== PINNED_STRATEGY_CODE && (
+              <DragHandle
+                strategyCode={strategy.strategy_code}
+                dragging={dragging}
+                onPointerDown={onPointerDown}
+                onMove={onMove}
+                t={t}
+              />
+            )}
           </div>
           {adaptiveSelection && strategy.strategy_code !== "ADAPTIVE_STRATEGY_SELECTOR" && (
             <span className="selected-strategy-chip" title={`${t("Active generated strategy")}: ${adaptiveSelection}`}>
@@ -1538,11 +1543,19 @@ export default function App() {
   }, []);
 
   const moveStrategyByOffset = useCallback((strategyCode, offset) => {
+    if (strategyCode === PINNED_STRATEGY_CODE) return;
+
     const current = orderedStrategies.map((item) => item.strategy_code);
     const sourceIndex = current.indexOf(strategyCode);
     if (sourceIndex < 0) return;
-    const targetIndex = Math.max(0, Math.min(current.length - 1, sourceIndex + offset));
+
+    const firstMovableIndex = current[0] === PINNED_STRATEGY_CODE ? 1 : 0;
+    const targetIndex = Math.max(
+      firstMovableIndex,
+      Math.min(current.length - 1, sourceIndex + offset),
+    );
     if (sourceIndex === targetIndex) return;
+
     const next = [...current];
     const [moved] = next.splice(sourceIndex, 1);
     next.splice(targetIndex, 0, moved);
@@ -1693,12 +1706,24 @@ export default function App() {
     const insertionIndex = targetIndex + (insertAfter ? 1 : 0);
 
     const next = [...nonDraggedOrder];
-    next.splice(insertionIndex, 0, sourceCode);
+    const minimumInsertionIndex = next[0] === PINNED_STRATEGY_CODE ? 1 : 0;
+    next.splice(Math.max(minimumInsertionIndex, insertionIndex), 0, sourceCode);
+
+    const pinnedIndex = next.indexOf(PINNED_STRATEGY_CODE);
+    if (pinnedIndex > 0) {
+      next.splice(pinnedIndex, 1);
+      next.unshift(PINNED_STRATEGY_CODE);
+    }
+
     return next;
   }, []);
 
   const startStrategyDrag = useCallback((event, strategyCode) => {
-    if (event.button !== 0 || dragSessionRef.current) return;
+    if (
+      strategyCode === PINNED_STRATEGY_CODE
+      || event.button !== 0
+      || dragSessionRef.current
+    ) return;
 
     const card = event.currentTarget.closest(".strategy-card");
     if (!card) return;
