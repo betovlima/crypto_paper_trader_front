@@ -2465,3 +2465,29 @@ a:focus-visible {
     font-size: 10px;
   }
 }
+
+
+/* Cleaner strategy cards and justified help text */
+.strategy-card-description {
+  display: none;
+}
+
+.strategy-help-popover > span {
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+}
+
+.strategy-help-attribution {
+  text-align: left;
+}
+
+.strategy-help-popover {
+  max-width: min(480px, calc(100vw - 28px));
+}
+
+@media (max-width: 620px) {
+  .strategy-help-popover > span {
+    text-align: left;
+  }
+}

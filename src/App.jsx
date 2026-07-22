@@ -632,9 +632,7 @@ const StrategyCard = memo(function StrategyCard({
             <h3>{strategyName(strategy, t)}</h3>
             <StrategyHelp strategyCode={strategy.strategy_code} t={t} />
           </div>
-          {visual.cardDescription && (
-            <p className="strategy-card-description">{t(visual.cardDescription)}</p>
-          )}
+
         </div>
         <div className="strategy-state">
           <div className="strategy-state-top">

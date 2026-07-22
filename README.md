@@ -1,3 +1,11 @@
+## v0.18.0 — cleaner strategy cards and justified help text
+
+- Removes the explanatory paragraph from the strategy card body.
+- Keeps the explanation inside the strategy help popover.
+- Justifies the help text on desktop for easier reading.
+- Preserves left alignment on small screens to avoid uneven spacing.
+- Keeps strategy names, creator attribution and entry-candle information unchanged.
+
 ## v0.17.9 — active experiment emphasis
 
 - Highlights the active experiment label with a subtle teal status badge.
