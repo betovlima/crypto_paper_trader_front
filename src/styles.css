@@ -9,11 +9,11 @@
   --surface: #101c30;
   --surface-2: #142239;
   --surface-3: #0d182a;
-  --border: #263a58;
-  --border-strong: #385071;
+  --border: #304866;
+  --border-strong: #476586;
   --text: #f5f7fb;
-  --muted: #91a9c7;
-  --muted-light: #6f87a6;
+  --muted: #b7c8de;
+  --muted-light: #93a9c5;
   --accent: #7182ff;
   --accent-soft: rgba(113, 130, 255, .14);
   --green: #43d09b;
@@ -84,7 +84,7 @@ h1 { font-size: clamp(19px, 2vw, 25px); line-height: 1.05; letter-spacing: -.03e
   border-radius: 999px;
   color: #b8c5ff;
   background: rgba(87, 105, 206, .15);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
 }
 .topbar-actions {
@@ -547,7 +547,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 .strategy-title-block { min-width: 0; }
 .strategy-card-header span:first-child {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -593,7 +593,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 }
 .selected-strategy-chip small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -774,7 +774,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 .strategy-metric.metric-wide { grid-column: 1 / -1; min-height: 87px; }
 .strategy-metric > span {
   color: #93abd0;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .03em;
 }
@@ -815,7 +815,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
   justify-content: space-between;
   gap: 12px;
   color: var(--muted-light);
-  font-size: 9px;
+  font-size: 12px;
 }
 .loading-indicator {
   position: fixed;
@@ -828,7 +828,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
   color: var(--muted);
   background: rgba(10, 20, 36, .94);
   box-shadow: var(--shadow);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .modal-backdrop {
@@ -934,11 +934,11 @@ body.is-reordering-strategies .strategy-card-placeholder {
   }
   .brand-title-row h1 { font-size: 17px; }
   .version-badge { display: none; }
-  .eyebrow { font-size: 8px; }
+  .eyebrow { font-size: 11px; }
   .run-timing { flex-direction: column; }
   .run-timing > span { width: 100%; }
   .strategy-card-header { min-height: 0; }
-  .strategy-card-header h3 { font-size: 15px; }
+  .strategy-card-header h3 { font-size: 18px; }
   .strategy-help-popover { left: auto; right: -40px; transform: translate(0, -4px); }
   .strategy-help-popover::before { left: auto; right: 45px; transform: rotate(45deg); }
   .strategy-help:hover .strategy-help-popover,
@@ -1045,7 +1045,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
   border-radius: 50%;
   color: #dce9ff;
   background: rgba(72, 132, 224, .25);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .ai-scanner-summary {
@@ -1075,7 +1075,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 }
 .ai-next-scan em {
   color: #7186a6;
-  font-size: 8px;
+  font-size: 11px;
   font-style: normal;
 }
 .live-countdown {
@@ -1140,7 +1140,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 .ai-opportunity-score-value small {
   margin-left: 2px;
   color: #8f9bb8;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 750;
 }
 .ai-opportunity-score-help {
@@ -1162,20 +1162,22 @@ body.is-reordering-strategies .strategy-card-placeholder {
   outline: none;
 }
 .ai-opportunity-score-tooltip {
-  position: absolute;
-  z-index: 80;
-  top: calc(100% + 9px);
-  right: 0;
-  width: min(360px, calc(100vw - 42px));
-  padding: 13px;
-  border: 1px solid rgba(129, 140, 248, .48);
-  border-radius: 12px;
-  background: rgba(6, 14, 28, .98);
-  box-shadow: 0 18px 46px rgba(0, 0, 0, .46);
+  position: fixed;
+  z-index: 300;
+  left: 50%;
+  bottom: 22px;
+  width: min(600px, calc(100vw - 28px));
+  max-height: min(620px, calc(100vh - 44px));
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid rgba(129, 140, 248, .52);
+  border-radius: 14px;
+  background: rgba(6, 14, 28, .99);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .62);
   color: #d8e1f4;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-4px);
+  transform: translate(-50%, 10px);
   transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
   pointer-events: none;
 }
@@ -1183,63 +1185,136 @@ body.is-reordering-strategies .strategy-card-placeholder {
 .ai-opportunity-score-wrap:focus-within .ai-opportunity-score-tooltip {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translate(-50%, 0);
   pointer-events: auto;
 }
-.ai-opportunity-score-tooltip > strong {
-  display: block;
-  color: #f0f3ff;
-  font-size: 12px;
-}
-.ai-opportunity-score-tooltip p {
-  margin: 6px 0 0;
-  color: #9eacc4;
-  font-size: 9px;
-  line-height: 1.5;
-}
-.ai-score-formula {
-  margin-top: 10px;
-  padding: 8px;
+.ai-score-tooltip-heading {
   display: grid;
   gap: 5px;
-  border: 1px solid rgba(91, 111, 148, .42);
-  border-radius: 8px;
+}
+.ai-score-tooltip-heading > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ai-score-tooltip-heading strong {
+  color: #f0f3ff;
+  font-size: 14px;
+}
+.ai-score-tooltip-heading span {
+  color: #d7dcff;
+  font-size: 17px;
+  font-weight: 900;
+}
+.ai-score-tooltip-heading small {
+  color: #f2c66d;
+  font-size: 13px;
+  font-weight: 750;
+}
+.ai-score-simple-explanation {
+  margin: 10px 0 0;
+  color: #a9b7cd;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ai-score-breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.ai-score-breakdown > div {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(91, 111, 148, .38);
+  border-radius: 10px;
   background: rgba(16, 29, 49, .72);
 }
-.ai-score-formula span { color: #8f9bb4; font-size: 8px; }
-.ai-score-formula code {
-  overflow-wrap: anywhere;
-  color: #cdd4ff;
-  font-size: 9px;
+.ai-score-breakdown span {
+  display: block;
+  min-height: 28px;
+  color: #aebbd0;
+  font-size: 12px;
+  line-height: 1.45;
 }
-.ai-opportunity-score-tooltip dl {
-  margin: 9px 0 0;
+.ai-score-breakdown strong {
+  display: block;
+  margin-top: 5px;
+  color: #eef2ff;
+  font-size: 18px;
+}
+.ai-score-breakdown small {
+  display: block;
+  margin-top: 2px;
+  color: #8493ac;
+  font-size: 11px;
+}
+.ai-score-plain-result {
   display: grid;
-  gap: 7px;
+  gap: 5px;
+  margin-top: 11px;
+  padding: 10px;
+  border-left: 3px solid rgba(129, 140, 248, .68);
+  border-radius: 8px;
+  background: rgba(129, 140, 248, .08);
 }
-.ai-opportunity-score-tooltip dl > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 2px;
+.ai-score-plain-result span {
+  color: #9faeff;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .05em;
 }
-.ai-opportunity-score-tooltip dt {
-  color: #cbd5e8;
-  font-size: 9px;
+.ai-score-plain-result strong {
+  color: #dbe4f4;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ai-score-technical-details {
+  margin-top: 11px;
+  border-top: 1px solid rgba(76, 95, 128, .36);
+  padding-top: 9px;
+}
+.ai-score-technical-details summary {
+  cursor: pointer;
+  color: #9eacc4;
+  font-size: 12px;
   font-weight: 800;
 }
-.ai-opportunity-score-tooltip dd {
-  margin: 0;
-  color: #91a0bb;
-  font-size: 8px;
+.ai-score-technical-details code {
+  display: block;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+  color: #cdd4ff;
+  font-size: 12px;
 }
-.ai-opportunity-score-tooltip .ai-score-note {
-  padding-top: 7px;
-  border-top: 1px solid rgba(76, 95, 128, .34);
+.ai-score-technical-details p {
+  margin: 7px 0 0;
+  color: #a9b7cd;
+  font-size: 12px;
 }
-.ai-opportunity-score-tooltip .ai-score-total {
-  color: #b7c3d9;
+.ai-score-technical-details small {
+  display: block;
+  margin-top: 5px;
+  color: #8493ac;
+  font-size: 11px;
 }
-.ai-opportunity-score-tooltip .ai-score-total strong { color: #d7dcff; }
+@media (max-width: 620px) {
+  .ai-opportunity-score-tooltip {
+    bottom: 10px;
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    padding: 13px;
+  }
+  .ai-score-breakdown {
+    grid-template-columns: 1fr;
+  }
+  .ai-score-breakdown span {
+    min-height: 0;
+  }
+}
+
 .ai-opportunity-action {
   width: fit-content;
   padding: 4px 7px;
@@ -1247,7 +1322,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
   border-radius: 999px;
   color: #aebed4;
   background: rgba(125, 145, 177, .08);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: .055em;
 }
@@ -1269,7 +1344,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
   justify-content: space-between;
   gap: 8px;
 }
-.ai-opportunity-card dt { color: var(--muted); font-size: 8px; }
+.ai-opportunity-card dt { color: var(--muted); font-size: 11px; }
 .ai-opportunity-card dd {
   margin: 0;
   overflow: hidden;
@@ -1496,7 +1571,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 }
 .ai-training-progress-details small {
   color: #7185a2;
-  font-size: 8px;
+  font-size: 11px;
 }
 .ai-training-progress-details strong {
   overflow: hidden;
@@ -1584,7 +1659,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 }
 .adaptive-research-panel small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .07em;
   text-transform: uppercase;
@@ -1599,7 +1674,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
   border-radius: 999px;
   color: #9ec8ff;
   background: rgba(126, 182, 255, .09);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1626,7 +1701,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 }
 .adaptive-active-strategy span {
   color: #91a7c4;
-  font-size: 9px;
+  font-size: 12px;
 }
 .adaptive-research-reason p {
   margin: 0;
@@ -1666,7 +1741,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
   border-radius: 999px;
   color: #abb5ff;
   background: rgba(129, 140, 248, .08);
-  font-size: 8px;
+  font-size: 11px;
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1797,7 +1872,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 .adaptive-strip-main small,
 .adaptive-strip-fact small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .07em;
   text-transform: uppercase;
@@ -1845,8 +1920,8 @@ body.is-reordering-strategies .strategy-card-placeholder {
 
 .adaptive-strip-fact span {
   color: #91a7c4;
-  font-size: 9px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .adaptive-strip-sources {
@@ -1864,7 +1939,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
   border-radius: 999px;
   color: #abb5ff;
   background: rgba(129, 140, 248, .08);
-  font-size: 8px;
+  font-size: 11px;
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1924,8 +1999,8 @@ body.is-reordering-strategies .strategy-card-placeholder {
 }
 .adaptive-position-meta span {
   color: #91a7c4;
-  font-size: 9px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.45;
 }
 .adaptive-research-status.status-active {
   color: var(--green);
@@ -2029,4 +2104,222 @@ body.is-reordering-strategies .strategy-card-placeholder {
 .diagnostic-status.is-observation {
   border-color: rgba(52, 211, 153, 0.44);
   color: #64e6b4;
+}
+
+
+.ai-opportunity-score-help {
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 16px;
+}
+
+.ai-opportunity-score-tooltip :focus-visible {
+  outline: 2px solid #9db9ff;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-opportunity-score-tooltip {
+    transition: none;
+  }
+}
+
+
+/* ============================================================
+   Accessibility refinements — readable dark interface
+   ============================================================ */
+
+body {
+  color: var(--text);
+  line-height: 1.5;
+}
+
+p,
+span,
+small,
+label,
+dt,
+dd,
+th,
+td,
+button,
+input,
+select {
+  text-rendering: optimizeLegibility;
+}
+
+.eyebrow {
+  color: #b9c9df;
+  font-size: 12px;
+}
+
+.run-status {
+  font-size: 12px;
+}
+
+.setup-menu-form label,
+.setup-profile-field legend,
+.reset-dialog label,
+.stop-position-options legend,
+.stop-position-options span {
+  color: #c2d0e2;
+  font-size: 12px;
+}
+
+.input-with-suffix em,
+.profile-option small,
+.profile-summary,
+.profile-summary strong,
+.run-timing small,
+.strategy-state small,
+.strategy-help-popover strong,
+.signal-badge,
+.strategy-metric > small,
+.ai-scanner-status-block small,
+.ai-scanner-process span,
+.ai-scanner-summary small,
+.ai-training-progress-header span,
+.ai-scanner-warning,
+.adaptive-research-reason p {
+  font-size: 11px;
+}
+
+.profile-option strong,
+.run-identity p,
+.selected-strategy-chip small,
+.reset-dialog > p,
+.ai-scanner-header p,
+.ai-scanner-process b,
+.ai-next-scan em,
+.ai-opportunity-score-value small,
+.ai-opportunity-action,
+.ai-opportunity-card dt,
+.ai-opportunity-empty strong,
+.ai-training-progress-details small,
+.adaptive-research-panel small,
+.adaptive-research-status,
+.adaptive-validation-grid strong,
+.adaptive-research-sources a,
+.adaptive-strip-fact small,
+.adaptive-strip-main p,
+.adaptive-strip-sources a {
+  font-size: 12px;
+}
+
+.fee-note,
+.selected-strategy-chip strong,
+.strategy-help-button,
+.strategy-help-popover,
+.reset-dialog > span,
+.modal-error,
+.ai-scanner-header > div:first-child > span,
+.ai-scanner-status,
+.ai-scanner-error,
+.ai-opportunity-empty,
+.ai-training-progress-details strong {
+  font-size: 12px;
+}
+
+.ai-scanner-header p,
+.ai-opportunity-empty,
+.adaptive-strip-main p,
+.run-identity p,
+.reset-dialog > p,
+.fee-note {
+  color: #b8c8dc;
+  line-height: 1.6;
+}
+
+.ai-scanner-process span,
+.ai-scanner-summary small,
+.ai-opportunity-card dt,
+.strategy-metric > small,
+.adaptive-strip-fact small,
+.ai-next-scan em {
+  color: #a9bdd6;
+}
+
+.ai-opportunity-card dd {
+  color: #f4f7fb;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ai-opportunity-card-header span {
+  color: #aebfff;
+  font-size: 11px;
+}
+
+.ai-opportunity-action,
+.signal-badge,
+.adaptive-research-status,
+.ai-scanner-status {
+  letter-spacing: .035em;
+}
+
+.strategy-help-button,
+.ai-opportunity-score-help,
+.icon-button {
+  color: #c7d3ff;
+  border-color: rgba(113, 130, 255, .55);
+  background: rgba(113, 130, 255, .10);
+}
+
+.strategy-help-button:hover,
+.ai-opportunity-score-help:hover,
+.icon-button:hover {
+  color: #eef1ff;
+  border-color: rgba(142, 154, 255, .82);
+  background: rgba(113, 130, 255, .18);
+}
+
+.ai-opportunity-card,
+.strategy-card,
+.ai-scanner-summary,
+.ai-next-scan,
+.metric-card {
+  border-color: rgba(70, 98, 135, .78);
+}
+
+.ai-opportunity-card:hover,
+.strategy-card:hover {
+  border-color: rgba(102, 128, 172, .90);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .28);
+}
+
+input,
+select {
+  color: #f5f7fb;
+}
+
+input::placeholder {
+  color: #8fa4bf;
+  opacity: 1;
+}
+
+a {
+  color: #aebaff;
+}
+
+a:hover {
+  color: #d5dcff;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid #aeb8ff;
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .ai-opportunity-card dd,
+  .ai-opportunity-card dt,
+  .ai-opportunity-action,
+  .ai-scanner-process span,
+  .ai-scanner-summary small {
+    font-size: 12px;
+  }
 }

@@ -727,35 +727,53 @@ function AIOpportunityScore({ opportunity, language, t }) {
         ?
       </button>
       <div id={tooltipId} role="tooltip" className="ai-opportunity-score-tooltip">
-        <strong>{t("Opportunity score")}</strong>
-        <p>{t("Overall ranking from 0 to 100. A higher score means the market currently has a stronger AI-detected entry opportunity.")}</p>
-
-        <div className="ai-score-formula">
-          <span>{t("Calculation used")}</span>
-          <code>100 × (0.45 × C + 0.35 × P + 0.20 × R)</code>
+        <div className="ai-score-tooltip-heading">
+          <div>
+            <strong>{t("Opportunity quality")}</strong>
+            <span>{formatNumber(opportunity.score, 1, language)}/100</span>
+          </div>
+          <small>{t("This is a ranking score, not a profit percentage.")}</small>
         </div>
 
-        <dl>
-          <div>
-            <dt>{t("Confidence (C)")}</dt>
-            <dd>{formatPercent(confidence, 1, language)} × 45% = {formatNumber(confidencePoints, 1, language)} {t("points")}</dd>
-          </div>
-          <div>
-            <dt>{t("Upward probability (P)")}</dt>
-            <dd>{formatPercent(upwardProbability, 1, language)} × 35% = {formatNumber(probabilityPoints, 1, language)} {t("points")}</dd>
-          </div>
-          <div>
-            <dt>{t("Expected return component (R)")}</dt>
-            <dd>{formatPercent(expectedReturnComponent, 1, language)} × 20% = {formatNumber(expectedReturnPoints, 1, language)} {t("points")}</dd>
-          </div>
-        </dl>
+        <p className="ai-score-simple-explanation">
+          {t("The score compares this market with the other scanned markets. A high score does not guarantee a profit and a HOLD card is not a buy recommendation.")}
+        </p>
 
-        <p className="ai-score-note">
-          {t("R equals expected net return divided by 3%, limited to the 0%–100% range. Negative expected returns contribute zero points.")}
-        </p>
-        <p className="ai-score-total">
-          {t("Card total")}: {formatNumber(confidencePoints, 1, language)} + {formatNumber(probabilityPoints, 1, language)} + {formatNumber(expectedReturnPoints, 1, language)} = <strong>{formatNumber(opportunity.score, 1, language)}/100</strong>
-        </p>
+        <div className="ai-score-breakdown">
+          <div>
+            <span>{t("Prediction reliability")}</span>
+            <strong>{formatPercent(confidence, 1, language)}</strong>
+            <small>{formatNumber(confidencePoints, 1, language)} {t("of 45 points")}</small>
+          </div>
+          <div>
+            <span>{t("Chance of price increase")}</span>
+            <strong>{formatPercent(upwardProbability, 1, language)}</strong>
+            <small>{formatNumber(probabilityPoints, 1, language)} {t("of 35 points")}</small>
+          </div>
+          <div>
+            <span>{t("Expected net return")}</span>
+            <strong>{formatPercent(expectedNetReturn, 2, language)}</strong>
+            <small>{formatNumber(expectedReturnPoints, 1, language)} {t("of 20 points")}</small>
+          </div>
+        </div>
+
+        <div className="ai-score-plain-result">
+          <span>{t("How to read this card")}</span>
+          <strong>
+            {expectedNetReturn > 0
+              ? t("The model sees a positive expected return, but the remaining filters still determine whether the action becomes BUY.")
+              : t("The expected return is not positive, so this market remains under observation instead of becoming a BUY opportunity.")}
+          </strong>
+        </div>
+
+        <details className="ai-score-technical-details">
+          <summary>{t("Show technical calculation")}</summary>
+          <code>100 × (0.45 × C + 0.35 × P + 0.20 × R)</code>
+          <p>
+            {t("Card total")}: {formatNumber(confidencePoints, 1, language)} + {formatNumber(probabilityPoints, 1, language)} + {formatNumber(expectedReturnPoints, 1, language)} = <strong>{formatNumber(opportunity.score, 1, language)}/100</strong>
+          </p>
+          <small>{t("Negative expected returns contribute zero ranking points.")}</small>
+        </details>
       </div>
     </div>
   );

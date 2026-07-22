@@ -11,6 +11,19 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "Opportunity quality": "Qualidade da oportunidade",
+  "This is a ranking score, not a profit percentage.": "Esta é uma nota de classificação, não um percentual de lucro.",
+  "The score compares this market with the other scanned markets. A high score does not guarantee a profit and a HOLD card is not a buy recommendation.": "A nota compara este mercado com os demais mercados analisados. Uma nota alta não garante lucro, e um card MANTER não é uma recomendação de compra.",
+  "Prediction reliability": "Confiabilidade da previsão",
+  "Chance of price increase": "Chance de valorização",
+  "of 45 points": "de 45 pontos",
+  "of 35 points": "de 35 pontos",
+  "of 20 points": "de 20 pontos",
+  "How to read this card": "Como interpretar este card",
+  "The model sees a positive expected return, but the remaining filters still determine whether the action becomes BUY.": "O modelo vê retorno esperado positivo, mas os outros filtros ainda determinam se a ação será alterada para COMPRAR.",
+  "The expected return is not positive, so this market remains under observation instead of becoming a BUY opportunity.": "O retorno esperado não é positivo. Por isso, este mercado permanece em observação em vez de se tornar uma oportunidade de COMPRA.",
+  "Show technical calculation": "Mostrar cálculo técnico",
+  "Negative expected returns contribute zero ranking points.": "Retornos esperados negativos não acrescentam pontos à classificação.",
   "Strategy simulation and market research": "Simulação de estratégias e pesquisa de mercado",
   "Exchange: MEXC": "Corretora: MEXC",
   "Market: Spot": "Mercado: Spot",
@@ -287,6 +300,19 @@ const pt = {
 };
 
 const es = {
+  "Opportunity quality": "Calidad de la oportunidad",
+  "This is a ranking score, not a profit percentage.": "Esta es una puntuación de clasificación, no un porcentaje de ganancia.",
+  "The score compares this market with the other scanned markets. A high score does not guarantee a profit and a HOLD card is not a buy recommendation.": "La puntuación compara este mercado con los demás mercados analizados. Una puntuación alta no garantiza ganancias y una tarjeta MANTENER no es una recomendación de compra.",
+  "Prediction reliability": "Confiabilidad de la previsión",
+  "Chance of price increase": "Probabilidad de subida",
+  "of 45 points": "de 45 puntos",
+  "of 35 points": "de 35 puntos",
+  "of 20 points": "de 20 puntos",
+  "How to read this card": "Cómo interpretar esta tarjeta",
+  "The model sees a positive expected return, but the remaining filters still determine whether the action becomes BUY.": "El modelo ve un retorno esperado positivo, pero los demás filtros todavía determinan si la acción cambia a COMPRAR.",
+  "The expected return is not positive, so this market remains under observation instead of becoming a BUY opportunity.": "El retorno esperado no es positivo. Por eso, este mercado permanece en observación en lugar de convertirse en una oportunidad de COMPRA.",
+  "Show technical calculation": "Mostrar cálculo técnico",
+  "Negative expected returns contribute zero ranking points.": "Los retornos esperados negativos no añaden puntos a la clasificación.",
   "Strategy simulation and market research": "Simulación de estrategias e investigación de mercado",
   "Exchange: MEXC": "Exchange: MEXC",
   "Market: Spot": "Mercado: Spot",
