@@ -578,6 +578,89 @@ function AdaptiveResearchPanel({ strategy, decision, language, t }) {
   );
 }
 
+
+const STRATEGY_TITLE_MIN_FONT_PX = 15.5;
+const STRATEGY_TITLE_MAX_FONT_PX = 19;
+
+function ResponsiveStrategyTitle({ title }) {
+  const rowRef = useRef(null);
+  const titleRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const row = rowRef.current;
+    const titleElement = titleRef.current;
+    if (!row || !titleElement) return undefined;
+
+    let animationFrame = null;
+
+    const fitTitle = () => {
+      animationFrame = null;
+
+      const accentDot = row.querySelector(".strategy-accent-dot");
+      const rowStyle = window.getComputedStyle(row);
+      const gap = Number.parseFloat(rowStyle.columnGap || rowStyle.gap || "0") || 0;
+      const dotWidth = accentDot?.getBoundingClientRect().width || 0;
+      const availableWidth = Math.max(120, row.clientWidth - dotWidth - gap);
+
+      // Measure the complete title at the maximum permitted size.
+      titleElement.style.fontSize = `${STRATEGY_TITLE_MAX_FONT_PX}px`;
+      titleElement.style.whiteSpace = "nowrap";
+      titleElement.style.textWrap = "nowrap";
+      titleElement.style.width = `${availableWidth}px`;
+
+      const requiredWidthAtMaximum = Math.max(
+        titleElement.scrollWidth,
+        availableWidth,
+      );
+
+      const calculatedSize = (
+        STRATEGY_TITLE_MAX_FONT_PX
+        * availableWidth
+        / requiredWidthAtMaximum
+      );
+
+      const shouldWrap = calculatedSize < STRATEGY_TITLE_MIN_FONT_PX;
+      const fittedSize = shouldWrap
+        ? STRATEGY_TITLE_MIN_FONT_PX
+        : Math.min(
+          STRATEGY_TITLE_MAX_FONT_PX,
+          Math.floor(calculatedSize * 10) / 10,
+        );
+
+      titleElement.style.fontSize = `${fittedSize}px`;
+      titleElement.style.whiteSpace = shouldWrap ? "normal" : "nowrap";
+      titleElement.style.textWrap = shouldWrap ? "balance" : "nowrap";
+      titleElement.style.width = "auto";
+      titleElement.dataset.wrapped = shouldWrap ? "true" : "false";
+    };
+
+    const scheduleFit = () => {
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(fitTitle);
+    };
+
+    const resizeObserver = new ResizeObserver(scheduleFit);
+    resizeObserver.observe(row);
+    scheduleFit();
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(scheduleFit).catch(() => {});
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+    };
+  }, [title]);
+
+  return (
+    <div ref={rowRef} className="strategy-title-row">
+      <i className="strategy-accent-dot" aria-hidden="true" />
+      <h3 ref={titleRef}>{title}</h3>
+    </div>
+  );
+}
+
 function StrategyHelp({ strategyCode, t }) {
   const details = STRATEGY_VISUALS[strategyCode] || {
     summary: "Evaluates the current market and produces BUY, HOLD or SELL decisions according to its configured rules.",
@@ -678,19 +761,12 @@ const StrategyCard = memo(function StrategyCard({
       data-strategy-key={strategy.strategy_code}
     >
       <header className="strategy-card-header">
-        <div className="strategy-title-block">
+        <div className="strategy-header-top">
           <div className="strategy-label-row">
             <span>{t("Strategy")}</span>
             <StrategyHelp strategyCode={strategy.strategy_code} t={t} />
           </div>
-          <div className="strategy-title-row">
-            <i className="strategy-accent-dot" aria-hidden="true" />
-            <h3>{strategyName(strategy, t)}</h3>
-          </div>
 
-
-        </div>
-        <div className="strategy-state">
           <div className="strategy-state-top">
             <span
               className={`signal-badge automation-${automationState.tone}`}
@@ -710,13 +786,16 @@ const StrategyCard = memo(function StrategyCard({
               />
             )}
           </div>
-          {adaptiveSelection && strategy.strategy_code !== "ADAPTIVE_STRATEGY_SELECTOR" && (
-            <span className="selected-strategy-chip" title={`${t("Active generated strategy")}: ${adaptiveSelection}`}>
-              <small>{t("Active generated strategy")}</small>
-              <strong>{adaptiveSelection}</strong>
-            </span>
-          )}
         </div>
+
+        <ResponsiveStrategyTitle title={strategyName(strategy, t)} />
+
+        {adaptiveSelection && strategy.strategy_code !== "ADAPTIVE_STRATEGY_SELECTOR" && (
+          <span className="selected-strategy-chip" title={`${t("Active generated strategy")}: ${adaptiveSelection}`}>
+            <small>{t("Active generated strategy")}</small>
+            <strong>{adaptiveSelection}</strong>
+          </span>
+        )}
       </header>
 
       <AdaptiveResearchPanel

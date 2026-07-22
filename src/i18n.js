@@ -1425,6 +1425,33 @@ Object.assign(es, {
   "The seven averages remain aligned, price enters the ribbon and a later candle closes above the pullback high. A wick-only breakout remains on HOLD. The setup keeps its technical stop and 3R target.": "Las siete medias permanecen alineadas, el precio entra en la banda y una vela posterior cierra por encima del máximo del retroceso. Una ruptura solo con mecha permanece en ESPERA. El setup conserva su stop técnico y objetivo 3R."
 });
 
+
+Object.assign(pt, {
+  "ACTIVE POSITION": "POSIÇÃO ATIVA",
+  "ENTERING MARKET": "ENTRANDO NO MERCADO",
+  "EXITING MARKET": "SAINDO DO MERCADO",
+  "ENTRY ARMED": "ENTRADA ARMADA",
+  "Technical decision": "Decisão técnica",
+  "The system opened a simulated buy position and is now managing the trade automatically.": "O sistema abriu uma posição simulada de compra e agora está gerenciando a operação automaticamente.",
+  "The system selected a buy entry and is executing the simulated position.": "O sistema selecionou uma entrada de compra e está executando a posição simulada.",
+  "The system selected an exit and is closing or avoiding the simulated position.": "O sistema selecionou uma saída e está encerrando ou evitando a posição simulada.",
+  "The system found a valid setup and is waiting for the final entry trigger.": "O sistema encontrou um setup válido e está aguardando o gatilho final de entrada.",
+  "The system evaluated the market and decided not to open or close a position yet.": "O sistema avaliou o mercado e decidiu não abrir nem encerrar uma posição neste momento."
+});
+
+Object.assign(es, {
+  "ACTIVE POSITION": "POSICIÓN ACTIVA",
+  "ENTERING MARKET": "ENTRANDO AL MERCADO",
+  "EXITING MARKET": "SALIENDO DEL MERCADO",
+  "ENTRY ARMED": "ENTRADA PREPARADA",
+  "Technical decision": "Decisión técnica",
+  "The system opened a simulated buy position and is now managing the trade automatically.": "El sistema abrió una posición de compra simulada y ahora administra la operación automáticamente.",
+  "The system selected a buy entry and is executing the simulated position.": "El sistema seleccionó una entrada de compra y está ejecutando la posición simulada.",
+  "The system selected an exit and is closing or avoiding the simulated position.": "El sistema seleccionó una salida y está cerrando o evitando la posición simulada.",
+  "The system found a valid setup and is waiting for the final entry trigger.": "El sistema encontró un setup válido y espera el gatillo final de entrada.",
+  "The system evaluated the market and decided not to open or close a position yet.": "El sistema evaluó el mercado y decidió no abrir ni cerrar una posición por el momento."
+});
+
 const dictionaries = { en: {}, pt, es };
 
 export function detectInitialLanguage() {

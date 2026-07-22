@@ -2689,3 +2689,165 @@ a:focus-visible {
 .strategy-card.is-adaptive-selector .strategy-state-top {
   justify-content: flex-end;
 }
+
+
+/* v0.18.9: keep strategy titles on one visual line when space is available */
+.strategy-card-header {
+  align-items: flex-start;
+}
+
+.strategy-title-block {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.strategy-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding-left: 0;
+}
+
+.strategy-accent-dot {
+  position: static;
+  margin-top: 0.42em;
+  flex: 0 0 auto;
+}
+
+.strategy-title-row h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+}
+
+@media (max-width: 860px) {
+  .strategy-title-row h3 {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    text-wrap: balance;
+  }
+}
+
+
+/* v0.18.10: use the full card width for the strategy title */
+.strategy-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+  container-type: inline-size;
+}
+
+.strategy-header-top {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.strategy-title-row {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 0;
+}
+
+.strategy-accent-dot {
+  position: static;
+  margin-top: 0;
+  flex: 0 0 auto;
+}
+
+.strategy-title-row h3 {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--strategy-accent) 74%, #ffffff);
+  font-size: clamp(12px, 2.35cqw, 16px);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  text-wrap: nowrap;
+  word-spacing: normal;
+  letter-spacing: -.02em;
+}
+
+.strategy-card-header > .selected-strategy-chip {
+  justify-self: end;
+}
+
+@container (max-width: 430px) {
+  .strategy-title-row h3 {
+    font-size: 13px;
+    white-space: normal;
+    text-wrap: balance;
+  }
+}
+
+@media (max-width: 620px) {
+  .strategy-header-top {
+    align-items: flex-start;
+  }
+
+  .strategy-title-row h3 {
+    white-space: normal;
+    text-wrap: balance;
+  }
+}
+
+
+/* v0.18.11: calculate the largest readable title size for each card */
+.strategy-title-row {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 0;
+}
+
+.strategy-title-row h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  font-size: 19px;
+  line-height: 1.18;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  text-wrap: nowrap;
+  word-spacing: normal;
+  letter-spacing: -.025em;
+}
+
+.strategy-title-row h3[data-wrapped="true"] {
+  line-height: 1.25;
+}
+
+.strategy-accent-dot {
+  position: static;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 620px) {
+  .strategy-title-row h3 {
+    line-height: 1.24;
+  }
+}

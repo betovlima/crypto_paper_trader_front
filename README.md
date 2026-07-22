@@ -1,3 +1,34 @@
+## v0.18.12 — complete card-status translations
+
+- Adds Portuguese and Spanish translations for all new strategy automation statuses.
+- Translates the status tooltip explanations and the technical-decision label.
+- Adds an automated translation coverage check for every literal `t("...")` call.
+- Prevents future frontend releases from silently displaying untranslated English text.
+
+## v0.18.11 — calculated responsive strategy title size
+
+- Measures the real width available inside each strategy card.
+- Measures the complete title at the maximum 19 px font size.
+- Calculates the largest font size that fits without hiding text.
+- Uses a readable minimum of 15.5 px.
+- Wraps the title only when it cannot fit at the minimum size.
+- Recalculates automatically when the card or viewport width changes.
+
+## v0.18.10 — full-width strategy title
+
+- Removes ellipsis from strategy names.
+- Moves the status controls to a dedicated top row.
+- Gives the strategy title the full card width.
+- Adapts the font size to the card width using container units.
+- Wraps the title only on genuinely narrow cards.
+
+## v0.18.9 — single-line strategy title refinement
+
+- Refines the strategy card header so the title uses the available horizontal space better.
+- Keeps the accent dot aligned with the title without breaking the first line.
+- Shows the strategy name in one visual line when there is enough room.
+- Falls back to wrapped text on narrower screens to preserve readability.
+
 ## v0.18.8 — automatic strategy card priority
 
 - Keeps Automatic Strategy Selection fixed in the first full-width position.
