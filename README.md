@@ -78,3 +78,8 @@ npm run build
 
 - Running and active-position status dots now share the same green pulsing animation.
 - BUY execution status uses the same live green indicator.
+
+
+## v0.17.0
+
+Adds the Stormer Filha Mal Criada strategy card and setup descriptions.

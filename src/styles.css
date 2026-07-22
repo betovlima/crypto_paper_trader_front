@@ -1092,7 +1092,7 @@ body.is-reordering-strategies .strategy-card-placeholder {
 }
 .ai-opportunity-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 9px;
 }
 .ai-opportunity-card {
@@ -1335,7 +1335,11 @@ body.is-reordering-strategies .strategy-card-placeholder {
   line-height: 1.35;
 }
 
-@media (max-width: 1320px) {
+@media (max-width: 1500px) {
+  .ai-opportunity-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1180px) {
   .ai-opportunity-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
@@ -1930,4 +1934,99 @@ body.is-reordering-strategies .strategy-card-placeholder {
 }
 @media (max-width: 1500px) {
   .adaptive-strip-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+
+.ai-diagnostics-compact {
+  width: min(100%, 1180px);
+  margin-top: 14px;
+  border: 1px solid rgba(92, 132, 196, 0.34);
+  border-radius: 12px;
+  background: rgba(7, 24, 46, 0.46);
+  text-align: left;
+}
+
+.ai-diagnostics-compact > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 13px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  list-style: none;
+}
+
+.ai-diagnostics-compact > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ai-diagnostics-compact > summary strong {
+  min-width: 25px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(74, 126, 255, 0.18);
+  color: #9db9ff;
+  text-align: center;
+  font-size: 0.7rem;
+}
+
+.ai-diagnostics-table-wrap {
+  overflow-x: auto;
+  border-top: 1px solid rgba(92, 132, 196, 0.22);
+}
+
+.ai-diagnostics-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: 0.73rem;
+}
+
+.ai-diagnostics-table th,
+.ai-diagnostics-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(92, 132, 196, 0.14);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.ai-diagnostics-table th {
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-align: left;
+}
+
+.ai-diagnostics-table td {
+  color: var(--text-primary);
+}
+
+.ai-diagnostics-table td:last-child {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-diagnostics-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.diagnostic-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 190, 70, 0.46);
+  border-radius: 999px;
+  color: #ffd36b;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.diagnostic-status.is-approved,
+.diagnostic-status.is-observation {
+  border-color: rgba(52, 211, 153, 0.44);
+  color: #64e6b4;
 }

@@ -29,6 +29,7 @@ const LANGUAGE_STORAGE_KEY = "crypto-paper-trader-language";
 const STRATEGY_ORDER_STORAGE_KEY = "crypto-paper-trader-strategy-card-order";
 const REFRESH_SECONDS = 15;
 const AI_SCANNER_REFRESH_MS = 2000;
+const AI_OPPORTUNITY_CARD_LIMIT = 10;
 const AI_SCANNER_DELAY_THRESHOLD_MS = 90000;
 
 const AI_SCANNER_PROCESSING_STATES = new Set([
@@ -61,6 +62,7 @@ const STRATEGY_LABELS = {
   EMA9_SETUP_91_COST_AWARE: "Larry Williams 9.1 Classic",
   EMA9_SETUP_91_TREND_FOLLOWER: "Larry Williams 9.1 Trend Follower",
   LARRY_VOLATILITY_BREAKOUT: "Larry Volatility Breakout",
+  STORMER_FILHA_MAL_CRIADA: "Stormer Filha Mal Criada",
   AI_PATTERN_TRADER: "AI Pattern Trader",
 };
 
@@ -101,6 +103,11 @@ const STRATEGY_VISUALS = {
     accent: "#f472b6",
     summary: "Searches for a volatility expansion and buys only when price breaks a calculated range with trend and volume confirmation.",
     example: "The recent range is 0.10 USDT and the breakout factor is 0.5; price crossing the calculated trigger with strong volume creates BUY.",
+  },
+  STORMER_FILHA_MAL_CRIADA: {
+    accent: "#34d399",
+    summary: "Uses a ribbon of seven aligned exponential moving averages to buy pullbacks inside a confirmed bullish trend.",
+    example: "The 20–50 EMA ribbon is aligned upward, price pulls back into the ribbon, and a break above the pullback candle high triggers the simulated purchase with a 3R target.",
   },
   AI_PATTERN_TRADER: {
     accent: "#818cf8",
@@ -793,6 +800,9 @@ function AIOpportunityScannerPanel({ status, opportunities, language, t }) {
   const elapsed = scanStarted ? formatDuration(now - scanStarted.getTime()) : "—";
   const activitySeconds = activityAgeMs === null ? null : Math.floor(activityAgeMs / 1000);
   const showEmptyState = !showProgress && !hasError && !displayOpportunities.length;
+  const marketDiagnostics = Array.isArray(status?.market_diagnostics)
+    ? status.market_diagnostics
+    : [];
 
   return (
     <section className="ai-scanner-panel" aria-labelledby="ai-scanner-title">
@@ -933,6 +943,54 @@ function AIOpportunityScannerPanel({ status, opportunities, language, t }) {
                 ? t("The latest scan finished successfully, but the eligible markets are still training. Ranked cards will appear only after the model produces a valid score.")
                 : t("The latest scan finished successfully, but no market reached the minimum quality required to appear in the ranking.")}
             </span>
+
+            {marketDiagnostics.length > 0 && (
+              <details className="ai-diagnostics-compact">
+                <summary>
+                  <span>Show scanner diagnostics</span>
+                  <strong>{marketDiagnostics.length}</strong>
+                </summary>
+
+                <div className="ai-diagnostics-table-wrap">
+                  <table className="ai-diagnostics-table">
+                    <thead>
+                      <tr>
+                        <th>Market</th>
+                        <th>Status</th>
+                        <th>Samples</th>
+                        <th>Execution candles</th>
+                        <th>Trend candles</th>
+                        <th>Regime</th>
+                        <th>Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {marketDiagnostics.map((item) => (
+                        <tr key={item.market}>
+                          <td><strong>{formatMarketPair(item.market)}</strong></td>
+                          <td>
+                            <span className={`diagnostic-status is-${String(item.status || "unknown").toLowerCase()}`}>
+                              {item.status || "UNKNOWN"}
+                            </span>
+                          </td>
+                          <td>
+                            {Number(item.training_samples || 0)}
+                            {" / "}
+                            {Number(item.required_training_samples || 0) || "—"}
+                          </td>
+                          <td>{item.downloaded_execution_candles ?? 0}</td>
+                          <td>{item.downloaded_trend_candles ?? 0}</td>
+                          <td>{item.regime || "UNKNOWN"}</td>
+                          <td title={item.risk_reason || ""}>
+                            {item.risk_reason || "No diagnostic reason was returned."}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            )}
           </div>
         ) : null}
       </div>
@@ -1263,7 +1321,7 @@ export default function App() {
       const requests = [
         listExperimentHistory({ page: 1, page_size: 20, sort_direction: "desc" }),
         getAIOpportunityScannerStatus(),
-        listLatestAIOpportunities(5),
+        listLatestAIOpportunities(AI_OPPORTUNITY_CARD_LIMIT),
       ];
       if (includeConfiguration) requests.unshift(getPublicConfiguration());
 
@@ -1339,7 +1397,7 @@ export default function App() {
 
       const completedAt = scannerStatus?.last_scan_completed_at || null;
       if (completedAt && completedAt !== lastScannerCompletionRef.current) {
-        const opportunityRows = await listLatestAIOpportunities(5);
+        const opportunityRows = await listLatestAIOpportunities(AI_OPPORTUNITY_CARD_LIMIT);
         if (!mountedRef.current) return;
         lastScannerCompletionRef.current = completedAt;
         setStable(setAiOpportunities, opportunityRows || [], sameRows);

@@ -1205,6 +1205,27 @@ Object.assign(es, {
   "Starts after position close": "Comienza después del cierre de la posición"
 });
 
+
+Object.assign(pt, {
+  "Stormer Filha Mal Criada": "Stormer Filha Mal Criada",
+  "Uses a ribbon of seven aligned exponential moving averages to buy pullbacks inside a confirmed bullish trend.": "Usa um leque de sete médias móveis exponenciais alinhadas para comprar recuos dentro de uma tendência de alta confirmada.",
+  "The 20–50 EMA ribbon is aligned upward, price pulls back into the ribbon, and a break above the pullback candle high triggers the simulated purchase with a 3R target.": "O leque de EMAs 20–50 está alinhado para cima, o preço recua até as médias e o rompimento da máxima do candle de recuo dispara a compra simulada com alvo de 3R.",
+  "PULLBACK_SETUP_ARMED": "ENTRADA PREPARADA",
+  "ENTRY_TRIGGER_UPDATED": "GATILHO ATUALIZADO",
+  "BREAKOUT_ENTRY": "ENTRADA POR ROMPIMENTO",
+  "SETUP_CANCELLED": "SETUP CANCELADO"
+});
+
+Object.assign(es, {
+  "Stormer Filha Mal Criada": "Stormer Filha Mal Criada",
+  "Uses a ribbon of seven aligned exponential moving averages to buy pullbacks inside a confirmed bullish trend.": "Usa un abanico de siete medias móviles exponenciales alineadas para comprar retrocesos dentro de una tendencia alcista confirmada.",
+  "The 20–50 EMA ribbon is aligned upward, price pulls back into the ribbon, and a break above the pullback candle high triggers the simulated purchase with a 3R target.": "El abanico de EMA 20–50 está alineado al alza, el precio retrocede hacia las medias y la ruptura del máximo de la vela de retroceso activa la compra simulada con objetivo de 3R.",
+  "PULLBACK_SETUP_ARMED": "ENTRADA PREPARADA",
+  "ENTRY_TRIGGER_UPDATED": "DISPARADOR ACTUALIZADO",
+  "BREAKOUT_ENTRY": "ENTRADA POR RUPTURA",
+  "SETUP_CANCELLED": "SETUP CANCELADO"
+});
+
 const dictionaries = { en: {}, pt, es };
 
 export function detectInitialLanguage() {
