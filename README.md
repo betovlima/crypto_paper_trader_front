@@ -1,3 +1,23 @@
+## v0.18.8 — automatic strategy card priority
+
+- Keeps Automatic Strategy Selection fixed in the first full-width position.
+- Places every strategy with an active position before all other operational cards.
+- Orders the remaining cards by exit, entry, risk, learning and waiting states.
+- Prioritizes active positions with a confirmed exit or armed exit.
+- Within active positions, shows the largest open loss first, then the oldest position.
+- Preserves the user's manual order as the final tie-breaker among cards with equal priority.
+
+Automatic order:
+
+1. Active position
+2. Exiting market
+3. Exit armed
+4. Entering market
+5. Entry armed
+6. Risk blocked
+7. Learning
+8. Waiting
+
 ## v0.18.7 — pinned automatic strategy selector
 
 - Keeps the Automatic Strategy Selection card permanently in the first full-width position.

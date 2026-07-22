@@ -330,14 +330,60 @@ function strategyAutomationState(strategy, decision, t = (value) => value) {
 }
 
 function strategyAutomaticPriority(strategy, decision) {
-  if (strategy?.strategy_code === PINNED_STRATEGY_CODE) return -1;
+  if (strategy?.strategy_code === PINNED_STRATEGY_CODE) return 0;
 
   const signal = decisionSignal(decision);
 
-  if (strategy?.has_open_position) return 0;
-  if (signal === "BUY" || signal === "SELL") return 1;
-  if (strategy?.setup_status === "ARMED" || strategy?.setup_status === "EXIT_ARMED") return 2;
-  return 3;
+  // A strategy with capital exposed must always be the first operational card.
+  if (strategy?.has_open_position) return 10;
+
+  // Transitional states are ordered by how close they are to changing exposure.
+  if (signal === "SELL") return 20;
+  if (strategy?.setup_status === "EXIT_ARMED") return 30;
+  if (signal === "BUY") return 40;
+  if (strategy?.setup_status === "ARMED") return 50;
+
+  // AI-specific states appear after actionable trading states.
+  if (strategy?.ai_risk_status === "BLOCKED") return 60;
+  if (strategy?.ai_risk_status === "LEARNING") return 70;
+
+  return 80;
+}
+
+function strategyOpenPositionUrgency(strategy, decision, marketPrice) {
+  if (!strategy?.has_open_position) return null;
+
+  const signal = decisionSignal(decision);
+  const exitAttention = signal === "SELL"
+    ? 0
+    : strategy?.setup_status === "EXIT_ARMED"
+      ? 1
+      : 2;
+
+  const entryPrice = Number(
+    strategy?.entry_execution_price
+      || strategy?.average_entry_price
+      || strategy?.entry_market_price
+      || 0,
+  );
+  const currentPrice = Number(marketPrice || 0);
+  const openReturn = entryPrice > 0 && currentPrice > 0
+    ? (currentPrice - entryPrice) / entryPrice
+    : 0;
+
+  const entryTimestamp = Date.parse(
+    strategy?.entry_candle_timestamp
+      || strategy?.entry_time
+      || "",
+  );
+
+  return {
+    exitAttention,
+    openReturn,
+    entryTimestamp: Number.isFinite(entryTimestamp)
+      ? entryTimestamp
+      : Number.MAX_SAFE_INTEGER,
+  };
 }
 
 function selectedStrategyLabel(strategy, decision, t = (value) => value) {
@@ -1519,23 +1565,52 @@ export default function App() {
 
   const orderedStrategies = useMemo(() => {
     const orderIndex = new Map(effectiveStrategyOrder.map((code, index) => [code, index]));
+    const marketPrice = Number(selected?.last_price || 0);
+
     return [...strategies].sort((left, right) => {
-      const leftPriority = strategyAutomaticPriority(
-        left,
-        decisionsByStrategy[left.strategy_code],
-      );
-      const rightPriority = strategyAutomaticPriority(
-        right,
-        decisionsByStrategy[right.strategy_code],
-      );
+      const leftDecision = decisionsByStrategy[left.strategy_code];
+      const rightDecision = decisionsByStrategy[right.strategy_code];
+      const leftPriority = strategyAutomaticPriority(left, leftDecision);
+      const rightPriority = strategyAutomaticPriority(right, rightDecision);
 
       if (leftPriority !== rightPriority) return leftPriority - rightPriority;
 
+      // Among active positions, show the operation needing the most attention first:
+      // confirmed exit, armed exit, largest open loss, then oldest position.
+      if (leftPriority === 10) {
+        const leftUrgency = strategyOpenPositionUrgency(
+          left,
+          leftDecision,
+          marketPrice,
+        );
+        const rightUrgency = strategyOpenPositionUrgency(
+          right,
+          rightDecision,
+          marketPrice,
+        );
+
+        if (leftUrgency.exitAttention !== rightUrgency.exitAttention) {
+          return leftUrgency.exitAttention - rightUrgency.exitAttention;
+        }
+        if (leftUrgency.openReturn !== rightUrgency.openReturn) {
+          return leftUrgency.openReturn - rightUrgency.openReturn;
+        }
+        if (leftUrgency.entryTimestamp !== rightUrgency.entryTimestamp) {
+          return leftUrgency.entryTimestamp - rightUrgency.entryTimestamp;
+        }
+      }
+
+      // The user's saved order remains the final tie-breaker inside the same status.
       const leftIndex = orderIndex.get(left.strategy_code) ?? Number.MAX_SAFE_INTEGER;
       const rightIndex = orderIndex.get(right.strategy_code) ?? Number.MAX_SAFE_INTEGER;
       return leftIndex - rightIndex;
     });
-  }, [strategies, decisionsByStrategy, effectiveStrategyOrder]);
+  }, [
+    strategies,
+    decisionsByStrategy,
+    effectiveStrategyOrder,
+    selected?.last_price,
+  ]);
 
   const persistStrategyOrder = useCallback((nextOrder) => {
     setStrategyOrder(nextOrder);
