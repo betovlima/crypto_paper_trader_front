@@ -55,15 +55,15 @@ const AI_SCANNER_STATUS_MESSAGES = {
 };
 
 const STRATEGY_LABELS = {
-  ADAPTIVE_STRATEGY_SELECTOR: "Adaptive Strategy Selector",
-  CURRENT_HYBRID: "Trend, Momentum, Volume and AI Confirmation",
-  EMA_CROSSOVER_COST_AWARE: "Fast and Slow Exponential Average Crossover",
-  EMA_PULLBACK: "Pullback to Exponential Moving Averages",
-  EMA9_SETUP_91_COST_AWARE: "EMA 9 Reversal and Price Breakout (Larry Williams)",
-  EMA9_SETUP_91_TREND_FOLLOWER: "EMA 9 Reversal with Trailing Stop (Larry Williams adaptation)",
-  LARRY_VOLATILITY_BREAKOUT: "Volatility Range Breakout (Larry Williams)",
-  STORMER_FILHA_MAL_CRIADA: "Seven-EMA Trend Pullback (Stormer)",
-  AI_PATTERN_TRADER: "AI Candle Pattern Recognition",
+  ADAPTIVE_STRATEGY_SELECTOR: "Automatic Strategy Selection",
+  CURRENT_HYBRID: "Market Confirmation with AI",
+  EMA_CROSSOVER_COST_AWARE: "Trend Change by Moving Averages",
+  EMA_PULLBACK: "Buy After a Temporary Price Pullback",
+  EMA9_SETUP_91_COST_AWARE: "EMA 9 Reversal with Breakout",
+  EMA9_SETUP_91_TREND_FOLLOWER: "EMA 9 Reversal with Moving Stop",
+  LARRY_VOLATILITY_BREAKOUT: "Buy When Price Breaks Its Recent Range",
+  STORMER_FILHA_MAL_CRIADA: "Buy on a Pullback in an Uptrend",
+  AI_PATTERN_TRADER: "AI-Based Market Pattern Detection",
 };
 
 const MARKET_QUOTE_ASSETS = ["USDT", "USDC", "FDUSD", "BUSD", "TUSD", "DAI", "BTC", "ETH", "BNB"];
@@ -94,6 +94,7 @@ const STRATEGY_VISUALS = {
   },
   EMA9_SETUP_91_COST_AWARE: {
     accent: "#fbbf24",
+    authorLabel: "Larry Williams",
     attribution: "Original setup by Larry Williams.",
     cardDescription: "Uses the 9-period exponential moving average to detect a reversal and a later price breakout.",
     summary: "EMA 9 must turn strictly from falling to rising on a bullish closed candle that crosses and closes above the average. A later candle must also close bullish above the setup high. A wick that only touches or briefly crosses the level does not trigger entry.",
@@ -101,6 +102,7 @@ const STRATEGY_VISUALS = {
   },
   EMA9_SETUP_91_TREND_FOLLOWER: {
     accent: "#fb923c",
+    authorLabel: "Based on Larry Williams",
     attribution: "Application adaptation based on the Larry Williams 9.1 setup.",
     cardDescription: "Uses an EMA 9 reversal for entry and raises the protective stop as price advances.",
     summary: "The entry uses the same strict EMA 9 reversal and closed-candle breakout confirmation as the classic version. After entry, the protective stop can move upward with each favorable closed candle.",
@@ -108,6 +110,7 @@ const STRATEGY_VISUALS = {
   },
   LARRY_VOLATILITY_BREAKOUT: {
     accent: "#f472b6",
+    authorLabel: "Larry Williams",
     attribution: "Volatility breakout method popularized by Larry Williams.",
     cardDescription: "Looks for price to leave its recent range with stronger movement and volume.",
     summary: "It calculates a trigger from the recent price range. Entry requires a bullish candle to close beyond the trigger by a small volatility buffer, finish near its high, pass trend and volume filters and avoid an excessively late extension.",
@@ -115,6 +118,7 @@ const STRATEGY_VISUALS = {
   },
   STORMER_FILHA_MAL_CRIADA: {
     accent: "#34d399",
+    authorLabel: "Stormer",
     attribution: "Created by Alexandre Wolwacz, known as Stormer.",
     cardDescription: "Uses seven exponential moving averages from 20 to 50 periods to find pullbacks in an uptrend.",
     summary: "It uses EMA 20, 25, 30, 35, 40, 45 and 50 aligned upward. After price returns into the ribbon, entry requires a later bullish candle to close above the armed pullback high without excessive extension.",
@@ -626,12 +630,15 @@ const StrategyCard = memo(function StrategyCard({
     >
       <header className="strategy-card-header">
         <div className="strategy-title-block">
-          <span>{t("Strategy")}</span>
+          <div className="strategy-label-row">
+            <span>{t("Strategy")}</span>
+            <StrategyHelp strategyCode={strategy.strategy_code} t={t} />
+          </div>
           <div className="strategy-title-row">
             <i className="strategy-accent-dot" aria-hidden="true" />
             <h3>{strategyName(strategy, t)}</h3>
-            <StrategyHelp strategyCode={strategy.strategy_code} t={t} />
           </div>
+
 
         </div>
         <div className="strategy-state">
@@ -652,7 +659,6 @@ const StrategyCard = memo(function StrategyCard({
               t={t}
             />
           </div>
-          <small>{strategyRuntimeStatus(strategy, t)}</small>
           {adaptiveSelection && strategy.strategy_code !== "ADAPTIVE_STRATEGY_SELECTOR" && (
             <span className="selected-strategy-chip" title={`${t("Active generated strategy")}: ${adaptiveSelection}`}>
               <small>{t("Active generated strategy")}</small>

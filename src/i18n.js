@@ -11,6 +11,21 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "Automatic Strategy Selection": "Seleção automática de estratégia",
+  "Market Confirmation with AI": "Confirmação do mercado com IA",
+  "Trend Change by Moving Averages": "Mudança de tendência pelas médias móveis",
+  "Buy After a Temporary Price Pullback": "Compra após uma queda temporária do preço",
+  "EMA 9 Reversal with Breakout": "Reversão da média de 9 períodos com rompimento",
+  "EMA 9 Reversal with Moving Stop": "Reversão da média de 9 períodos com stop móvel",
+  "Buy When Price Breaks Its Recent Range": "Compra no rompimento da faixa recente de preços",
+  "Buy on a Pullback in an Uptrend": "Compra após recuo em uma tendência de alta",
+  "AI-Based Market Pattern Detection": "Detecção de padrões de mercado com IA",
+  "EMA 9 Reversal and Price Breakout": "Reversão da média exponencial de 9 períodos e rompimento",
+  "EMA 9 Reversal with Trailing Stop": "Reversão da média exponencial de 9 períodos com stop móvel",
+  "Volatility Range Breakout": "Rompimento da faixa recente de volatilidade",
+  "Seven-EMA Trend Pullback": "Retorno às sete médias exponenciais da tendência",
+  "Origin": "Origem",
+  "Based on Larry Williams": "Baseada em Larry Williams",
   "EMA 9 Reversal and Price Breakout (Larry Williams)": "Reversão da média exponencial de 9 períodos e rompimento (Larry Williams)",
   "EMA 9 Reversal with Trailing Stop (Larry Williams adaptation)": "Reversão da média exponencial de 9 períodos com stop móvel (adaptação de Larry Williams)",
   "Volatility Range Breakout (Larry Williams)": "Rompimento da faixa recente de volatilidade (Larry Williams)",
@@ -357,6 +372,21 @@ const pt = {
 };
 
 const es = {
+  "Automatic Strategy Selection": "Selección automática de estrategia",
+  "Market Confirmation with AI": "Confirmación del mercado con IA",
+  "Trend Change by Moving Averages": "Cambio de tendencia por medias móviles",
+  "Buy After a Temporary Price Pullback": "Compra después de una caída temporal del precio",
+  "EMA 9 Reversal with Breakout": "Reversión de la media de 9 períodos con ruptura",
+  "EMA 9 Reversal with Moving Stop": "Reversión de la media de 9 períodos con stop móvil",
+  "Buy When Price Breaks Its Recent Range": "Compra en la ruptura del rango reciente de precios",
+  "Buy on a Pullback in an Uptrend": "Compra después de un retroceso en una tendencia alcista",
+  "AI-Based Market Pattern Detection": "Detección de patrones de mercado con IA",
+  "EMA 9 Reversal and Price Breakout": "Reversión de la media exponencial de 9 períodos y ruptura",
+  "EMA 9 Reversal with Trailing Stop": "Reversión de la media exponencial de 9 períodos con stop móvil",
+  "Volatility Range Breakout": "Ruptura del rango reciente de volatilidad",
+  "Seven-EMA Trend Pullback": "Retorno a las siete medias exponenciales de tendencia",
+  "Origin": "Origen",
+  "Based on Larry Williams": "Basada en Larry Williams",
   "EMA 9 Reversal and Price Breakout (Larry Williams)": "Reversión de la media exponencial de 9 períodos y ruptura (Larry Williams)",
   "EMA 9 Reversal with Trailing Stop (Larry Williams adaptation)": "Reversión de la media exponencial de 9 períodos con stop móvil (adaptación de Larry Williams)",
   "Volatility Range Breakout (Larry Williams)": "Ruptura del rango reciente de volatilidad (Larry Williams)",

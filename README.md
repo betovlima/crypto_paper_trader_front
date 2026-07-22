@@ -1,3 +1,45 @@
+## v0.18.6 — hint clipping and accent-dot alignment
+
+- Repositions the help popover so it opens fully inside the viewport.
+- Prevents the first strategy card hint from being cut off.
+- Anchors the accent dot to the first line of the strategy title.
+- Removes the broken dot/wrap effect on long strategy names.
+
+## v0.18.5 — strategy help button reposition
+
+- Moves the help button from the strategy name row to the top label row.
+- Frees more horizontal space for long strategy names.
+- Keeps the strategy title cleaner and easier to read.
+- Preserves all existing hint content and behavior.
+
+## v0.18.4 — plain-language strategy names
+
+- Replaces technical and abstract strategy names with short action-oriented labels.
+- Keeps technical details, indicator names and creator attribution inside the help popover.
+- Makes each card title explain what the strategy waits for before buying.
+- Preserves all strategy logic and backend identifiers.
+
+## v0.18.3 — cleaner strategy title and status
+
+- Removes the redundant Monitoring, Setup armed and similar secondary text below the main status badge.
+- Restores natural left alignment for long strategy names.
+- Removes justified spacing that created large gaps between words.
+- Uses balanced wrapping to keep long titles readable without stretching the text.
+
+## v0.18.2 — cleaner strategy header
+
+- Removes the creator/origin label from the strategy card.
+- Keeps the creator or origin exclusively inside the strategy help popover.
+- Justifies long strategy names on desktop.
+- Keeps left alignment on narrow screens to preserve readability.
+
+## v0.18.1 — separate strategy author from title
+
+- Removes creator and adaptation text from strategy names.
+- Adds a compact origin badge below the strategy title.
+- Keeps full attribution inside the strategy help popover.
+- Preserves clean card titles and improves scanning.
+
 ## v0.18.0 — cleaner strategy cards and justified help text
 
 - Removes the explanatory paragraph from the strategy card body.
