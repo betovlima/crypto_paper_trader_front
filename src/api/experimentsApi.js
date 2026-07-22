@@ -20,6 +20,10 @@ export function getExperiment(experimentId) {
   return requestJson(`/api/v1/experiments/${encodeURIComponent(experimentId)}`);
 }
 
+export function getRunningExperimentHeaderSummary() {
+  return requestJson("/api/v1/experiments/running/header-summary");
+}
+
 export function createExperiment(payload) {
   return requestJson("/api/v1/experiments", {
     method: "POST",

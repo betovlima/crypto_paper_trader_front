@@ -1452,6 +1452,60 @@ Object.assign(es, {
   "The system evaluated the market and decided not to open or close a position yet.": "El sistema evaluó el mercado y decidió no abrir ni cerrar una posición por el momento."
 });
 
+
+Object.assign(pt, {
+  "Trend Resumption with LBR 3/10": "Retomada de tendência com LBR 3/10",
+  "LBR 3/10 Anti with Crypto Daily Baseline": "Anti 3/10 de Linda Raschke com referência diária do mercado cripto",
+  "LBR 3/10 Anti with 24-Hour Crypto Baseline": "Anti 3/10 de Linda Raschke com referência de 24 horas do mercado cripto",
+  "Based on Linda Bradford Raschke's original 3/10 Anti setup. The UTC daily market baseline is a Crypto Paper Trader context filter, not part of the original setup.": "Baseada no setup Anti 3/10 original de Linda Bradford Raschke. A referência diária UTC é um filtro de contexto do Crypto Paper Trader e não faz parte do setup original.",
+  "Original 3/10 Anti by Linda Bradford Raschke. The fixed 24-hour UTC baseline is an application adaptation for crypto markets.": "Anti 3/10 original de Linda Bradford Raschke. A referência fixa de 24 horas em UTC é uma adaptação da aplicação para o mercado de criptomoedas.",
+  "Looks for a weak pullback inside positive momentum and confirms the continuation with the LBR 3/10 oscillator.": "Procura um recuo fraco dentro de um movimento positivo e confirma a continuação com o oscilador LBR 3/10.",
+  "It calculates SMA 3 minus SMA 10 and a 16-period simple signal line. A positive impulse must be followed by a weaker pullback and a bullish momentum hook. Because crypto has no official opening or closing bell, the completed previous UTC day and its final hour form the initial 24-hour baseline; after the current day's first hour closes, it is added as confirmation. The baseline filters context but never opens a position by itself. A later bullish candle must close above the armed setup high, while exhaustion and excessive extension remain blocked.": "Calcula a média móvel simples de 3 períodos menos a de 10 períodos e uma linha de sinal simples de 16 períodos. Um impulso positivo deve ser seguido por um recuo mais fraco e uma retomada altista do momentum. Como o mercado cripto não tem abertura ou fechamento oficiais, o dia anterior completo em UTC e sua última hora formam a referência inicial de 24 horas; depois do fechamento da primeira hora do dia atual, ela também é adicionada como confirmação. A referência apenas filtra o contexto e nunca abre uma posição sozinha. Um candle posterior de alta precisa fechar acima da máxima armada do setup, enquanto exaustão e extensão excessiva continuam bloqueadas.",
+  "The previous UTC day and its final hour are not bearish. Price makes a positive impulse, pulls back with smaller candles and the 3/10 fast line turns upward above the signal line. The setup is armed, but BUY occurs only when a later closed candle finishes above the setup high.": "O dia anterior em UTC e sua última hora não estão em contexto baixista. O preço faz um impulso positivo, recua com candles menores e a linha rápida 3/10 vira para cima acima da linha de sinal. O setup é armado, mas a COMPRA ocorre apenas quando um candle posterior fechado termina acima da máxima do setup."
+});
+
+Object.assign(es, {
+  "Trend Resumption with LBR 3/10": "Reanudación de tendencia con LBR 3/10",
+  "LBR 3/10 Anti with Crypto Daily Baseline": "Anti 3/10 de Linda Raschke con referencia diaria del mercado cripto",
+  "LBR 3/10 Anti with 24-Hour Crypto Baseline": "Anti 3/10 de Linda Raschke con referencia de 24 horas del mercado cripto",
+  "Based on Linda Bradford Raschke's original 3/10 Anti setup. The UTC daily market baseline is a Crypto Paper Trader context filter, not part of the original setup.": "Basada en el setup Anti 3/10 original de Linda Bradford Raschke. La referencia diaria UTC es un filtro de contexto de Crypto Paper Trader y no forma parte del setup original.",
+  "Original 3/10 Anti by Linda Bradford Raschke. The fixed 24-hour UTC baseline is an application adaptation for crypto markets.": "Anti 3/10 original de Linda Bradford Raschke. La referencia fija de 24 horas en UTC es una adaptación de la aplicación para los mercados de criptomonedas.",
+  "Looks for a weak pullback inside positive momentum and confirms the continuation with the LBR 3/10 oscillator.": "Busca un retroceso débil dentro de un impulso positivo y confirma la continuación con el oscilador LBR 3/10.",
+  "It calculates SMA 3 minus SMA 10 and a 16-period simple signal line. A positive impulse must be followed by a weaker pullback and a bullish momentum hook. Because crypto has no official opening or closing bell, the completed previous UTC day and its final hour form the initial 24-hour baseline; after the current day's first hour closes, it is added as confirmation. The baseline filters context but never opens a position by itself. A later bullish candle must close above the armed setup high, while exhaustion and excessive extension remain blocked.": "Calcula la media móvil simple de 3 períodos menos la de 10 períodos y una línea de señal simple de 16 períodos. Un impulso positivo debe ser seguido por un retroceso más débil y un giro alcista del momentum. Como el mercado cripto no tiene apertura ni cierre oficiales, el día UTC anterior completo y su última hora forman la referencia inicial de 24 horas; después del cierre de la primera hora del día actual, también se añade como confirmación. La referencia solo filtra el contexto y nunca abre una posición por sí sola. Una vela alcista posterior debe cerrar por encima del máximo preparado del setup, mientras la estrategia bloquea el agotamiento y la extensión excesiva.",
+  "The previous UTC day and its final hour are not bearish. Price makes a positive impulse, pulls back with smaller candles and the 3/10 fast line turns upward above the signal line. The setup is armed, but BUY occurs only when a later closed candle finishes above the setup high.": "El día UTC anterior y su última hora no están en contexto bajista. El precio realiza un impulso positivo, retrocede con velas menores y la línea rápida 3/10 gira al alza por encima de la línea de señal. El setup queda preparado, pero la COMPRA solo ocurre cuando una vela posterior cerrada termina por encima del máximo del setup."
+});
+
+
+Object.assign(pt, {
+  "Running simulation summary": "Resumo da simulação em execução",
+  "Market": "Mercado",
+  "Analysis": "Análise",
+  "Every {timeframe}": "A cada {timeframe}",
+  "Next": "Próxima",
+  "Trend confirmation": "Confirmação de tendência",
+  "Last market update": "Última atualização",
+  "Strategies": "Estratégias",
+  "in total": "no total",
+  "in position": "em posição",
+  "armed entries": "entradas armadas",
+  "waiting": "aguardando"
+});
+
+Object.assign(es, {
+  "Running simulation summary": "Resumen de la simulación en ejecución",
+  "Market": "Mercado",
+  "Analysis": "Análisis",
+  "Every {timeframe}": "Cada {timeframe}",
+  "Next": "Próximo",
+  "Trend confirmation": "Confirmación de tendencia",
+  "Last market update": "Última actualización",
+  "Strategies": "Estrategias",
+  "in total": "en total",
+  "in position": "en posición",
+  "armed entries": "entradas preparadas",
+  "waiting": "esperando"
+});
+
 const dictionaries = { en: {}, pt, es };
 
 export function detectInitialLanguage() {

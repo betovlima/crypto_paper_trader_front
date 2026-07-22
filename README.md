@@ -1,3 +1,28 @@
+## v0.18.15 — fixed server-calculated experiment summary
+
+- Removes the large active-experiment banner from the dashboard body.
+- Moves market, cadence, timing and strategy-state totals into the existing sticky header.
+- Reads every numeric header value from the dedicated API summary endpoint.
+- Performs no strategy count, countdown or timeframe calculation in the frontend header.
+- Hides the summary automatically when the API reports that no experiment is running.
+- Adds a responsive horizontal summary layout for smaller screens.
+- Does not add the decorative charts from the visual mockup.
+
+## v0.18.14 — corrected LBR strategy name and title style
+
+- Renames the visible card to `Trend Resumption with LBR 3/10`.
+- Uses `Retomada de tendência com LBR 3/10` in Portuguese and the equivalent Spanish translation.
+- Keeps the original Anti attribution and the crypto daily baseline explanation inside the help popover.
+- Adds a dedicated `strategy-card-title` class so this card follows the same responsive title sizing used by every strategy card.
+- Preserves the existing 15.5–19 px measured fitting algorithm and never uses ellipsis.
+
+## v0.18.13 — LBR 3/10 Anti strategy card
+
+- Adds the LBR 3/10 Anti strategy card with Portuguese, English and Spanish content.
+- Explains the fixed UTC 24-hour crypto baseline and distinguishes it from an official market opening or closing bell.
+- Attributes the original 3/10 Anti to Linda Bradford Raschke and identifies the UTC baseline as an application adaptation.
+- Keeps the strategy card compatible with automatic status priority and responsive title sizing.
+
 ## v0.18.12 — complete card-status translations
 
 - Adds Portuguese and Spanish translations for all new strategy automation statuses.

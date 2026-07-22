@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import {
   createExperiment as createExperimentRequest,
   getExperiment,
+  getRunningExperimentHeaderSummary,
   listExperimentHistory,
   stopRunningExperiment,
 } from "./api/experimentsApi";
@@ -64,6 +65,7 @@ const STRATEGY_LABELS = {
   EMA9_SETUP_91_TREND_FOLLOWER: "EMA 9 Reversal with Moving Stop",
   LARRY_VOLATILITY_BREAKOUT: "Buy When Price Breaks Its Recent Range",
   STORMER_FILHA_MAL_CRIADA: "Buy on a Pullback in an Uptrend",
+  LBR_310_ANTI_CONTEXT: "Trend Resumption with LBR 3/10",
   AI_PATTERN_TRADER: "AI-Based Market Pattern Detection",
 };
 
@@ -124,6 +126,14 @@ const STRATEGY_VISUALS = {
     cardDescription: "Uses seven exponential moving averages from 20 to 50 periods to find pullbacks in an uptrend.",
     summary: "It uses EMA 20, 25, 30, 35, 40, 45 and 50 aligned upward. After price returns into the ribbon, entry requires a later bullish candle to close above the armed pullback high without excessive extension.",
     example: "The seven averages remain aligned, price enters the ribbon and a later candle closes above the pullback high. A wick-only breakout remains on HOLD. The setup keeps its technical stop and 3R target.",
+  },
+  LBR_310_ANTI_CONTEXT: {
+    accent: "#c084fc",
+    authorLabel: "Linda Bradford Raschke",
+    attribution: "Based on Linda Bradford Raschke's original 3/10 Anti setup. The UTC daily market baseline is a Crypto Paper Trader context filter, not part of the original setup.",
+    cardDescription: "Looks for a weak pullback inside positive momentum and confirms the continuation with the LBR 3/10 oscillator.",
+    summary: "It calculates SMA 3 minus SMA 10 and a 16-period simple signal line. A positive impulse must be followed by a weaker pullback and a bullish momentum hook. Because crypto has no official opening or closing bell, the completed previous UTC day and its final hour form the initial 24-hour baseline; after the current day's first hour closes, it is added as confirmation. The baseline filters context but never opens a position by itself. A later bullish candle must close above the armed setup high, while exhaustion and excessive extension remain blocked.",
+    example: "The previous UTC day and its final hour are not bearish. Price makes a positive impulse, pulls back with smaller candles and the 3/10 fast line turns upward above the signal line. The setup is armed, but BUY occurs only when a later closed candle finishes above the setup high.",
   },
   AI_PATTERN_TRADER: {
     accent: "#818cf8",
@@ -656,7 +666,7 @@ function ResponsiveStrategyTitle({ title }) {
   return (
     <div ref={rowRef} className="strategy-title-row">
       <i className="strategy-accent-dot" aria-hidden="true" />
-      <h3 ref={titleRef}>{title}</h3>
+      <h3 ref={titleRef} className="strategy-card-title">{title}</h3>
     </div>
   );
 }
@@ -1443,11 +1453,71 @@ function LanguageSelector({ language, onChange, t }) {
   );
 }
 
+function RunningExperimentTopbarSummary({ summary, t }) {
+  if (!summary?.visible) return null;
+
+  const strategySummary = summary.strategy_summary || {};
+
+  return (
+    <section className="running-topbar-summary" aria-label={t("Running simulation summary")}>
+      <div className="topbar-summary-item market-summary-item">
+        <small>{t("Market")}</small>
+        <strong>{summary.market_label || "—"}</strong>
+        <span className={`topbar-live-state is-${summary.status_tone || "running"}`}>
+          <i aria-hidden="true" />
+          {statusLabel(summary.status, t)}
+        </span>
+      </div>
+
+      <div className="topbar-summary-item">
+        <small>{t("Analysis")}</small>
+        <strong>
+          {t("Every {timeframe}").replace(
+            "{timeframe}",
+            summary.decision_timeframe_label || "—",
+          )}
+        </strong>
+        <span>
+          {t("Next")}: {summary.next_analysis_countdown_label || "—"}
+        </span>
+      </div>
+
+      <div className="topbar-summary-item">
+        <small>{t("Trend confirmation")}</small>
+        <strong>{summary.trend_timeframe_label || "—"}</strong>
+        <span>
+          {t("Last market update")}: {summary.last_market_update_label || "—"}
+        </span>
+      </div>
+
+      <div className="topbar-summary-item strategy-summary-item">
+        <small>{t("Strategies")}</small>
+        <strong>
+          {strategySummary.total ?? "—"} {t("in total")}
+        </strong>
+        <div className="topbar-strategy-chips">
+          <span className="is-active">
+            {strategySummary.active_positions ?? "—"} {t("in position")}
+          </span>
+          <span className="is-armed">
+            {strategySummary.armed_entries ?? "—"} {t("armed entries")}
+          </span>
+          <span className="is-waiting">
+            {strategySummary.waiting ?? "—"} {t("waiting")}
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 export default function App() {
   const [language, setLanguage] = useState(detectInitialLanguage);
   const [configuration, setConfiguration] = useState(null);
   const [experiments, setExperiments] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [runningHeaderSummary, setRunningHeaderSummary] = useState(null);
   const [strategies, setStrategies] = useState([]);
   const [decisionsByStrategy, setDecisionsByStrategy] = useState({});
   const [strategyOrder, setStrategyOrder] = useState(readStoredStrategyOrder);
@@ -1499,6 +1569,7 @@ export default function App() {
     try {
       const requests = [
         listExperimentHistory({ page: 1, page_size: 20, sort_direction: "desc" }),
+        getRunningExperimentHeaderSummary(),
         getAIOpportunityScannerStatus(),
         listLatestAIOpportunities(AI_OPPORTUNITY_CARD_LIMIT),
       ];
@@ -1508,13 +1579,15 @@ export default function App() {
       const offset = includeConfiguration ? 1 : 0;
       const config = includeConfiguration ? payload[0] : null;
       const historyPayload = payload[offset];
-      const scannerStatus = payload[offset + 1];
-      const opportunityRows = payload[offset + 2] || [];
+      const headerSummary = payload[offset + 1];
+      const scannerStatus = payload[offset + 2];
+      const opportunityRows = payload[offset + 3] || [];
       const list = historyPayload.items || [];
 
       if (!mountedRef.current) return;
       if (config) setStable(setConfiguration, config);
       setStable(setExperiments, list, sameRows);
+      setStable(setRunningHeaderSummary, headerSummary);
       setStable(setAiScannerStatus, scannerStatus);
       setStable(setAiOpportunities, opportunityRows, sameRows);
       if (scannerStatus?.last_scan_completed_at) {
@@ -1620,10 +1693,6 @@ export default function App() {
     setForm((previous) => ({ ...previous, market: formatMarketPair(selected.market) }));
   }, [selected?.id, selected?.market]);
 
-  const strategyCountText = useMemo(
-    () => `${strategies.length} ${t(strategies.length === 1 ? "strategy" : "strategies")}`,
-    [strategies.length, t],
-  );
 
   useEffect(() => {
     const availableCodes = strategies.map((item) => item.strategy_code);
@@ -2099,7 +2168,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="topbar-inner">
+        <div className={`topbar-inner${runningHeaderSummary?.visible ? " has-running-summary" : ""}`}>
           <div className="brand-block">
             <img className="brand-mark" src="/app-icon.png" alt="" aria-hidden="true" />
             <div>
@@ -2111,12 +2180,12 @@ export default function App() {
             </div>
           </div>
 
+          <RunningExperimentTopbarSummary
+            summary={runningHeaderSummary}
+            t={t}
+          />
+
           <div className="topbar-actions">
-            {selected && (
-              <span className={`run-status status-${String(selected.status).toLowerCase()}`}>
-                <i /> {statusLabel(selected.status, t)}
-              </span>
-            )}
             <LanguageSelector language={language} onChange={setLanguage} t={t} />
             <button type="button" className="secondary-button" onClick={openConfiguration}>
               {t("Setup")}
@@ -2145,18 +2214,6 @@ export default function App() {
             </section>
           ) : (
             <>
-              <section className="run-header">
-                <div className="run-identity">
-                  <span>{t("Active experiment")}</span>
-                  <h2>{formatMarketPair(selected.market)}</h2>
-                  <p>{selected.execution_timeframe} {t("decisions")} · {selected.trend_timeframe} {t("trend confirmation")} · {strategyCountText}</p>
-                </div>
-                <div className="run-timing">
-                  <span><small>{t("Next analysis")}</small><strong><Countdown target={selected.next_analysis_at} language={language} /></strong></span>
-                  <span><small>{t("Market updated")}</small><strong>{formatTime(selected.last_market_update_at, language)} UTC</strong></span>
-                </div>
-              </section>
-
               <section ref={strategiesGridRef} className="strategies-grid" aria-label={t("All strategy results")}>
                 {orderedStrategies.map((strategy) => {
                   const isDragging = draggedStrategyCode === strategy.strategy_code;
