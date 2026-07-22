@@ -56,14 +56,14 @@ const AI_SCANNER_STATUS_MESSAGES = {
 
 const STRATEGY_LABELS = {
   ADAPTIVE_STRATEGY_SELECTOR: "Adaptive Strategy Selector",
-  CURRENT_HYBRID: "Hybrid + ML",
-  EMA_CROSSOVER_COST_AWARE: "EMA Crossover",
-  EMA_PULLBACK: "EMA Pullback",
-  EMA9_SETUP_91_COST_AWARE: "Larry Williams 9.1 Classic",
-  EMA9_SETUP_91_TREND_FOLLOWER: "Larry Williams 9.1 Trend Follower",
-  LARRY_VOLATILITY_BREAKOUT: "Larry Volatility Breakout",
-  STORMER_FILHA_MAL_CRIADA: "Stormer Filha Mal Criada",
-  AI_PATTERN_TRADER: "AI Pattern Trader",
+  CURRENT_HYBRID: "Trend, Momentum, Volume and AI Confirmation",
+  EMA_CROSSOVER_COST_AWARE: "Fast and Slow Exponential Average Crossover",
+  EMA_PULLBACK: "Pullback to Exponential Moving Averages",
+  EMA9_SETUP_91_COST_AWARE: "EMA 9 Reversal and Price Breakout (Larry Williams)",
+  EMA9_SETUP_91_TREND_FOLLOWER: "EMA 9 Reversal with Trailing Stop (Larry Williams adaptation)",
+  LARRY_VOLATILITY_BREAKOUT: "Volatility Range Breakout (Larry Williams)",
+  STORMER_FILHA_MAL_CRIADA: "Seven-EMA Trend Pullback (Stormer)",
+  AI_PATTERN_TRADER: "AI Candle Pattern Recognition",
 };
 
 const MARKET_QUOTE_ASSETS = ["USDT", "USDC", "FDUSD", "BUSD", "TUSD", "DAI", "BTC", "ETH", "BNB"];
@@ -71,48 +71,60 @@ const MARKET_QUOTE_ASSETS = ["USDT", "USDC", "FDUSD", "BUSD", "TUSD", "DAI", "BT
 const STRATEGY_VISUALS = {
   ADAPTIVE_STRATEGY_SELECTOR: {
     accent: "#a78bfa",
-    summary: "Detects the market regime, researches executable strategy hypotheses, backtests them with costs and activates only a generated strategy that passes walk-forward and risk validation.",
-    example: "In a strong uptrend, the system can research and generate an ATR-adjusted pullback strategy, validate it on chronological windows and activate it only when the results remain stable after costs.",
+    summary: "Detects the market regime, researches executable strategy hypotheses and validates them chronologically. Generated entries must also confirm candle direction, avoid weak wick-only breakouts and avoid buying too far from the reference average or trigger.",
+    example: "In a strong uptrend, a generated pullback strategy must pass walk-forward validation and then wait for a real touch, a bullish recovery close and an entry that is not excessively extended.",
   },
   CURRENT_HYBRID: {
     accent: "#60a5fa",
-    summary: "Combines trend, momentum, volume and an ML direction probability before approving an entry.",
-    example: "The fast EMA is above the slow EMA, ADX and volume confirm strength, and the model estimates a higher next candle, so it signals BUY.",
+    cardDescription: "Requires agreement between trend, momentum, volume and the AI direction estimate.",
+    summary: "This strategy combines exponential moving averages, RSI, ADX, relative volume and the XGBoost estimate. A BUY also requires a meaningful bullish candle closing above the fast average without being excessively extended from it.",
+    example: "In the Balanced Intraday profile, EMA 9, EMA 21 and EMA 50 must support the same direction. The current candle must close bullish near EMA 9, and trend, momentum, volume and the AI estimate must agree.",
   },
   EMA_CROSSOVER_COST_AWARE: {
     accent: "#38bdf8",
-    summary: "Looks for a fresh bullish crossover of the fast EMA above the slow EMA, confirmed by trend and momentum filters.",
-    example: "EMA 9 was below EMA 21 and closes above it with acceptable ADX and volume, creating a BUY setup.",
+    cardDescription: "Compares a fast and a slow exponential moving average to detect a possible trend change.",
+    summary: "EMA means Exponential Moving Average. The fast average must cross above the slow average on a closed bullish candle. The candle must close above both averages, pass trend, RSI, ADX and volume filters, and remain close enough to the fast average to avoid a late entry.",
+    example: "In the Balanced Intraday profile, EMA 9 crosses above EMA 21 while EMA 50 confirms the broader trend. A red candle or a candle already far above EMA 9 does not authorize BUY.",
   },
   EMA_PULLBACK: {
     accent: "#2dd4bf",
-    summary: "Waits for an established uptrend, then buys a controlled pullback toward a fast or medium EMA after price shows rejection.",
-    example: "EMA 9 is above EMA 21 and EMA 50; price returns to EMA 21 and the next bullish candle breaks its high.",
+    cardDescription: "Waits for price to return toward an exponential moving average during an existing uptrend.",
+    summary: "Instead of buying after a sharp rise, this strategy requires a real intersection with the area between the fast and slow exponential averages. The pullback must start above the fast average and finish with a meaningful bullish rejection close that is not already extended.",
+    example: "In the Balanced Intraday profile, price comes from above EMA 9, enters the EMA 9–EMA 21 area, rejects the decline and closes bullish back above EMA 9. A distant low or a weak candle does not count as a valid pullback.",
   },
   EMA9_SETUP_91_COST_AWARE: {
     accent: "#fbbf24",
-    summary: "Detects the classic Larry Williams 9.1 reversal: EMA 9 turns upward and price later breaks the signal candle high.",
-    example: "EMA 9 stops falling, turns up on a candle, and the following market movement crosses that candle high to trigger BUY.",
+    attribution: "Original setup by Larry Williams.",
+    cardDescription: "Uses the 9-period exponential moving average to detect a reversal and a later price breakout.",
+    summary: "EMA 9 must turn strictly from falling to rising on a bullish closed candle that crosses and closes above the average. A later candle must also close bullish above the setup high. A wick that only touches or briefly crosses the level does not trigger entry.",
+    example: "EMA 9 turns upward at 09:30 on a bullish candle closing above the average. The 10:00 candle may trade above its high, but BUY occurs only if that 10:00 candle also closes above the trigger without excessive extension.",
   },
   EMA9_SETUP_91_TREND_FOLLOWER: {
     accent: "#fb923c",
-    summary: "Uses the Larry Williams 9.1 entry and then follows the move with a protective stop that rises with new closed candles.",
-    example: "After the 9.1 BUY, each new candle raises the stop to protect gains until the stop or an EMA 9 reversal closes the trade.",
+    attribution: "Application adaptation based on the Larry Williams 9.1 setup.",
+    cardDescription: "Uses an EMA 9 reversal for entry and raises the protective stop as price advances.",
+    summary: "The entry uses the same strict EMA 9 reversal and closed-candle breakout confirmation as the classic version. After entry, the protective stop can move upward with each favorable closed candle.",
+    example: "A wick above the setup high is ignored. After a later bullish candle closes above the trigger, the position opens and subsequent candle lows can raise the stop without ever lowering it.",
   },
   LARRY_VOLATILITY_BREAKOUT: {
     accent: "#f472b6",
-    summary: "Searches for a volatility expansion and buys only when price breaks a calculated range with trend and volume confirmation.",
-    example: "The recent range is 0.10 USDT and the breakout factor is 0.5; price crossing the calculated trigger with strong volume creates BUY.",
+    attribution: "Volatility breakout method popularized by Larry Williams.",
+    cardDescription: "Looks for price to leave its recent range with stronger movement and volume.",
+    summary: "It calculates a trigger from the recent price range. Entry requires a bullish candle to close beyond the trigger by a small volatility buffer, finish near its high, pass trend and volume filters and avoid an excessively late extension.",
+    example: "If the trigger is 0.07250, a wick at 0.07255 followed by a close below the trigger is rejected. A strong close above the buffered trigger can authorize BUY.",
   },
   STORMER_FILHA_MAL_CRIADA: {
     accent: "#34d399",
-    summary: "Uses a ribbon of seven aligned exponential moving averages to buy pullbacks inside a confirmed bullish trend.",
-    example: "The 20–50 EMA ribbon is aligned upward, price pulls back into the ribbon, and a break above the pullback candle high triggers the simulated purchase with a 3R target.",
+    attribution: "Created by Alexandre Wolwacz, known as Stormer.",
+    cardDescription: "Uses seven exponential moving averages from 20 to 50 periods to find pullbacks in an uptrend.",
+    summary: "It uses EMA 20, 25, 30, 35, 40, 45 and 50 aligned upward. After price returns into the ribbon, entry requires a later bullish candle to close above the armed pullback high without excessive extension.",
+    example: "The seven averages remain aligned, price enters the ribbon and a later candle closes above the pullback high. A wick-only breakout remains on HOLD. The setup keeps its technical stop and 3R target.",
   },
   AI_PATTERN_TRADER: {
     accent: "#818cf8",
-    summary: "Uses the AI pattern model to detect recurring candle and indicator conditions associated with favorable future movement.",
-    example: "A familiar bullish pattern appears with confidence above the configured threshold and passes risk checks, so the strategy signals BUY.",
+    cardDescription: "Learns recurring combinations of candles and indicators that previously preceded favorable movements.",
+    summary: "The local AI model studies chronological candle patterns and indicator conditions. It estimates direction and expected movement, but entry is considered only when confidence and risk checks pass.",
+    example: "A pattern similar to earlier bullish periods appears, validation confidence is sufficient and the expected movement passes the risk filters.",
   },
 };
 
@@ -250,7 +262,7 @@ function statusLabel(status, t = (value) => value) {
 
 function strategyName(strategy, t = (value) => value) {
   if (!strategy) return "—";
-  return t(strategy.display_name || STRATEGY_LABELS[strategy.strategy_code] || strategy.strategy_code);
+  return t(STRATEGY_LABELS[strategy.strategy_code] || strategy.display_name || strategy.strategy_code);
 }
 
 function strategyRuntimeStatus(strategy, t = (value) => value) {
@@ -530,6 +542,12 @@ function StrategyHelp({ strategyCode, t }) {
         ?
       </button>
       <span className="strategy-help-popover" role="tooltip">
+        {details.attribution && (
+          <>
+            <strong>{t("Creator or origin")}</strong>
+            <span className="strategy-help-attribution">{t(details.attribution)}</span>
+          </>
+        )}
         <strong>{t("How it works")}</strong>
         <span>{t(details.summary)}</span>
         <strong>{t("Simple example")}</strong>
@@ -594,6 +612,7 @@ const StrategyCard = memo(function StrategyCard({
   const openPnl = strategy.has_open_position && entryPrice > 0
     ? Number(strategy.asset_quantity || 0) * (Number(experiment.last_price || 0) - entryPrice)
     : 0;
+  const entryCandleTimestamp = strategy.entry_candle_timestamp || strategy.entry_time || null;
 
   const visual = STRATEGY_VISUALS[strategy.strategy_code] || { accent: "#7182ff" };
   const adaptiveSelection = selectedStrategyLabel(strategy, decision, t);
@@ -613,6 +632,9 @@ const StrategyCard = memo(function StrategyCard({
             <h3>{strategyName(strategy, t)}</h3>
             <StrategyHelp strategyCode={strategy.strategy_code} t={t} />
           </div>
+          {visual.cardDescription && (
+            <p className="strategy-card-description">{t(visual.cardDescription)}</p>
+          )}
         </div>
         <div className="strategy-state">
           <div className="strategy-state-top">
@@ -678,6 +700,11 @@ const StrategyCard = memo(function StrategyCard({
           <span>{t("Position")}</span>
           <strong>{positionLabel}</strong>
           <small>{strategy.has_open_position ? `${t("Open P&L")} ${formatSignedMoney(openPnl, language)}` : t("Waiting for entry")}</small>
+          {strategy.has_open_position && (
+            <small className="entry-candle-time">
+              {t("Entry candle (UTC)")}: {formatDateTime(entryCandleTimestamp, language)}
+            </small>
+          )}
         </div>
       </div>
     </article>

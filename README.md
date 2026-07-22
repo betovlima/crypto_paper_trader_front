@@ -1,4 +1,26 @@
-# Crypto Paper Trader Front — v0.16.1
+## v0.17.9 — active experiment emphasis
+
+- Highlights the active experiment label with a subtle teal status badge.
+- Gives the selected market pair stronger visual hierarchy.
+- Adds a restrained teal-to-blue accent while preserving the dark interface.
+- Improves contrast without making the header visually aggressive.
+
+## v0.17.8 — strategy creator and origin attribution
+
+- Adds the creator or origin to strategy names when the attribution is meaningful.
+- Identifies the Larry Williams 9.1 setup and volatility breakout family.
+- Marks the trailing-stop version as an application adaptation rather than the original setup.
+- Identifies Alexandre Wolwacz (Stormer) in the strategy help.
+- Keeps generic and internally developed strategies without misleading creator labels.
+
+## v0.17.7 — entry-candle time and stricter strategy guidance
+
+- Shows the UTC opening time of the candle that produced an active entry.
+- Explains the new closed-candle confirmation used by both EMA 9 strategies.
+- Updates all rule-based strategy hints to describe candle-body, breakout-close and maximum-extension safeguards.
+- Clarifies which AI strategies already use independent validation and risk gates.
+
+# Crypto Paper Trader Front — v0.17.7
 
 React/Vite dashboard for the PAPER_ONLY Crypto Paper Trader research application.
 
