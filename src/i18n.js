@@ -108,7 +108,7 @@ const pt = {
   "hours": "horas",
   "Capital per strategy": "Capital por estratégia",
   "Trading profile": "Perfil de negociação",
-  "Decision candle": "Candle de decisão",
+  "Decision candle": "Candle de decisão ",
   "Trend timeframe": "Período da tendência",
   "EMA structure": "Estrutura das EMAs",
   "Max holding": "Tempo máximo em posição",
