@@ -1527,8 +1527,8 @@ Object.assign(pt, {
   "ERROR": "FALHOU",
   "INSUFFICIENT_HISTORY": "Histórico insuficiente para validação",
   "INSUFFICIENT_VALIDATED_TRADES": "Poucas operações validadas",
-  "NON_POSITIVE_EXPECTANCY": "Expectativa matemática não positiva",
-  "NON_POSITIVE_NET_RETURN": "Retorno líquido não positivo",
+  "NON_POSITIVE_EXPECTANCY": "Os testes não indicaram ganho após os custos",
+  "NON_POSITIVE_NET_RETURN": "Não gerou lucro após os custos",
   "MAX_DRAWDOWN_EXCEEDED": "Drawdown acima do limite",
   "INSUFFICIENT_POSITIVE_FOLDS": "Poucas janelas walk-forward positivas",
   "BELOW_IDEAL_TRADE_COUNT": "Quantidade de operações abaixo do ideal",
@@ -1584,8 +1584,8 @@ Object.assign(es, {
   "ERROR": "FALLÓ",
   "INSUFFICIENT_HISTORY": "Historial insuficiente para validar",
   "INSUFFICIENT_VALIDATED_TRADES": "Pocas operaciones validadas",
-  "NON_POSITIVE_EXPECTANCY": "Expectativa matemática no positiva",
-  "NON_POSITIVE_NET_RETURN": "Retorno neto no positivo",
+  "NON_POSITIVE_EXPECTANCY": "Las pruebas no indicaron ganancias después de los costos",
+  "NON_POSITIVE_NET_RETURN": "No generó ganancias después de los costos",
   "MAX_DRAWDOWN_EXCEEDED": "Drawdown superior al límite",
   "INSUFFICIENT_POSITIVE_FOLDS": "Pocas ventanas walk-forward positivas",
   "BELOW_IDEAL_TRADE_COUNT": "Cantidad de operaciones por debajo de lo ideal",
@@ -2139,4 +2139,36 @@ Object.assign(es, {
   "Update history now?": "¿Actualizar el historial ahora?",
   "Updating history…": "Actualizando historial…",
   "Update history": "Actualizar historial"
+});
+
+Object.assign(pt, {
+  "Opportunity": "Oportunidade",
+  "POSSIBLE ENTRY": "POSSÍVEL ENTRADA",
+  "WAITING FOR CONFIRMATION": "AGUARDANDO CONFIRMAÇÃO",
+  "ENTRY CONFIRMED": "ENTRADA CONFIRMADA",
+  "Entry price": "Preço de entrada",
+  "Protection": "Proteção",
+  "Target": "Alvo",
+  "Validity": "Validade",
+  "Technical details": "Detalhes técnicos",
+  "Research status": "Status da análise",
+  "Usable candles": "Candles disponíveis",
+  "NON_POSITIVE_EXPECTANCY": "Os testes não indicaram ganho após os custos",
+  "NON_POSITIVE_NET_RETURN": "Não gerou lucro após os custos"
+});
+
+Object.assign(es, {
+  "Opportunity": "Oportunidad",
+  "POSSIBLE ENTRY": "POSIBLE ENTRADA",
+  "WAITING FOR CONFIRMATION": "ESPERANDO CONFIRMACIÓN",
+  "ENTRY CONFIRMED": "ENTRADA CONFIRMADA",
+  "Entry price": "Precio de entrada",
+  "Protection": "Protección",
+  "Target": "Objetivo",
+  "Validity": "Validez",
+  "Technical details": "Detalles técnicos",
+  "Research status": "Estado del análisis",
+  "Usable candles": "Velas disponibles",
+  "NON_POSITIVE_EXPECTANCY": "Las pruebas no indicaron ganancias después de los costos",
+  "NON_POSITIVE_NET_RETURN": "No generó ganancias después de los costos"
 });
