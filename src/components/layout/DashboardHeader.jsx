@@ -1,6 +1,6 @@
 import { LANGUAGE_OPTIONS } from "../../i18n";
 import { Countdown } from "../../features/adaptive-research/AdaptiveResearchPanel";
-import { formatDateTime } from "../../shared/dashboardUtils";
+import { statusLabel } from "../../shared/dashboardUtils";
 
 function FlagIcon({ code }) {
   if (code === "pt") {

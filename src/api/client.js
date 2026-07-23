@@ -125,10 +125,10 @@ export async function requestJson(path, options = {}) {
       }
     }
 
-    const error = new Error(message);
-
-    error.status = response.status;
-    error.path = path;
+    const error = Object.assign(new Error(message), {
+      status: response.status,
+      path,
+    });
 
     throw error;
   }

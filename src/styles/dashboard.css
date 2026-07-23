@@ -3617,7 +3617,7 @@ a:focus-visible {
   color: #a9e7f2;
 }
 
-/* v0.18.24 — concise interface copy and compact experiment cycle */
+/* v0.18.16 — concise interface copy and compact experiment cycle */
 .topbar-inner.has-running-context {
   width: min(1760px, 100%);
   min-height: 76px;
@@ -3907,7 +3907,7 @@ a:focus-visible {
   }
 }
 
-/* v0.18.24 — adaptive analysis stays concise inside the strategy card */
+/* v0.18.16 — adaptive analysis stays concise inside the strategy card */
 .strategy-card.is-adaptive-selector {
   overflow: hidden;
 }
@@ -3972,7 +3972,7 @@ a:focus-visible {
   }
 }
 
-/* v0.18.24 — actionable adaptive entry only; diagnostics stay collapsed */
+/* v0.18.16 — actionable adaptive entry only; diagnostics stay collapsed */
 .adaptive-entry-opportunity {
   display: grid;
   gap: 12px;

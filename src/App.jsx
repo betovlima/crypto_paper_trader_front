@@ -21,7 +21,6 @@ import {
 import {
   detectInitialLanguage,
   INTL_LOCALES,
-  LANGUAGE_OPTIONS,
   translate,
   translateDynamicText,
 } from "./i18n";
@@ -32,9 +31,8 @@ import {
   SELECTED_EXPERIMENT_STORAGE_KEY, STRATEGY_ORDER_STORAGE_KEY, STRATEGY_VISUALS,
 } from "./config/dashboard";
 import {
-  decisionSignal, formatDateTime, formatMarketPair, formatNumber, formatPercent, formatPrice,
-  formatSignedMoney, formatTime, normalizeMarketSymbol, readStoredStrategyOrder, sameRecord, sameRows, setStable,
-  strategyAutomaticPriority, strategyName, strategyOpenPositionUrgency,
+  formatMarketPair, formatTime, normalizeMarketSymbol, readStoredStrategyOrder, sameRows, setStable,
+  strategyAutomaticPriority, strategyOpenPositionUrgency,
 } from "./shared/dashboardUtils";
 import { StrategyCard } from "./features/strategies/StrategyCard";
 import { AIOpportunityScannerPanel } from "./features/opportunities/AIOpportunityScannerPanel";
@@ -434,14 +432,17 @@ export default function App() {
     const currentOrder = dragPreviewOrderRef.current;
     if (!grid || !currentOrder?.length) return currentOrder;
 
-    const cards = Array.from(grid.querySelectorAll(".strategy-card[data-strategy-code]"));
+    const cards = Array.from(
+      grid.querySelectorAll(".strategy-card[data-strategy-code]"),
+    ).filter((card) => card instanceof HTMLElement);
     const nonDraggedOrder = currentOrder.filter((code) => code !== sourceCode);
     if (!cards.length || !nonDraggedOrder.length) return currentOrder;
 
+    /** @type {HTMLElement | null} */
     let targetElement = null;
     let closestDistance = Number.POSITIVE_INFINITY;
 
-    cards.forEach((card) => {
+    for (const card of cards) {
       const rect = card.getBoundingClientRect();
       const dx = clientX < rect.left ? rect.left - clientX : clientX > rect.right ? clientX - rect.right : 0;
       const dy = clientY < rect.top ? rect.top - clientY : clientY > rect.bottom ? clientY - rect.bottom : 0;
@@ -450,7 +451,7 @@ export default function App() {
         closestDistance = distance;
         targetElement = card;
       }
-    });
+    }
 
     if (!targetElement) return currentOrder;
 
@@ -890,7 +891,6 @@ export default function App() {
           configuration={configuration}
           form={form}
           setForm={setForm}
-          selected={selected}
           hasRunningExperiment={experiments.some((item) => item.status === "RUNNING")}
           saving={saving}
           onSubmit={createExperiment}

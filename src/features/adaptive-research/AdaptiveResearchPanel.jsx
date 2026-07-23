@@ -1,5 +1,5 @@
 import { useLiveNow } from "../../hooks/useLiveNow";
-import { decisionSignal, formatDateTime, formatDuration, formatMarketPair, formatNumber, formatPercent, formatPrice, parseApiDate, parseJsonObject, parseStringArray } from "../../shared/dashboardUtils";
+import { decisionSignal, formatDuration, formatMarketPair, formatNumber, formatPercent, formatPrice, parseApiDate, parseJsonObject } from "../../shared/dashboardUtils";
 
 export function Countdown({ target, expiredLabel = null }) {
   const now = useLiveNow(Boolean(target));

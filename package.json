@@ -1,7 +1,7 @@
 {
   "name": "crypto-paper-trader-front",
   "private": true,
-  "version": "0.18.24",
+  "version": "0.18.16",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
     "start": "serve -s dist -l $PORT",
     "i18n:check": "node scripts/check-i18n.mjs",
     "architecture:check": "node scripts/check-header-boundary.mjs",
-    "copy:check": "node scripts/check-copy-style.mjs"
+    "copy:check": "node scripts/check-copy-style.mjs",
+    "ui:check": "node scripts/check-v01816-ui.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.6.0",

@@ -1,6 +1,6 @@
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import { memo, useLayoutEffect, useRef } from "react";
 import { PINNED_STRATEGY_CODE, STRATEGY_VISUALS } from "../../config/dashboard";
-import { decisionSignal, formatDateTime, formatNumber, formatPercent, formatPrice, formatSignedMoney, pnlTone, selectedStrategyLabel, sourceLabel, strategyAutomationState, strategyName, strategyOpenPositionUrgency, strategyRuntimeStatus } from "../../shared/dashboardUtils";
+import { decisionSignal, formatDateTime, formatNumber, formatPercent, formatPrice, formatSignedMoney, pnlTone, selectedStrategyLabel, strategyAutomationState, strategyName } from "../../shared/dashboardUtils";
 import { AdaptiveResearchPanel } from "../adaptive-research/AdaptiveResearchPanel";
 
 const STRATEGY_TITLE_MIN_FONT_PX = 15.5;

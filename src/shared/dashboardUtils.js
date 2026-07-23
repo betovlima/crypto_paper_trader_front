@@ -1,5 +1,10 @@
 import { INTL_LOCALES } from "../i18n";
-import { STRATEGY_LABELS, STRATEGY_ORDER_STORAGE_KEY } from "../config/dashboard";
+import {
+  MARKET_QUOTE_ASSETS,
+  PINNED_STRATEGY_CODE,
+  STRATEGY_LABELS,
+  STRATEGY_ORDER_STORAGE_KEY,
+} from "../config/dashboard";
 
 export function readStoredStrategyOrder() {
   try {

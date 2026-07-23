@@ -1,10 +1,10 @@
+import { translateDynamicText } from "../../i18n";
 import { formatMarketPair, formatPercent } from "../../shared/dashboardUtils";
 
 export function SetupDialog({
   configuration,
   form,
   setForm,
-  selected,
   hasRunningExperiment,
   saving,
   onSubmit,

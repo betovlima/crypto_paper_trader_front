@@ -1,5 +1,7 @@
+import { useLiveNow } from "../../hooks/useLiveNow";
+import { translateDynamicText } from "../../i18n";
 import { AI_SCANNER_DELAY_THRESHOLD_MS, AI_SCANNER_PROCESSING_STATES, AI_SCANNER_STATUS_MESSAGES } from "../../config/dashboard";
-import { formatDateTime, formatDuration, formatMarketPair, formatNumber, formatPercent, formatPrice, formatTime, parseApiDate, pnlTone } from "../../shared/dashboardUtils";
+import { formatDuration, formatMarketPair, formatNumber, formatPercent, formatPrice, formatTime, parseApiDate } from "../../shared/dashboardUtils";
 import { Countdown } from "../adaptive-research/AdaptiveResearchPanel";
 
 function isRankedOpportunity(opportunity) {
