@@ -1,4 +1,4 @@
-## v0.18.16 — concise interface copy
+## v0.18.24 — concise interface copy
 
 This release simplifies the wording used across the main dashboard.
 
