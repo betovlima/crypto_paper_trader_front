@@ -5,6 +5,8 @@ import {
   getExperiment,
   getRunningExperimentHeaderSummary,
   listExperimentHistory,
+  retryAdaptiveSelectorHistory,
+  retryAdaptiveSelectorResearch,
   stopRunningExperiment,
 } from "./api/experimentsApi";
 import {
@@ -57,7 +59,7 @@ const AI_SCANNER_STATUS_MESSAGES = {
 };
 
 const STRATEGY_LABELS = {
-  ADAPTIVE_STRATEGY_SELECTOR: "Automatic Strategy Selection",
+  ADAPTIVE_STRATEGY_SELECTOR: "Adaptive Pattern Strategy",
   CURRENT_HYBRID: "Market Confirmation with AI",
   EMA_CROSSOVER_COST_AWARE: "Trend Change by Moving Averages",
   EMA_PULLBACK: "Buy After a Temporary Price Pullback",
@@ -74,72 +76,72 @@ const MARKET_QUOTE_ASSETS = ["USDT", "USDC", "FDUSD", "BUSD", "TUSD", "DAI", "BT
 const STRATEGY_VISUALS = {
   ADAPTIVE_STRATEGY_SELECTOR: {
     accent: "#a78bfa",
-    summary: "Detects the market regime, researches executable strategy hypotheses and validates them chronologically. Generated entries must also confirm candle direction, avoid weak wick-only breakouts and avoid buying too far from the reference average or trigger.",
-    example: "In a strong uptrend, a generated pullback strategy must pass walk-forward validation and then wait for a real touch, a bullish recovery close and an entry that is not excessively extended.",
+    summary: "Finds recurring patterns in the asset history and tests rules for the next candle.",
+    example: "It can combine moving averages, volume and candle patterns when the backtest supports the setup.",
   },
   CURRENT_HYBRID: {
     accent: "#60a5fa",
-    cardDescription: "Requires agreement between trend, momentum, volume and the AI direction estimate.",
-    summary: "This strategy combines exponential moving averages, RSI, ADX, relative volume and the XGBoost estimate. A BUY also requires a meaningful bullish candle closing above the fast average without being excessively extended from it.",
-    example: "In the Balanced Intraday profile, EMA 9, EMA 21 and EMA 50 must support the same direction. The current candle must close bullish near EMA 9, and trend, momentum, volume and the AI estimate must agree.",
+    cardDescription: "Combines trend, momentum, volume and an AI direction estimate.",
+    summary: "Combines moving averages, RSI, ADX, volume and the XGBoost direction estimate.",
+    example: "A buy is considered only when the main signals point in the same direction.",
   },
   EMA_CROSSOVER_COST_AWARE: {
     accent: "#38bdf8",
-    cardDescription: "Compares a fast and a slow exponential moving average to detect a possible trend change.",
-    summary: "EMA means Exponential Moving Average. The fast average must cross above the slow average on a closed bullish candle. The candle must close above both averages, pass trend, RSI, ADX and volume filters, and remain close enough to the fast average to avoid a late entry.",
-    example: "In the Balanced Intraday profile, EMA 9 crosses above EMA 21 while EMA 50 confirms the broader trend. A red candle or a candle already far above EMA 9 does not authorize BUY.",
+    cardDescription: "Confirms a possible trend change with fast and slow averages.",
+    summary: "Looks for the fast average to cross above the slow average, with trend, strength and volume confirmation.",
+    example: "The signal is ignored when the candle closes weak or too far from the averages.",
   },
   EMA_PULLBACK: {
     accent: "#2dd4bf",
-    cardDescription: "Waits for price to return toward an exponential moving average during an existing uptrend.",
-    summary: "Instead of buying after a sharp rise, this strategy requires a real intersection with the area between the fast and slow exponential averages. The pullback must start above the fast average and finish with a meaningful bullish rejection close that is not already extended.",
-    example: "In the Balanced Intraday profile, price comes from above EMA 9, enters the EMA 9–EMA 21 area, rejects the decline and closes bullish back above EMA 9. A distant low or a weak candle does not count as a valid pullback.",
+    cardDescription: "Waits for price to return to the averages during an uptrend.",
+    summary: "Waits for price to return to the moving averages during an uptrend and show strength again.",
+    example: "The entry comes after a clear reaction near the averages.",
   },
   EMA9_SETUP_91_COST_AWARE: {
     accent: "#fbbf24",
     authorLabel: "Larry Williams",
     attribution: "Original setup by Larry Williams.",
-    cardDescription: "Uses the 9-period exponential moving average to detect a reversal and a later price breakout.",
-    summary: "EMA 9 must turn strictly from falling to rising on a bullish closed candle that crosses and closes above the average. A later candle must also close bullish above the setup high. A wick that only touches or briefly crosses the level does not trigger entry.",
-    example: "EMA 9 turns upward at 09:30 on a bullish candle closing above the average. The 10:00 candle may trade above its high, but BUY occurs only if that 10:00 candle also closes above the trigger without excessive extension.",
+    cardDescription: "Looks for an EMA 9 reversal followed by a breakout.",
+    summary: "Looks for an EMA 9 reversal and a later close above the reference candle high.",
+    example: "A wick above the trigger is not enough; the candle must close above it.",
   },
   EMA9_SETUP_91_TREND_FOLLOWER: {
     accent: "#fb923c",
     authorLabel: "Based on Larry Williams",
     attribution: "Application adaptation based on the Larry Williams 9.1 setup.",
-    cardDescription: "Uses an EMA 9 reversal for entry and raises the protective stop as price advances.",
-    summary: "The entry uses the same strict EMA 9 reversal and closed-candle breakout confirmation as the classic version. After entry, the protective stop can move upward with each favorable closed candle.",
-    example: "A wick above the setup high is ignored. After a later bullish candle closes above the trigger, the position opens and subsequent candle lows can raise the stop without ever lowering it.",
+    cardDescription: "Uses the EMA 9 entry and raises the stop as price advances.",
+    summary: "Uses the EMA 9 reversal for entry and raises the stop as the trend advances.",
+    example: "After entry, favorable candles can move the stop upward, never downward.",
   },
   LARRY_VOLATILITY_BREAKOUT: {
     accent: "#f472b6",
     authorLabel: "Larry Williams",
     attribution: "Volatility breakout method popularized by Larry Williams.",
-    cardDescription: "Looks for price to leave its recent range with stronger movement and volume.",
-    summary: "It calculates a trigger from the recent price range. Entry requires a bullish candle to close beyond the trigger by a small volatility buffer, finish near its high, pass trend and volume filters and avoid an excessively late extension.",
-    example: "If the trigger is 0.07250, a wick at 0.07255 followed by a close below the trigger is rejected. A strong close above the buffered trigger can authorize BUY.",
+    cardDescription: "Looks for a strong close outside the recent price range.",
+    summary: "Builds a trigger from the recent range and waits for a strong close above it.",
+    example: "A wick-only breakout is ignored; trend and volume must confirm the move.",
   },
   STORMER_FILHA_MAL_CRIADA: {
     accent: "#34d399",
     authorLabel: "Stormer",
     attribution: "Created by Alexandre Wolwacz, known as Stormer.",
-    cardDescription: "Uses seven exponential moving averages from 20 to 50 periods to find pullbacks in an uptrend.",
-    summary: "It uses EMA 20, 25, 30, 35, 40, 45 and 50 aligned upward. After price returns into the ribbon, entry requires a later bullish candle to close above the armed pullback high without excessive extension.",
-    example: "The seven averages remain aligned, price enters the ribbon and a later candle closes above the pullback high. A wick-only breakout remains on HOLD. The setup keeps its technical stop and 3R target.",
+    cardDescription: "Uses seven aligned averages to find pullbacks in an uptrend.",
+    summary: "Uses seven aligned moving averages to find pullbacks inside an uptrend.",
+    example: "The setup waits for price to leave the average ribbon with a confirmed close.",
   },
   LBR_310_ANTI_CONTEXT: {
     accent: "#c084fc",
     authorLabel: "Linda Bradford Raschke",
-    attribution: "Based on Linda Bradford Raschke's original 3/10 Anti setup. The UTC daily market baseline is a Crypto Paper Trader context filter, not part of the original setup.",
-    cardDescription: "Looks for a weak pullback inside positive momentum and confirms the continuation with the LBR 3/10 oscillator.",
-    summary: "It calculates SMA 3 minus SMA 10 and a 16-period simple signal line. A positive impulse must be followed by a weaker pullback and a bullish momentum hook. Because crypto has no official opening or closing bell, the completed previous UTC day and its final hour form the initial 24-hour baseline; after the current day's first hour closes, it is added as confirmation. The baseline filters context but never opens a position by itself. A later bullish candle must close above the armed setup high, while exhaustion and excessive extension remain blocked.",
-    example: "The previous UTC day and its final hour are not bearish. Price makes a positive impulse, pulls back with smaller candles and the 3/10 fast line turns upward above the signal line. The setup is armed, but BUY occurs only when a later closed candle finishes above the setup high.",
+    attribution: "Based on Linda Bradford Raschke's 3/10 Anti setup.",
+    cardDescription: "Looks for momentum to resume after a light pullback.",
+    summary: "Looks for a light pullback after positive momentum and confirms the continuation with the LBR 3/10 oscillator.",
+    example: "The setup waits for momentum to turn up and for price to close above the pullback high.",
   },
   AI_PATTERN_TRADER: {
     accent: "#818cf8",
-    cardDescription: "Learns recurring combinations of candles and indicators that previously preceded favorable movements.",
-    summary: "The local AI model studies chronological candle patterns and indicator conditions. It estimates direction and expected movement, but entry is considered only when confidence and risk checks pass.",
-    example: "A pattern similar to earlier bullish periods appears, validation confidence is sufficient and the expected movement passes the risk filters.",
+    cardDescription: "Finds recurring candle and indicator patterns.",
+    summary: "Learns combinations of candles and indicators that preceded favorable moves.",
+    example: "The signal is used only when confidence and risk checks are acceptable.",
   },
 };
 
@@ -304,7 +306,7 @@ function strategyAutomationState(strategy, decision, t = (value) => value) {
     return {
       label: t("ACTIVE POSITION"),
       tone: "active",
-      title: t("The system opened a simulated buy position and is now managing the trade automatically."),
+      title: t("Position open. Risk controls are active."),
     };
   }
 
@@ -312,7 +314,7 @@ function strategyAutomationState(strategy, decision, t = (value) => value) {
     return {
       label: t("ENTERING MARKET"),
       tone: "buy",
-      title: t("The system selected a buy entry and is executing the simulated position."),
+      title: t("Buy signal confirmed."),
     };
   }
 
@@ -320,7 +322,7 @@ function strategyAutomationState(strategy, decision, t = (value) => value) {
     return {
       label: t("EXITING MARKET"),
       tone: "sell",
-      title: t("The system selected an exit and is closing or avoiding the simulated position."),
+      title: t("Exit signal confirmed."),
     };
   }
 
@@ -328,14 +330,14 @@ function strategyAutomationState(strategy, decision, t = (value) => value) {
     return {
       label: t("ENTRY ARMED"),
       tone: "armed",
-      title: t("The system found a valid setup and is waiting for the final entry trigger."),
+      title: t("Setup ready. Waiting for entry."),
     };
   }
 
   return {
     label: t("WAITING"),
     tone: "waiting",
-    title: t("The system evaluated the market and decided not to open or close a position yet."),
+    title: t("No action on this candle."),
   };
 }
 
@@ -426,6 +428,19 @@ function parseStringArray(value) {
   }
 }
 
+function parseJsonObject(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : {};
+  } catch {
+    return {};
+  }
+}
+
 function sourceLabel(value) {
   try {
     return new URL(value).hostname.replace(/^www\./, "");
@@ -455,133 +470,315 @@ function useLiveNow(enabled = true) {
   return now;
 }
 
-function Countdown({ target }) {
+function Countdown({ target, expiredLabel = null }) {
   const now = useLiveNow(Boolean(target));
   const targetDate = parseApiDate(target);
+  const remaining = targetDate ? targetDate.getTime() - now : null;
 
   return (
     <span className="live-countdown" aria-live="off" aria-atomic="true">
-      {targetDate ? formatDuration(targetDate.getTime() - now) : "—"}
+      {targetDate
+        ? (remaining <= 0 && expiredLabel ? expiredLabel : formatDuration(remaining))
+        : "—"}
     </span>
   );
 }
 
 
-function AdaptiveResearchPanel({ strategy, decision, language, t }) {
+function AdaptiveResearchPanel({
+  strategy,
+  decision,
+  experiment,
+  language,
+  t,
+  onRetryHistory,
+  retryingHistory,
+  onRetryResearch,
+  retryingResearch,
+}) {
   if (strategy?.strategy_code !== "ADAPTIVE_STRATEGY_SELECTOR") return null;
 
   const value = (key) => strategy?.[key] ?? decision?.[key] ?? null;
+  const researchStatus = value("selector_research_status") || "WAITING_FOR_VALID_STRATEGY";
   const activeName = value("selector_active_strategy_name");
   const activeCode = value("selector_selected_strategy");
-  const origin = value("selector_strategy_origin");
-  const researchStatus = value("selector_research_status") || "WAITING_FOR_VALID_STRATEGY";
-  const summary = value("selector_research_summary");
-  const regime = value("selector_market_regime");
-  const sources = parseStringArray(value("selector_source_urls_json"));
-  const score = value("selector_validation_score");
-  const profitFactor = value("selector_profit_factor");
-  const drawdown = value("selector_max_drawdown_pct");
-  const tradeCount = value("selector_trade_count");
-  const nextResearchAt = value("selector_next_research_at");
-  const aiProvider = value("selector_ai_provider");
-  const aiModel = value("selector_ai_model");
-  const aiReviewStatus = value("selector_ai_review_status");
-  const aiReviewScore = value("selector_ai_review_score");
+  const researchDetails = parseJsonObject(value("selector_candidate_scores"));
+  const history = parseJsonObject(researchDetails.history);
+  const historySync = parseJsonObject(researchDetails.history_sync);
+  const patternAnalysis = parseJsonObject(researchDetails.pattern_analysis);
+  const bestCandidate = researchDetails.best_candidate || null;
+  const bestDisplay = bestCandidate?.display || {};
+  const rejectionSummary = Array.isArray(researchDetails.rejection_summary)
+    ? researchDetails.rejection_summary
+    : [];
+  const hardFailures = Array.isArray(bestCandidate?.hard_failures)
+    ? bestCandidate.hard_failures
+    : [];
+  const softWarnings = Array.isArray(bestCandidate?.soft_warnings)
+    ? bestCandidate.soft_warnings
+    : [];
+  const currentPatterns = Array.isArray(patternAnalysis.current_patterns)
+    ? patternAnalysis.current_patterns
+    : [];
+  const dominantPatterns = Array.isArray(patternAnalysis.dominant_historical_patterns)
+    ? patternAnalysis.dominant_historical_patterns
+    : [];
 
-  const positionCode = value("selector_position_strategy_code")
-    || (strategy?.has_open_position ? activeCode : null);
-  const positionName = value("selector_position_strategy_name")
-    || (strategy?.has_open_position ? activeName : null)
-    || (positionCode ? t(STRATEGY_LABELS[positionCode] || positionCode) : null);
-  const positionOrigin = value("selector_position_strategy_origin")
-    || (strategy?.has_open_position ? origin : null);
-  const positionValidationScore = value("selector_position_validation_score")
-    ?? (strategy?.has_open_position ? score : null);
-  const positionOpenedAt = value("selector_position_opened_at")
-    || (strategy?.has_open_position ? strategy?.entry_time : null);
-  const providerLabel = aiProvider
-    ? `${aiProvider}${aiModel ? ` · ${aiModel}` : ""}`
-    : t("Local quantitative engine");
-  const candidateName = activeName || (activeCode ? t(STRATEGY_LABELS[activeCode] || activeCode) : null);
-  const compactSummary = summary
-    || (candidateName
-      ? t("The selector validated a candidate strategy for the current regime.")
-      : t("The selector is still validating candidates for the current regime."));
-
+  const isWaitingForHistory = researchStatus === "WAITING_FOR_HISTORY";
+  const cleanCandleCount = history.clean_candles ?? null;
+  const requiredCandleCount = history.required_clean_candles ?? null;
+  const targetCandleCount = history.target_history_candles
+    ?? historySync.target_candles
+    ?? null;
+  const storedCandleCount = history.stored_candles
+    ?? historySync.stored_candles
+    ?? patternAnalysis.history_candles_analyzed
+    ?? null;
+  const historyProgressLabel = cleanCandleCount != null && requiredCandleCount != null
+    ? `${cleanCandleCount}/${requiredCandleCount}`
+    : "—";
+  const market = researchDetails.market || patternAnalysis.market || experiment?.market || "—";
+  const executionTimeframe = researchDetails.execution_timeframe
+    || patternAnalysis.execution_timeframe
+    || experiment?.execution_timeframe
+    || "—";
+  const trendTimeframe = researchDetails.trend_timeframe
+    || patternAnalysis.trend_timeframe
+    || experiment?.trend_timeframe
+    || "—";
+  const similarPatterns = patternAnalysis.similar_pattern_count ?? 0;
+  const positiveRate = patternAnalysis.positive_after_cost_rate;
+  const expectedReturn = patternAnalysis.expected_next_return;
+  const patternConfidence = patternAnalysis.similarity_confidence;
+  const rangeState = patternAnalysis.range_state || "UNKNOWN";
+  const rangeScore = patternAnalysis.range_bound_score;
+  const rangePosition = patternAnalysis.range_position;
+  const rangeSupport = patternAnalysis.range_support;
+  const rangeResistance = patternAnalysis.range_resistance;
+  const bollingerZScore = patternAnalysis.bollinger_zscore;
+  const bollingerBandwidth = patternAnalysis.bollinger_bandwidth;
+  const stochasticK = patternAnalysis.stochastic_k;
+  const stochasticD = patternAnalysis.stochastic_d;
+  const rangePositionLabel = rangePosition == null
+    ? t("Not calculated")
+    : rangePosition <= 0.33
+      ? t("Lower range")
+      : rangePosition >= 0.67
+        ? t("Upper range")
+        : t("Middle range");
+  const aiStatus = researchDetails.ai_hypothesis_status
+    || researchDetails.web_research_status
+    || value("selector_ai_review_status")
+    || "NOT_USED";
+  const aiError = String(
+    researchDetails.ai_hypothesis_error
+      || researchDetails.web_research_error
+      || researchDetails.ai_review_error
+      || value("selector_last_error")
+      || "",
+  ).trim();
+  const hasAiError = Boolean(aiError) && aiStatus === "ERROR";
+  const canRetryResearch = !strategy?.has_open_position && !isWaitingForHistory;
+  const candidateName = activeName
+    || (activeCode ? t(STRATEGY_LABELS[activeCode] || activeCode) : null)
+    || bestCandidate?.name
+    || null;
   return (
-    <section className="adaptive-research-strip" aria-label={t("Adaptive strategy research details")}>
+    <section className="adaptive-research-strip" aria-label={t("Adaptive pattern research details")}>
       <div className="adaptive-strip-main">
-        <small>{strategy?.has_open_position ? t("Current position strategy") : t("Adaptive selector status")}</small>
+        <small>{t("Adaptive pattern strategy")}</small>
         <div className="adaptive-strip-main-row">
-          <strong>
-            {strategy?.has_open_position
-              ? (positionName || t("Legacy strategy attribution unavailable"))
-              : (candidateName || t("No validated strategy yet"))}
-          </strong>
-          <span className={`adaptive-research-status ${strategy?.has_open_position ? "status-active" : `status-${String(researchStatus).toLowerCase()}`}`}>
-            {strategy?.has_open_position ? t("POSITION LOCKED") : t(researchStatus)}
+          <strong>{candidateName ? t(candidateName) : t("No validated strategy yet")}</strong>
+          <span className={`adaptive-research-status status-${String(researchStatus).toLowerCase()}`}>
+            {t(researchStatus)}
           </span>
         </div>
-        <p>
-          {strategy?.has_open_position
-            ? t("This strategy is permanently attached to the open position and will remain unchanged until the trade is closed.")
-            : compactSummary}
-        </p>
-        {strategy?.has_open_position && (
-          <div className="adaptive-position-meta">
-            <span>{t("Origin")}: {positionOrigin ? t(positionOrigin) : t("Legacy selector position")}</span>
-            <span>{t("Opened at")}: {positionOpenedAt ? formatDateTime(positionOpenedAt, language) : "—"}</span>
-            <span>{t("Entry validation")}: {positionValidationScore == null ? "—" : `${formatNumber(positionValidationScore, 1, language)}/100`}</span>
+        {!strategy?.has_open_position && isWaitingForHistory && (
+          <div className="adaptive-selector-notice is-history">
+            <div className="adaptive-history-notice-heading">
+              <div>
+                <strong>{t("Preparing history")}</strong>
+                <span>
+                  {historyProgressLabel} {t("usable candles")}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="secondary-button adaptive-history-retry-button"
+                onClick={() => onRetryHistory?.(strategy)}
+                disabled={retryingHistory}
+              >
+                {retryingHistory ? t("Retrying history…") : t("Retry history now")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!strategy?.has_open_position && bestCandidate && (
+          <div className="adaptive-best-candidate">
+            <div className="adaptive-best-candidate-heading">
+              <div>
+                <small>{bestCandidate.eligible ? t("Validated candidate") : t("Highest-scoring tested hypothesis")}</small>
+                <strong>{t(bestCandidate.name)}</strong>
+                {bestCandidate.rationale && <p>{t(bestCandidate.rationale)}</p>}
+              </div>
+              <span className={bestCandidate.eligible ? "candidate-approved" : "candidate-rejected"}>
+                {bestCandidate.eligible ? t("APPROVED") : t("NOT ACTIVATED")}
+              </span>
+            </div>
+            <div className="adaptive-best-metrics">
+              <div><small>{t("Score")}</small><strong>{bestDisplay.score || "—"}</strong></div>
+              <div><small>{t("Net return")}</small><strong>{bestDisplay.net_return || "—"}</strong></div>
+              <div><small>{t("Profit factor")}</small><strong>{bestDisplay.profit_factor || "—"}</strong></div>
+              <div><small>{t("Drawdown")}</small><strong>{bestDisplay.max_drawdown || "—"}</strong></div>
+              <div><small>{t("Validated trades")}</small><strong>{bestDisplay.trade_count || "—"}</strong></div>
+              <div><small>{t("Positive folds")}</small><strong>{bestDisplay.positive_folds || "—"}</strong></div>
+            </div>
+            {hardFailures.length > 0 && (
+              <div className="adaptive-gate-list is-hard">
+                <small>{t("Why it was not activated")}</small>
+                <div>{hardFailures.map((code) => <span key={code}>{t(code)}</span>)}</div>
+              </div>
+            )}
+            {softWarnings.length > 0 && (
+              <div className="adaptive-gate-list is-soft">
+                <small>{t("Quality warnings")}</small>
+                <div>{softWarnings.map((code) => <span key={code}>{t(code)}</span>)}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {hasAiError && (
+          <details className="adaptive-ai-error-details">
+            <summary>
+              <span>
+                <strong>{t("OpenAI unavailable")}</strong>
+                <small>{t("Local analysis continued.")}</small>
+              </span>
+              {canRetryResearch && (
+                <button
+                  type="button"
+                  className="secondary-button adaptive-research-retry-button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onRetryResearch?.(strategy);
+                  }}
+                  disabled={retryingResearch}
+                >
+                  {retryingResearch ? t("Trying again…") : t("Try again")}
+                </button>
+              )}
+            </summary>
+            <code title={aiError}>{aiError}</code>
+          </details>
+        )}
+
+        {canRetryResearch && !hasAiError && researchStatus === "WAITING_FOR_VALID_STRATEGY" && (
+          <div className="adaptive-manual-research-action">
+            <span>{t("No hypothesis was approved in this review.")}</span>
+            <button
+              type="button"
+              className="secondary-button adaptive-research-retry-button"
+              onClick={() => onRetryResearch?.(strategy)}
+              disabled={retryingResearch}
+            >
+              {retryingResearch ? t("Analyzing…") : t("Analyze again")}
+            </button>
           </div>
         )}
       </div>
 
       <div className="adaptive-strip-facts">
         <div className="adaptive-strip-fact">
-          <small>{t("Regime")}</small>
-          <strong>{regime ? t(regime) : "—"}</strong>
-          <span>{t("Current market context")}</span>
+          <small>{t("Asset")}</small>
+          <strong>{formatMarketPair(market) || market}</strong>
         </div>
-
         <div className="adaptive-strip-fact">
-          <small>{t("Next operation candidate")}</small>
-          <strong>{candidateName || t("None yet")}</strong>
-          <span>{strategy?.has_open_position ? t("Research applies only after the current position closes") : t(researchStatus)}</span>
+          <small>{t("Candles")}</small>
+          <strong>{executionTimeframe} · {trendTimeframe}</strong>
+          <span>{t("Decision · trend")}</span>
         </div>
-
         <div className="adaptive-strip-fact">
-          <small>{t("AI layer")}</small>
-          <strong>{providerLabel}</strong>
+          <small>{t("History")}</small>
+          <strong>
+            {storedCandleCount == null
+              ? "—"
+              : `${storedCandleCount}${targetCandleCount == null ? "" : `/${targetCandleCount}`}`}
+          </strong>
+          <span>{t("candles")}</span>
+        </div>
+        <div className="adaptive-strip-fact">
+          <small>{t("Current patterns")}</small>
+          <strong>{currentPatterns.length ? currentPatterns.slice(0, 2).map(t).join(" · ") : t("No confirmed pattern")}</strong>
+          <span>{dominantPatterns.length ? `${t("Historical")}: ${dominantPatterns.slice(0, 2).map(t).join(" · ")}` : t("Waiting for confirmation")}</span>
+        </div>
+        <div className="adaptive-strip-fact">
+          <small>{t("Similar cases")}</small>
+          <strong>{similarPatterns || "—"}</strong>
           <span>
-            {t(aiReviewStatus || "NOT_USED")}
-            {aiReviewScore == null ? "" : ` · ${formatNumber(aiReviewScore, 1, language)}/100`}
+            {positiveRate == null
+              ? t("Not calculated")
+              : `${t("After costs")}: ${formatPercent(positiveRate, 1, language)}`}
           </span>
         </div>
-
         <div className="adaptive-strip-fact">
-          <small>{t("Candidate validation")}</small>
-          <strong>{score == null ? "—" : `${formatNumber(score, 1, language)}/100`}</strong>
-          <span>{t("Profit factor")}: {profitFactor == null ? "—" : formatNumber(profitFactor, 2, language)}</span>
+          <small>{t("Next candle")}</small>
+          <strong>{expectedReturn == null ? "—" : formatPercent(expectedReturn, 2, language)}</strong>
+          <span>{patternConfidence == null ? t("Not calculated") : `${t("Confidence")}: ${formatPercent(patternConfidence, 1, language)}`}</span>
         </div>
-
-        <div className="adaptive-strip-fact">
-          <small>{t("Candidate risk")}</small>
-          <strong>{drawdown == null ? "—" : formatPercent(-Math.abs(Number(drawdown)), 2, language)}</strong>
-          <span>{t("Validated trades")}: {tradeCount == null ? "—" : formatNumber(tradeCount, 0, language)}</span>
+        <div className="adaptive-strip-fact is-range-evaluation">
+          <small>{t("Sideways market")}</small>
+          <strong>{t(rangeState)}</strong>
+          <span>
+            {rangeScore == null
+              ? t("Not calculated")
+              : `${t("Range score")}: ${formatNumber(rangeScore, 1, language)}/100`}
+          </span>
         </div>
-
+        <div className="adaptive-strip-fact is-range-position">
+          <small>{t("Price range")}</small>
+          <strong>{rangePositionLabel}</strong>
+          <span>
+            {rangeSupport == null || rangeResistance == null
+              ? t("Calculating range")
+              : `${formatPrice(rangeSupport, language)} – ${formatPrice(rangeResistance, language)}`}
+          </span>
+        </div>
+        <div className="adaptive-strip-fact is-range-signals">
+          <small>{t("Range signals")}</small>
+          <strong>
+            {bollingerZScore == null
+              ? "—"
+              : `Z ${formatNumber(bollingerZScore, 2, language)}`}
+          </strong>
+          <span>
+            {stochasticK == null || stochasticD == null
+              ? t("Calculating indicators")
+              : `${t("Stochastic")}: ${formatNumber(stochasticK, 1, language)}/${formatNumber(stochasticD, 1, language)}${bollingerBandwidth == null ? "" : ` · ${t("Band width")}: ${formatPercent(bollingerBandwidth, 2, language)}`}`}
+          </span>
+        </div>
         <div className="adaptive-strip-fact">
-          <small>{t("Next review")}</small>
-          <strong><Countdown target={nextResearchAt} /></strong>
-          <span>{strategy?.has_open_position ? t("Starts after position close") : t("Automatic reassessment")}</span>
+          <small>{t("Hypotheses")}</small>
+          <strong>{researchDetails.tested_count ?? "—"}</strong>
+          <span>{t("Approved")}: {researchDetails.approved_count ?? "—"}</span>
+        </div>
+        <div className="adaptive-strip-fact is-review-cadence">
+          <small>{t("Review")}</small>
+          <strong>
+            {t("Every {timeframe}").replace("{timeframe}", executionTimeframe)}
+          </strong>
         </div>
       </div>
 
-      {sources.length > 0 && (
-        <div className="adaptive-strip-sources">
-          {sources.slice(0, 4).map((url) => (
-            <a key={url} href={url} target="_blank" rel="noreferrer">{sourceLabel(url)}</a>
-          ))}
+      {rejectionSummary.length > 0 && (
+        <div className="adaptive-rejection-summary">
+          <small>{t("Rejections")}</small>
+          <div>
+            {rejectionSummary.map((item) => (
+              <span key={item.code}><strong>{item.count}</strong>{t(item.code)}</span>
+            ))}
+          </div>
         </div>
       )}
     </section>
@@ -673,8 +870,8 @@ function ResponsiveStrategyTitle({ title }) {
 
 function StrategyHelp({ strategyCode, t }) {
   const details = STRATEGY_VISUALS[strategyCode] || {
-    summary: "Evaluates the current market and produces BUY, HOLD or SELL decisions according to its configured rules.",
-    example: "When every required condition is confirmed, the strategy can open a simulated position; otherwise it remains on HOLD.",
+    summary: "Uses its rules to choose between BUY, HOLD and SELL.",
+    example: "If the setup is incomplete, it stays on HOLD.",
   };
 
   return (
@@ -739,6 +936,10 @@ const StrategyCard = memo(function StrategyCard({
   dragging,
   onPointerDown,
   onMove,
+  onRetryHistory,
+  retryingHistory,
+  onRetryResearch,
+  retryingResearch,
 }) {
   const grossPnl = Number(strategy.gross_pnl || 0);
   const netPnl = Number(
@@ -808,13 +1009,6 @@ const StrategyCard = memo(function StrategyCard({
         )}
       </header>
 
-      <AdaptiveResearchPanel
-        strategy={strategy}
-        decision={decision}
-        language={language}
-        t={t}
-      />
-
       <div className="strategy-metrics">
         <div className="strategy-metric metric-wide">
           <span>{t("Market price")}</span>
@@ -851,6 +1045,18 @@ const StrategyCard = memo(function StrategyCard({
           )}
         </div>
       </div>
+
+      <AdaptiveResearchPanel
+        strategy={strategy}
+        decision={decision}
+        experiment={experiment}
+        language={language}
+        t={t}
+        onRetryHistory={onRetryHistory}
+        retryingHistory={retryingHistory}
+        onRetryResearch={onRetryResearch}
+        retryingResearch={retryingResearch}
+      />
     </article>
   );
 });
@@ -907,7 +1113,7 @@ function AIOpportunityScore({ opportunity, language, t }) {
         </div>
 
         <p className="ai-score-simple-explanation">
-          {t("The score compares this market with the other scanned markets. A high score does not guarantee a profit and a HOLD card is not a buy recommendation.")}
+          {t("Compares this pair with the others in the scan. It is not a recommendation.")}
         </p>
 
         <div className="ai-score-breakdown">
@@ -932,8 +1138,8 @@ function AIOpportunityScore({ opportunity, language, t }) {
           <span>{t("How to read this card")}</span>
           <strong>
             {expectedNetReturn > 0
-              ? t("The model sees a positive expected return, but the remaining filters still determine whether the action becomes BUY.")
-              : t("The expected return is not positive, so this market remains under observation instead of becoming a BUY opportunity.")}
+              ? t("Positive estimate. Other filters still apply.")
+              : t("No positive estimate. Kept on watch.")}
           </strong>
         </div>
 
@@ -997,14 +1203,13 @@ function AIOpportunityScannerPanel({ status, opportunities, language, t }) {
     <section className="ai-scanner-panel" aria-labelledby="ai-scanner-title">
       <div className="ai-scanner-header">
         <div>
-          <span>{t("Independent AI service")}</span>
           <h2 id="ai-scanner-title">{t("AI Opportunity Scanner")}</h2>
-          <p>{t("The scanner builds a liquid MEXC market universe, filters low-quality pairs, analyzes recent price, volume, volatility and trend data, trains and validates an adaptive model for each eligible coin, estimates upward probability and expected net return, and ranks the strongest entry zones.")}</p>
+          <p>{t("Ranks liquid MEXC pairs by trend, volume and risk.")}</p>
           <div className="ai-scanner-process" aria-label={t("Opportunity selection process")}>
-            <span><b>1</b>{t("Liquidity and spread filter")}</span>
-            <span><b>2</b>{t("Price, volume and volatility analysis")}</span>
-            <span><b>3</b>{t("Adaptive model training and validation")}</span>
-            <span><b>4</b>{t("Entry score and opportunity ranking")}</span>
+            <span><b>1</b>{t("Liquidity")}</span>
+            <span><b>2</b>{t("Market data")}</span>
+            <span><b>3</b>{t("Model")}</span>
+            <span><b>4</b>{t("Ranking")}</span>
           </div>
         </div>
         <div className="ai-scanner-status-block">
@@ -1021,14 +1226,13 @@ function AIOpportunityScannerPanel({ status, opportunities, language, t }) {
       </div>
 
       <div className="ai-scanner-summary">
-        <span><small>{t("Markets in universe")}</small><strong>{totalMarkets}</strong></span>
-        <span><small>{t("Markets analyzed")}</small><strong>{analyzedMarkets}</strong></span>
-        <span><small>{t("Markets learning")}</small><strong>{learningMarkets}</strong></span>
-        <span><small>{t("Ranked opportunities")}</small><strong>{qualifiedMarkets}</strong></span>
+        <span><small>{t("Markets")}</small><strong>{totalMarkets}</strong></span>
+        <span><small>{t("Analyzed")}</small><strong>{analyzedMarkets}</strong></span>
+        <span><small>{t("In analysis")}</small><strong>{learningMarkets}</strong></span>
+        <span><small>{t("Ranked")}</small><strong>{qualifiedMarkets}</strong></span>
         <span className="ai-next-scan">
-          <small>{t("Next scan countdown")}</small>
+          <small>{t("Next scan")}</small>
           <strong>{processing ? t("After current scan") : <Countdown target={status?.next_scan_at} />}</strong>
-          <em>{t("Second-by-second countdown")}</em>
         </span>
       </div>
 
@@ -1083,7 +1287,7 @@ function AIOpportunityScannerPanel({ status, opportunities, language, t }) {
           {delayed && (
             <div className="ai-scanner-warning">
               <strong>{t("Processing appears delayed")}</strong>
-              <span>{t("No scanner activity was detected for more than 90 seconds. Check the API logs if the timer continues increasing.")}</span>
+              <span>{t("No update for more than 90 seconds.")}</span>
             </div>
           )}
         </div>
@@ -1129,14 +1333,14 @@ function AIOpportunityScannerPanel({ status, opportunities, language, t }) {
             </strong>
             <span>
               {learningMarkets > 0
-                ? t("The latest scan finished successfully, but the eligible markets are still training. Ranked cards will appear only after the model produces a valid score.")
-                : t("The latest scan finished successfully, but no market reached the minimum quality required to appear in the ranking.")}
+                ? t("Markets are still being analyzed. Rankings will appear when scores are ready.")
+                : t("No pair met the ranking threshold.")}
             </span>
 
             {marketDiagnostics.length > 0 && (
               <details className="ai-diagnostics-compact">
                 <summary>
-                  <span>Show scanner diagnostics</span>
+                  <span>{t("Scanner details")}</span>
                   <strong>{marketDiagnostics.length}</strong>
                 </summary>
 
@@ -1144,13 +1348,13 @@ function AIOpportunityScannerPanel({ status, opportunities, language, t }) {
                   <table className="ai-diagnostics-table">
                     <thead>
                       <tr>
-                        <th>Market</th>
-                        <th>Status</th>
-                        <th>Samples</th>
-                        <th>Execution candles</th>
-                        <th>Trend candles</th>
-                        <th>Regime</th>
-                        <th>Reason</th>
+                        <th>{t("Market")}</th>
+                        <th>{t("Status")}</th>
+                        <th>{t("Samples")}</th>
+                        <th>{t("Decision candles")}</th>
+                        <th>{t("Trend candles")}</th>
+                        <th>{t("Regime")}</th>
+                        <th>{t("Reason")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1345,9 +1549,9 @@ function StopDialog({
     }}>
       <section className="reset-dialog stop-dialog" role="dialog" aria-modal="true" aria-labelledby="stop-title">
         <div className="reset-icon" aria-hidden="true">!</div>
-        <span>{t("Administrative action")}</span>
+        <span>{t("Confirmation")}</span>
         <h2 id="stop-title">{t("Stop running experiment?")}</h2>
-        <p>{t("The latest running experiment will stop immediately. All experiment data will be preserved, and the AI Opportunity Scanner will remain active.")}</p>
+        <p>{t("The experiment will stop and its data will be kept.")}</p>
 
         <form onSubmit={onConfirm}>
           <fieldset className="stop-position-options">
@@ -1359,7 +1563,7 @@ function StopDialog({
                 checked={closeOpenPositions}
                 onChange={() => setCloseOpenPositions(true)}
               />
-              <span>{t("Close open positions at the current market price")}</span>
+              <span>{t("Close positions at the current price")}</span>
             </label>
             <label>
               <input
@@ -1368,18 +1572,18 @@ function StopDialog({
                 checked={!closeOpenPositions}
                 onChange={() => setCloseOpenPositions(false)}
               />
-              <span>{t("Keep open positions frozen without further experiment analysis")}</span>
+              <span>{t("Keep positions frozen")}</span>
             </label>
           </fieldset>
 
-          <label htmlFor="admin-api-key">ADMIN_API_KEY</label>
+          <label htmlFor="admin-api-key">{t("Admin key")}</label>
           <input
             id="admin-api-key"
             type="password"
             autoComplete="off"
             value={adminKey}
             onChange={(event) => setAdminKey(event.target.value)}
-            placeholder={t("Enter the Railway admin token")}
+            placeholder={t("Enter the admin key")}
             autoFocus
           />
           {error && <div className="modal-error" role="alert">{error}</div>}
@@ -1394,6 +1598,113 @@ function StopDialog({
     </div>
   );
 }
+
+function HistoryRetryDialog({
+  open,
+  adminKey,
+  setAdminKey,
+  error,
+  retrying,
+  onClose,
+  onConfirm,
+  t,
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget && !retrying) onClose();
+    }}>
+      <section
+        className="reset-dialog history-retry-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="history-retry-title"
+      >
+        <div className="reset-icon" aria-hidden="true">↻</div>
+        <span>{t("Confirmation")}</span>
+        <h2 id="history-retry-title">{t("Update history now?")}</h2>
+        <p>{t("Older candles will be loaded and the analysis will run again.")}</p>
+
+        <form onSubmit={onConfirm}>
+          <label htmlFor="history-admin-api-key">{t("Admin key")}</label>
+          <input
+            id="history-admin-api-key"
+            type="password"
+            autoComplete="off"
+            value={adminKey}
+            onChange={(event) => setAdminKey(event.target.value)}
+            placeholder={t("Enter the admin key")}
+            autoFocus
+          />
+          {error && <div className="modal-error" role="alert">{error}</div>}
+          <div className="modal-actions">
+            <button type="button" className="secondary-button" onClick={onClose} disabled={retrying}>
+              {t("Cancel")}
+            </button>
+            <button type="submit" className="primary-button" disabled={retrying || !adminKey.trim()}>
+              {retrying ? t("Updating history…") : t("Update history")}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function ResearchRetryDialog({
+  open,
+  adminKey,
+  setAdminKey,
+  error,
+  retrying,
+  onClose,
+  onConfirm,
+  t,
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget && !retrying) onClose();
+    }}>
+      <section
+        className="reset-dialog research-retry-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="research-retry-title"
+      >
+        <div className="reset-icon" aria-hidden="true">↻</div>
+        <span>{t("Confirmation")}</span>
+        <h2 id="research-retry-title">{t("Analyze the current pattern again?")}</h2>
+        <p>{t("The history, pattern search and backtests will run again.")}</p>
+
+        <form onSubmit={onConfirm}>
+          <label htmlFor="research-admin-api-key">{t("Admin key")}</label>
+          <input
+            id="research-admin-api-key"
+            type="password"
+            autoComplete="off"
+            value={adminKey}
+            onChange={(event) => setAdminKey(event.target.value)}
+            placeholder={t("Enter the admin key")}
+            autoFocus
+          />
+          {error && <div className="modal-error" role="alert">{error}</div>}
+          <div className="modal-actions">
+            <button type="button" className="secondary-button" onClick={onClose} disabled={retrying}>
+              {t("Cancel")}
+            </button>
+            <button type="submit" className="primary-button" disabled={retrying || !adminKey.trim()}>
+              {retrying ? t("Analyzing…") : t("Analyze again")}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
 
 function FlagIcon({ code }) {
   if (code === "pt") {
@@ -1456,56 +1767,58 @@ function LanguageSelector({ language, onChange, t }) {
 function RunningExperimentTopbarSummary({ summary, t }) {
   if (!summary?.visible) return null;
 
-  const strategySummary = summary.strategy_summary || {};
+  return (
+    <section className="running-topbar-context" aria-label={t("Running simulation summary")}>
+      <div className="topbar-market-context">
+        <small>{t("Selected market")}</small>
+        <strong>{summary.market_label || "—"}</strong>
+      </div>
+
+      <span className={`topbar-live-state is-${summary.status_tone || "running"}`}>
+        <i aria-hidden="true" />
+        {statusLabel(summary.status, t)}
+      </span>
+
+      <div className="topbar-candle-context">
+        <span>
+          {t("Decision candle")}
+          <strong>{summary.decision_timeframe_label || "—"}</strong>
+        </span>
+        <i aria-hidden="true" />
+        <span>
+          {t("Trend context")}
+          <strong>{summary.trend_timeframe_label || "—"}</strong>
+        </span>
+      </div>
+    </section>
+  );
+}
+
+function ExperimentCycleBar({ summary, t }) {
+  if (!summary?.visible) return null;
 
   return (
-    <section className="running-topbar-summary" aria-label={t("Running simulation summary")}>
-      <div className="topbar-summary-item market-summary-item">
-        <small>{t("Market")}</small>
-        <strong>{summary.market_label || "—"}</strong>
-        <span className={`topbar-live-state is-${summary.status_tone || "running"}`}>
-          <i aria-hidden="true" />
-          {statusLabel(summary.status, t)}
-        </span>
+    <section className="experiment-cycle-bar" aria-label={t("Experiment cycle")}>
+      <div className="experiment-cycle-intro">
+        <span className="experiment-cycle-icon" aria-hidden="true">↻</span>
+        <strong>{t("Cycle")}</strong>
       </div>
 
-      <div className="topbar-summary-item">
-        <small>{t("Analysis")}</small>
+      <div className="experiment-cycle-next">
+        <small>{t("Next analysis")}</small>
         <strong>
-          {t("Every {timeframe}").replace(
-            "{timeframe}",
-            summary.decision_timeframe_label || "—",
-          )}
+          <Countdown
+            target={summary.next_analysis_at}
+            expiredLabel={t("Processing closed candle")}
+          />
         </strong>
-        <span>
-          {t("Next")}: {summary.next_analysis_countdown_label || "—"}
-        </span>
+        <span>{t("Decision candle")}: {summary.decision_timeframe_label || "—"}</span>
       </div>
 
-      <div className="topbar-summary-item">
-        <small>{t("Trend confirmation")}</small>
-        <strong>{summary.trend_timeframe_label || "—"}</strong>
-        <span>
-          {t("Last market update")}: {summary.last_market_update_label || "—"}
-        </span>
-      </div>
-
-      <div className="topbar-summary-item strategy-summary-item">
-        <small>{t("Strategies")}</small>
-        <strong>
-          {strategySummary.total ?? "—"} {t("in total")}
-        </strong>
-        <div className="topbar-strategy-chips">
-          <span className="is-active">
-            {strategySummary.active_positions ?? "—"} {t("in position")}
-          </span>
-          <span className="is-armed">
-            {strategySummary.armed_entries ?? "—"} {t("armed entries")}
-          </span>
-          <span className="is-waiting">
-            {strategySummary.waiting ?? "—"} {t("waiting")}
-          </span>
-        </div>
+      <div className="experiment-cycle-update">
+        <small>{t("Last price update")}</small>
+        <strong>{summary.last_market_update_label || "—"}</strong>
+        <span>{summary.market_label || "—"}</span>
       </div>
     </section>
   );
@@ -1534,6 +1847,14 @@ export default function App() {
   const [stopError, setStopError] = useState("");
   const [stopping, setStopping] = useState(false);
   const [closeOpenPositions, setCloseOpenPositions] = useState(true);
+  const [isHistoryRetryOpen, setIsHistoryRetryOpen] = useState(false);
+  const [historyAdminKey, setHistoryAdminKey] = useState("");
+  const [historyRetryError, setHistoryRetryError] = useState("");
+  const [retryingHistory, setRetryingHistory] = useState(false);
+  const [isResearchRetryOpen, setIsResearchRetryOpen] = useState(false);
+  const [researchAdminKey, setResearchAdminKey] = useState("");
+  const [researchRetryError, setResearchRetryError] = useState("");
+  const [retryingResearch, setRetryingResearch] = useState(false);
   const [aiScannerStatus, setAiScannerStatus] = useState(null);
   const [aiOpportunities, setAiOpportunities] = useState([]);
   const [form, setForm] = useState({
@@ -2125,6 +2446,76 @@ export default function App() {
     }
   };
 
+  const openHistoryRetryDialog = () => {
+    setHistoryAdminKey("");
+    setHistoryRetryError("");
+    setIsHistoryRetryOpen(true);
+  };
+
+  const closeHistoryRetryDialog = () => {
+    if (retryingHistory) return;
+    setHistoryAdminKey("");
+    setHistoryRetryError("");
+    setIsHistoryRetryOpen(false);
+  };
+
+  const confirmHistoryRetry = async (event) => {
+    event.preventDefault();
+    if (!selected?.id) return;
+    setRetryingHistory(true);
+    setHistoryRetryError("");
+    try {
+      await retryAdaptiveSelectorHistory({
+        experimentId: selected.id,
+        adminKey: historyAdminKey.trim(),
+      });
+      setIsHistoryRetryOpen(false);
+      setHistoryAdminKey("");
+      await refresh();
+    } catch (err) {
+      setHistoryRetryError(
+        translateDynamicText(language, err.message || "Unable to retry adaptive history."),
+      );
+    } finally {
+      setRetryingHistory(false);
+    }
+  };
+
+  const openResearchRetryDialog = () => {
+    setResearchAdminKey("");
+    setResearchRetryError("");
+    setIsResearchRetryOpen(true);
+  };
+
+  const closeResearchRetryDialog = () => {
+    if (retryingResearch) return;
+    setResearchAdminKey("");
+    setResearchRetryError("");
+    setIsResearchRetryOpen(false);
+  };
+
+  const confirmResearchRetry = async (event) => {
+    event.preventDefault();
+    if (!selected?.id) return;
+    setRetryingResearch(true);
+    setResearchRetryError("");
+    try {
+      await retryAdaptiveSelectorResearch({
+        experimentId: selected.id,
+        adminKey: researchAdminKey.trim(),
+      });
+      setIsResearchRetryOpen(false);
+      setResearchAdminKey("");
+      await refresh();
+    } catch (err) {
+      setResearchRetryError(
+        translateDynamicText(language, err.message || "Unable to retry adaptive research."),
+      );
+    } finally {
+      setRetryingResearch(false);
+    }
+  };
+
   useLayoutEffect(() => {
     if (!isConfigurationOpen) return undefined;
 
@@ -2168,7 +2559,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className={`topbar-inner${runningHeaderSummary?.visible ? " has-running-summary" : ""}`}>
+        <div className={`topbar-inner${runningHeaderSummary?.visible ? " has-running-context" : ""}`}>
           <div className="brand-block">
             <img className="brand-mark" src="/app-icon.png" alt="" aria-hidden="true" />
             <div>
@@ -2194,6 +2585,8 @@ export default function App() {
         </div>
       </header>
 
+      <ExperimentCycleBar summary={runningHeaderSummary} t={t} />
+
       {error && <div className="alert" role="alert">{error}</div>}
 
       <main className="workspace">
@@ -2209,11 +2602,21 @@ export default function App() {
             <section className="welcome-card">
               <span>{t("Ready")}</span>
               <h2>{t("Start a paper-trading experiment")}</h2>
-              <p>{t("Open Setup, choose a market and start the simulation.")}</p>
+              <p>{t("Choose an asset and start the simulation.")}</p>
               <button type="button" className="primary-button welcome-action" onClick={openConfiguration}>{t("Open setup")}</button>
             </section>
           ) : (
             <>
+              <div className="strategies-section-heading">
+                <div>
+                  <small>{t("Strategies")}</small>
+                  <strong>{formatMarketPair(selected.market) || selected.market || "—"}</strong>
+                </div>
+                <span>
+                  {strategies.length} {t("strategies")} · {t("Candle")}: {runningHeaderSummary?.decision_timeframe_label || selected.execution_timeframe || "—"}
+                </span>
+              </div>
+
               <section ref={strategiesGridRef} className="strategies-grid" aria-label={t("All strategy results")}>
                 {orderedStrategies.map((strategy) => {
                   const isDragging = draggedStrategyCode === strategy.strategy_code;
@@ -2246,6 +2649,10 @@ export default function App() {
                       dragging={false}
                       onPointerDown={startStrategyDrag}
                       onMove={moveStrategyByOffset}
+                      onRetryHistory={openHistoryRetryDialog}
+                      retryingHistory={retryingHistory}
+                      onRetryResearch={openResearchRetryDialog}
+                      retryingResearch={retryingResearch}
                     />
                   );
                 })}
@@ -2289,6 +2696,28 @@ export default function App() {
         stopping={stopping}
         onClose={closeStopDialog}
         onConfirm={confirmStop}
+        t={t}
+      />
+
+      <HistoryRetryDialog
+        open={isHistoryRetryOpen}
+        adminKey={historyAdminKey}
+        setAdminKey={setHistoryAdminKey}
+        error={historyRetryError}
+        retrying={retryingHistory}
+        onClose={closeHistoryRetryDialog}
+        onConfirm={confirmHistoryRetry}
+        t={t}
+      />
+
+      <ResearchRetryDialog
+        open={isResearchRetryOpen}
+        adminKey={researchAdminKey}
+        setAdminKey={setResearchAdminKey}
+        error={researchRetryError}
+        retrying={retryingResearch}
+        onClose={closeResearchRetryDialog}
+        onConfirm={confirmResearchRetry}
         t={t}
       />
     </div>

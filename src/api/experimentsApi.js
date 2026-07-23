@@ -38,3 +38,23 @@ export function stopRunningExperiment({ adminKey, closeOpenPositions = true }) {
     body: JSON.stringify({ close_open_positions: closeOpenPositions }),
   });
 }
+
+export function retryAdaptiveSelectorHistory({ experimentId, adminKey }) {
+  return requestJson(
+    `/api/v1/experiments/${encodeURIComponent(experimentId)}/adaptive-selector/retry-history`,
+    {
+      method: "POST",
+      headers: { "X-Admin-Key": adminKey },
+    },
+  );
+}
+export function retryAdaptiveSelectorResearch({ experimentId, adminKey }) {
+  return requestJson(
+    `/api/v1/experiments/${encodeURIComponent(experimentId)}/adaptive-selector/retry-research`,
+    {
+      method: "POST",
+      headers: { "X-Admin-Key": adminKey },
+    },
+  );
+}
+
