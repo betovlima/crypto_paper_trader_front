@@ -7,9 +7,11 @@ declare module "react" {
   export const useCallback: any;
   export const useRef: any;
   export const useLayoutEffect: any;
+  export const useId: any;
   export const memo: any;
 }
 declare module "react-dom/client" { export const createRoot: any; }
+declare module "react-dom" { export const createPortal: any; }
 declare module "react/jsx-runtime" { export const jsx: any; export const jsxs: any; export const Fragment: any; }
 declare namespace JSX { interface IntrinsicElements { [elemName: string]: any; } }
 interface ImportMetaEnv { readonly VITE_API_URL?: string; readonly DEV: boolean; }

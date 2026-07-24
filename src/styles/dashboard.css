@@ -4483,3 +4483,145 @@ a:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+/* v0.18.33 — viewport-safe strategy help popovers */
+.strategy-help-popover-portal {
+  position: fixed;
+  inset: auto;
+  z-index: 5000;
+  width: min(340px, calc(100vw - 24px));
+  max-width: min(340px, calc(100vw - 24px));
+  max-height: min(420px, calc(100vh - 24px));
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  scrollbar-width: thin;
+  animation: strategyHelpPopoverEnter .14s ease-out both;
+}
+
+.strategy-help-popover-portal::before {
+  top: -5px;
+  bottom: auto;
+  left: var(--strategy-help-arrow-left, 24px);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.strategy-help-popover-portal.is-top::before {
+  top: auto;
+  bottom: -5px;
+  transform: translateX(-50%) rotate(225deg);
+}
+
+.strategy-help-popover-portal.is-pinned {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--strategy-accent) 18%, transparent),
+    0 22px 54px rgba(0, 0, 0, .56);
+}
+
+@keyframes strategyHelpPopoverEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.strategy-help-popover-portal.is-top {
+  animation-name: strategyHelpPopoverEnterTop;
+}
+
+@keyframes strategyHelpPopoverEnterTop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .strategy-help-popover-portal {
+    width: min(310px, calc(100vw - 20px));
+    max-width: min(310px, calc(100vw - 20px));
+    max-height: calc(100vh - 20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strategy-help-popover-portal {
+    animation-duration: .01ms;
+  }
+}
+
+/* v0.18.34 — anchored and interactive AI opportunity score hints */
+.ai-opportunity-score-tooltip.ai-opportunity-score-tooltip-portal {
+  position: fixed;
+  z-index: 1700;
+  width: min(560px, calc(100vw - 24px));
+  max-height: min(590px, calc(100vh - 24px));
+  left: auto;
+  bottom: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+  scrollbar-width: thin;
+  animation: aiOpportunityHintEnter .14s ease-out both;
+}
+
+.ai-opportunity-score-tooltip.ai-opportunity-score-tooltip-portal.is-top {
+  animation-name: aiOpportunityHintEnterTop;
+}
+
+.ai-opportunity-score-tooltip.ai-opportunity-score-tooltip-portal.is-pinned {
+  border-color: rgba(153, 164, 255, .82);
+  box-shadow:
+    0 0 0 1px rgba(129, 140, 248, .18),
+    0 24px 70px rgba(0, 0, 0, .66);
+}
+
+@keyframes aiOpportunityHintEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes aiOpportunityHintEnterTop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 620px) {
+  .ai-opportunity-score-tooltip.ai-opportunity-score-tooltip-portal {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    padding: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-opportunity-score-tooltip.ai-opportunity-score-tooltip-portal {
+    animation-duration: .01ms;
+  }
+}

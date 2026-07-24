@@ -1,3 +1,6 @@
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+
 import { useLiveNow } from "../../hooks/useLiveNow";
 import { translateDynamicText } from "../../i18n";
 import { AI_SCANNER_DELAY_THRESHOLD_MS, AI_SCANNER_PROCESSING_STATES, AI_SCANNER_STATUS_MESSAGES } from "../../config/dashboard";
@@ -75,22 +78,148 @@ function AIOpportunityScore({ opportunity, language, t }) {
   const confidencePoints = 45 * confidence;
   const probabilityPoints = 35 * upwardProbability;
   const expectedReturnPoints = 20 * expectedReturnComponent;
-  const tooltipId = `opportunity-score-${String(opportunity.market).replace(/[^a-z0-9]/gi, "-")}-${opportunity.rank}`;
+  const tooltipId = useId();
+  const containerRef = useRef(null);
+  const anchorRef = useRef(null);
+  const popoverRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [position, setPosition] = useState({
+    top: 0,
+    left: 0,
+    placement: "bottom",
+    arrowLeft: 24,
+  });
 
-  return (
-    <div className="ai-opportunity-score-wrap">
-      <strong className="ai-opportunity-score-value">
-        {formatNumber(opportunity.score, 1, language)}<small>/100</small>
-      </strong>
-      <button
-        type="button"
-        className="ai-opportunity-score-help"
-        aria-label={t("Explain opportunity score")}
-        aria-describedby={tooltipId}
+  const cancelClose = useCallback(() => {
+    if (!closeTimerRef.current) return;
+    window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }, []);
+
+  const closePopover = useCallback(() => {
+    cancelClose();
+    setPinned(false);
+    setOpen(false);
+  }, [cancelClose]);
+
+  const scheduleClose = useCallback(() => {
+    if (pinned) return;
+    cancelClose();
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+      closeTimerRef.current = null;
+    }, 220);
+  }, [cancelClose, pinned]);
+
+  const updatePosition = useCallback(() => {
+    const anchor = anchorRef.current;
+    const popover = popoverRef.current;
+    if (!anchor || !popover) return;
+
+    const viewportMargin = 12;
+    const gap = 11;
+    const anchorRect = anchor.getBoundingClientRect();
+    const popoverRect = popover.getBoundingClientRect();
+    const width = popoverRect.width;
+    const height = popoverRect.height;
+    const availableBelow = window.innerHeight - anchorRect.bottom - gap - viewportMargin;
+    const availableAbove = anchorRect.top - gap - viewportMargin;
+
+    let placement = "bottom";
+    let top = anchorRect.bottom + gap;
+
+    if (height > availableBelow && availableAbove > availableBelow) {
+      placement = "top";
+      top = anchorRect.top - gap - height;
+    }
+
+    top = Math.min(
+      Math.max(viewportMargin, top),
+      Math.max(viewportMargin, window.innerHeight - height - viewportMargin),
+    );
+
+    let left = anchorRect.left + (anchorRect.width / 2) - (width / 2);
+    left = Math.min(
+      Math.max(viewportMargin, left),
+      Math.max(viewportMargin, window.innerWidth - width - viewportMargin),
+    );
+
+    const arrowLeft = Math.min(
+      Math.max(18, anchorRect.left + (anchorRect.width / 2) - left),
+      Math.max(18, width - 18),
+    );
+
+    setPosition({ top, left, placement, arrowLeft });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+
+    const animationFrame = window.requestAnimationFrame(updatePosition);
+    const resizeObserver = new ResizeObserver(updatePosition);
+    if (popoverRef.current) resizeObserver.observe(popoverRef.current);
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") closePopover();
+    };
+
+    const handlePointerDown = (event) => {
+      if (!pinned) return;
+      if (containerRef.current?.contains(event.target)) return;
+      if (popoverRef.current?.contains(event.target)) return;
+      closePopover();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [closePopover, open, pinned]);
+
+  useEffect(() => () => cancelClose(), [cancelClose]);
+
+  const showPopover = () => {
+    cancelClose();
+    setOpen(true);
+  };
+
+  const popover = open && typeof document !== "undefined"
+    ? createPortal(
+      <div
+        ref={popoverRef}
+        id={tooltipId}
+        role="dialog"
+        aria-label={t("Opportunity quality")}
+        className={`ai-opportunity-score-tooltip ai-opportunity-score-tooltip-portal is-${position.placement}${pinned ? " is-pinned" : ""}`}
+        style={{
+          top: `${position.top}px`,
+          left: `${position.left}px`,
+          "--ai-score-arrow-left": `${position.arrowLeft}px`,
+        }}
+        onPointerEnter={cancelClose}
+        onPointerLeave={scheduleClose}
+        onFocusCapture={cancelClose}
+        onBlurCapture={scheduleClose}
       >
-        ?
-      </button>
-      <div id={tooltipId} role="tooltip" className="ai-opportunity-score-tooltip">
         <div className="ai-score-tooltip-heading">
           <div>
             <strong>{t("Opportunity quality")}</strong>
@@ -138,11 +267,46 @@ function AIOpportunityScore({ opportunity, language, t }) {
           </p>
           <small>{t("Negative expected returns contribute zero ranking points.")}</small>
         </details>
-      </div>
+      </div>,
+      document.body,
+    )
+    : null;
+
+  return (
+    <div
+      ref={containerRef}
+      className="ai-opportunity-score-wrap"
+      onPointerDown={(event) => event.stopPropagation()}
+      onPointerEnter={showPopover}
+      onPointerLeave={scheduleClose}
+      onFocusCapture={showPopover}
+      onBlurCapture={scheduleClose}
+    >
+      <strong className="ai-opportunity-score-value">
+        {formatNumber(opportunity.score, 1, language)}<small>/100</small>
+      </strong>
+      <button
+        ref={anchorRef}
+        type="button"
+        className="ai-opportunity-score-help"
+        aria-label={t("Explain opportunity score")}
+        aria-controls={open ? tooltipId : undefined}
+        aria-expanded={open}
+        onClick={() => {
+          cancelClose();
+          setPinned((current) => {
+            const next = !current;
+            setOpen(next);
+            return next;
+          });
+        }}
+      >
+        ?
+      </button>
+      {popover}
     </div>
   );
 }
-
 
 export function AIOpportunityScannerPanel({ status, opportunities, language, t }) {
   const statusKey = String(status?.status || (status?.running ? "STARTING" : "STOPPED"));

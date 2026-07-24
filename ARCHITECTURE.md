@@ -16,3 +16,7 @@ The frontend is organized by feature while preserving the existing API contracts
 - `src/styles/dashboard.css`: dashboard component and responsive styles.
 
 The refactor intentionally preserves CSS class names, endpoint paths, local-storage keys and translation keys.
+## Viewport-safe overlays
+
+Strategy help content is rendered with `createPortal` into `document.body`. Its position is calculated from the help button and clamped to the current viewport, preventing strategy-card stacking contexts, grid siblings, and container overflow rules from covering the popover.
+

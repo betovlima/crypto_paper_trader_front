@@ -1,4 +1,5 @@
-import { memo, useLayoutEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { PINNED_STRATEGY_CODE, STRATEGY_VISUALS } from "../../config/dashboard";
 import { decisionSignal, formatDateTime, formatNumber, formatPercent, formatPrice, formatSignedMoney, pnlTone, selectedStrategyLabel, strategyAutomationState, strategyName } from "../../shared/dashboardUtils";
 import { AdaptiveResearchPanel } from "../adaptive-research/AdaptiveResearchPanel";
@@ -90,18 +91,145 @@ function StrategyHelp({ strategyCode, t }) {
     summary: "Uses its rules to choose between BUY, HOLD and SELL.",
     example: "If the setup is incomplete, it stays on HOLD.",
   };
+  const anchorRef = useRef(null);
+  const popoverRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const tooltipId = useId();
+  const [open, setOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [position, setPosition] = useState({
+    top: 0,
+    left: 0,
+    placement: "bottom",
+    arrowLeft: 24,
+  });
 
-  return (
-    <span className="strategy-help" onPointerDown={(event) => event.stopPropagation()}>
-      <button
-        type="button"
-        className="strategy-help-button"
-        aria-label={t("How this strategy works")}
-        title={t("How this strategy works")}
+  const cancelClose = useCallback(() => {
+    if (!closeTimerRef.current) return;
+    window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }, []);
+
+  const closePopover = useCallback(() => {
+    cancelClose();
+    setPinned(false);
+    setOpen(false);
+  }, [cancelClose]);
+
+  const scheduleClose = useCallback(() => {
+    if (pinned) return;
+    cancelClose();
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+      closeTimerRef.current = null;
+    }, 140);
+  }, [cancelClose, pinned]);
+
+  const updatePosition = useCallback(() => {
+    const anchor = anchorRef.current;
+    const popover = popoverRef.current;
+    if (!anchor || !popover) return;
+
+    const viewportMargin = 12;
+    const gap = 10;
+    const anchorRect = anchor.getBoundingClientRect();
+    const popoverRect = popover.getBoundingClientRect();
+    const width = popoverRect.width;
+    const height = popoverRect.height;
+    const availableBelow = window.innerHeight - anchorRect.bottom - gap - viewportMargin;
+    const availableAbove = anchorRect.top - gap - viewportMargin;
+
+    let placement = "bottom";
+    let top = anchorRect.bottom + gap;
+
+    if (height > availableBelow && availableAbove > availableBelow) {
+      placement = "top";
+      top = anchorRect.top - gap - height;
+    }
+
+    top = Math.min(
+      Math.max(viewportMargin, top),
+      Math.max(viewportMargin, window.innerHeight - height - viewportMargin),
+    );
+
+    let left = anchorRect.left + (anchorRect.width / 2) - (width / 2);
+    left = Math.min(
+      Math.max(viewportMargin, left),
+      Math.max(viewportMargin, window.innerWidth - width - viewportMargin),
+    );
+
+    const arrowLeft = Math.min(
+      Math.max(18, anchorRect.left + (anchorRect.width / 2) - left),
+      Math.max(18, width - 18),
+    );
+
+    setPosition({ top, left, placement, arrowLeft });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+
+    const animationFrame = window.requestAnimationFrame(updatePosition);
+    const resizeObserver = new ResizeObserver(updatePosition);
+    if (popoverRef.current) resizeObserver.observe(popoverRef.current);
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") closePopover();
+    };
+
+    const handlePointerDown = (event) => {
+      if (!pinned) return;
+      if (anchorRef.current?.contains(event.target)) return;
+      if (popoverRef.current?.contains(event.target)) return;
+      closePopover();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [closePopover, open, pinned]);
+
+  useEffect(() => () => cancelClose(), [cancelClose]);
+
+  const showPopover = () => {
+    cancelClose();
+    setOpen(true);
+  };
+
+  const popover = open && typeof document !== "undefined"
+    ? createPortal(
+      <span
+        ref={popoverRef}
+        id={tooltipId}
+        role="tooltip"
+        className={`strategy-help-popover strategy-help-popover-portal is-${position.placement}${pinned ? " is-pinned" : ""}`}
+        style={{
+          top: `${position.top}px`,
+          left: `${position.left}px`,
+          "--strategy-help-arrow-left": `${position.arrowLeft}px`,
+          "--strategy-accent": details.accent || "#7182ff",
+        }}
+        onPointerEnter={cancelClose}
+        onPointerLeave={scheduleClose}
       >
-        ?
-      </button>
-      <span className="strategy-help-popover" role="tooltip">
         {details.attribution && (
           <>
             <strong>{t("Creator or origin")}</strong>
@@ -112,11 +240,42 @@ function StrategyHelp({ strategyCode, t }) {
         <span>{t(details.summary)}</span>
         <strong>{t("Simple example")}</strong>
         <span>{t(details.example)}</span>
-      </span>
+      </span>,
+      document.body,
+    )
+    : null;
+
+  return (
+    <span
+      ref={anchorRef}
+      className="strategy-help"
+      onPointerDown={(event) => event.stopPropagation()}
+      onPointerEnter={showPopover}
+      onPointerLeave={scheduleClose}
+      onFocusCapture={showPopover}
+      onBlurCapture={scheduleClose}
+    >
+      <button
+        type="button"
+        className="strategy-help-button"
+        aria-label={t("How this strategy works")}
+        aria-describedby={open ? tooltipId : undefined}
+        aria-expanded={open}
+        onClick={() => {
+          cancelClose();
+          setPinned((current) => {
+            const next = !current;
+            setOpen(next);
+            return next;
+          });
+        }}
+      >
+        ?
+      </button>
+      {popover}
     </span>
   );
 }
-
 
 function adaptivePatternConfirmation(strategy, decision, t) {
   const reason = String(decision?.reason || strategy?.last_decision_reason || "").toUpperCase();

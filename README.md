@@ -1,3 +1,27 @@
+# Crypto Paper Trader Front
+
+## front-v0.18.34
+
+- Fixes AI Opportunity Scanner score hints that were displaced from their help buttons.
+- Renders each score hint in a viewport-safe React Portal anchored to its button.
+- Keeps the hint open while the pointer moves from the button into the hint content.
+- Supports click-to-pin, outside-click close, Escape close, scrolling and viewport resizing.
+
+## front-v0.18.33
+
+- Fixes strategy help popovers being partially covered by neighboring cards.
+- Renders each strategy help popover in a document-level portal so card stacking contexts and grid boundaries cannot clip it.
+- Automatically places the popover above or below the help button and keeps it inside the browser viewport.
+- Removes the duplicate native browser tooltip.
+- Supports hover, keyboard focus, click-to-pin, outside-click close and Escape close.
+- Preserves the approved strategy-card layout and two-line Hint preview.
+
+## front-v0.18.32
+
+- Adds translated presentation metadata for the new `FIBONACCI_TREND_PULLBACK` strategy.
+- Updates the Larry Williams 9.1 trend-follower explanation to describe its Fibonacci 61.8% stop with ATR buffer.
+- Preserves the approved dashboard layout and all existing strategy cards.
+
 ## v0.18.31 — concise interface copy
 
 This release simplifies the wording used across the main dashboard.
