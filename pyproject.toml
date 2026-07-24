@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "crypto-paper-trader"
+version = "0.16.12"
+description = "A PAPER_ONLY crypto strategy research application with local adaptive strategy generation, walk-forward validation and an independent quantitative opportunity scanner."
+authors = ["Roberto"]
+readme = "README.md"
+packages = [{ include = "crypto_paper_trader_api", from = "src" }]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.14"
+fastapi = ">=0.115,<1.0"
+uvicorn = {version = ">=0.34,<1.0", extras = ["standard"]}
+httpx = ">=0.28,<1.0"
+pydantic = ">=2.10,<3.0"
+pydantic-settings = ">=2.7,<3.0"
+sqlalchemy = ">=2.0,<3.0"
+pandas = ">=2.2,<4.0"
+numpy = ">=2.0,<3.0"
+scikit-learn = ">=1.6,<2.0"
+xgboost = ">=2.1,<4.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.3,<9.0"
+pytest-asyncio = ">=0.25,<1.0"
+ruff = ">=0.9,<1.0"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

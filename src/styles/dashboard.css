@@ -3617,7 +3617,7 @@ a:focus-visible {
   color: #a9e7f2;
 }
 
-/* v0.18.24 — concise interface copy and compact experiment cycle */
+/* v0.18.25 — concise interface copy and compact experiment cycle */
 .topbar-inner.has-running-context {
   width: min(1760px, 100%);
   min-height: 76px;
@@ -3907,7 +3907,7 @@ a:focus-visible {
   }
 }
 
-/* v0.18.24 — adaptive analysis stays concise inside the strategy card */
+/* v0.18.25 — adaptive analysis stays concise inside the strategy card */
 .strategy-card.is-adaptive-selector {
   overflow: hidden;
 }
@@ -3972,7 +3972,7 @@ a:focus-visible {
   }
 }
 
-/* v0.18.24 — actionable adaptive entry only; diagnostics stay collapsed */
+/* v0.18.25 — actionable adaptive entry only; diagnostics stay collapsed */
 .adaptive-entry-opportunity {
   display: grid;
   gap: 12px;
@@ -4116,4 +4116,241 @@ a:focus-visible {
   .adaptive-technical-details-content {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+
+/* v0.18.26 — compact candle countdown, non-redundant heading and stable strategy hints */
+.strategies-section-heading {
+  justify-content: flex-start;
+}
+
+.strategies-section-heading > span {
+  display: none;
+}
+
+.strategy-hint-preview {
+  min-height: 50px;
+  margin: 0 13px 2px;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--strategy-accent) 20%, rgba(55, 77, 109, .62));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--strategy-accent) 5%, rgba(7, 16, 29, .58));
+}
+
+.strategy-hint-icon {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--strategy-accent) 44%, var(--border));
+  border-radius: 7px;
+  color: color-mix(in srgb, var(--strategy-accent) 76%, white);
+  background: color-mix(in srgb, var(--strategy-accent) 10%, rgba(7, 15, 28, .72));
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.strategy-hint-preview > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.strategy-hint-preview small {
+  color: color-mix(in srgb, var(--strategy-accent) 70%, #dbe7f5);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.strategy-hint-preview p {
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #aebed2;
+  font-size: var(--text-xs);
+  line-height: 1.35;
+}
+
+.strategy-help-popover {
+  width: min(276px, calc(100vw - 32px));
+  max-height: min(310px, calc(100vh - 110px));
+  padding: 11px 12px;
+  gap: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  line-height: 1.42;
+}
+
+.strategy-help-popover > span {
+  overflow-wrap: anywhere;
+}
+
+.strategy-card.is-adaptive-selector .adaptive-strip-facts {
+  grid-template-columns: 124px minmax(160px, .8fr) repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.adaptive-strip-fact.is-decision-countdown {
+  min-height: 124px;
+  padding: 7px;
+  display: grid;
+  place-items: center;
+  border-color: rgba(96, 165, 250, .34);
+  background: radial-gradient(circle at 50% 42%, rgba(79, 70, 229, .13), rgba(7, 16, 29, .58) 68%);
+}
+
+.decision-countdown-ring {
+  --decision-progress: 360deg;
+  width: 102px;
+  height: 102px;
+  padding: 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #60a5fa 0deg,
+    #818cf8 var(--decision-progress),
+    rgba(71, 85, 105, .28) var(--decision-progress),
+    rgba(71, 85, 105, .28) 360deg
+  );
+  box-shadow: 0 0 22px rgba(96, 165, 250, .13);
+}
+
+.decision-countdown-ring-inner {
+  width: 100%;
+  height: 100%;
+  padding: 10px 7px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  border: 1px solid rgba(96, 165, 250, .24);
+  border-radius: 50%;
+  background: #091528;
+  text-align: center;
+}
+
+.decision-countdown-ring small {
+  color: #9eb4cf;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.05;
+  text-transform: none;
+}
+
+.decision-countdown-ring strong {
+  color: #f5f7fb;
+  font-size: 18px;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.decision-countdown-ring span {
+  color: #91a7c4;
+  font-size: 8px;
+  line-height: 1.12;
+}
+
+@media (max-width: 1480px) {
+  .strategy-card.is-adaptive-selector .adaptive-strip-facts {
+    grid-template-columns: 124px repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .strategy-card.is-adaptive-selector .adaptive-strip-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .adaptive-strip-fact.is-decision-countdown {
+    min-height: 118px;
+  }
+}
+
+@media (max-width: 560px) {
+  .strategy-hint-preview {
+    margin-inline: 10px;
+  }
+
+  .strategy-card.is-adaptive-selector .adaptive-strip-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* v0.18.27 — dashboard data refresh countdown capped at 20 seconds */
+
+/* v0.18.29 — adaptive selector is an intelligence panel, not a trading account */
+.adaptive-selector-overview {
+  display: grid;
+  grid-template-columns: 1.35fr repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 13px 10px;
+}
+
+.adaptive-selector-overview-item {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid rgba(73, 104, 142, .48);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(12, 28, 50, .88), rgba(8, 20, 37, .9));
+}
+
+.adaptive-selector-overview-item small,
+.adaptive-selector-overview-item span {
+  display: block;
+  color: #91a7c4;
+}
+
+.adaptive-selector-overview-item small {
+  margin-bottom: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.adaptive-selector-overview-item strong {
+  display: block;
+  min-height: 1.4em;
+  color: #f3f7fd;
+  font-size: 17px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.adaptive-selector-overview-item span {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.adaptive-selector-overview-item.is-selected-strategy {
+  border-color: color-mix(in srgb, var(--strategy-accent) 48%, #35506f);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--strategy-accent) 10%, #0b1b31), #081426);
+}
+
+.adaptive-selector-overview-item.tone-positive strong { color: #47d7a0; }
+.adaptive-selector-overview-item.tone-negative strong { color: #fb7185; }
+.adaptive-selector-overview-item.tone-warning strong { color: #fbbf24; }
+
+@media (max-width: 1380px) {
+  .adaptive-selector-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .adaptive-selector-overview-item.is-selected-strategy { grid-column: span 2; }
+}
+
+@media (max-width: 760px) {
+  .adaptive-selector-overview { grid-template-columns: 1fr; margin-inline: 10px; }
+  .adaptive-selector-overview-item.is-selected-strategy { grid-column: auto; }
 }

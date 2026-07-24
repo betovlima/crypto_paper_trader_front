@@ -117,6 +117,73 @@ function StrategyHelp({ strategyCode, t }) {
   );
 }
 
+
+function adaptivePatternConfirmation(strategy, decision, t) {
+  const reason = String(decision?.reason || strategy?.last_decision_reason || "").toUpperCase();
+  if (reason.includes("PATTERN_CONFIRMATION=APPROVED")) return { label: t("APPROVED"), tone: "positive" };
+  if (reason.includes("PATTERN_CONFIRMATION=BLOCKED")) return { label: t("BLOCKED"), tone: "negative" };
+  if (reason.includes("PATTERN_CONFIRMATION=NOT_REQUIRED_FOR_EXIT")) return { label: t("NOT REQUIRED"), tone: "neutral" };
+  return { label: t("WAITING"), tone: "neutral" };
+}
+
+function adaptiveOpportunityStatus(strategy, decision, t) {
+  const signal = decisionSignal(decision);
+  const setupStatus = String(strategy?.setup_status || decision?.setup_status || "").toUpperCase();
+  if (signal === "BUY" || setupStatus === "TRIGGERED") return { label: t("ENTRY CONFIRMED"), tone: "positive" };
+  if (signal === "SELL") return { label: t("EXIT SIGNAL"), tone: "negative" };
+  if (["ARMED", "ENTRY_ARMED"].includes(setupStatus)) return { label: t("WAITING FOR CONFIRMATION"), tone: "warning" };
+  if (["ENTRY_WATCH", "WATCHING_ENTRY"].includes(setupStatus)) return { label: t("POSSIBLE ENTRY"), tone: "warning" };
+  return { label: t("Waiting for next signal"), tone: "neutral" };
+}
+
+function AdaptiveSelectorOverview({ strategy, decision, language, t }) {
+  const selectedName = strategy?.selector_active_strategy_name
+    || decision?.selector_active_strategy_name
+    || strategy?.selector_selected_strategy
+    || decision?.selector_selected_strategy
+    || t("No strategy selected");
+  const regime = strategy?.selector_market_regime
+    || decision?.selector_market_regime
+    || t("Not calculated");
+  const confirmation = adaptivePatternConfirmation(strategy, decision, t);
+  const opportunity = adaptiveOpportunityStatus(strategy, decision, t);
+  const confidence = decision?.ai_confidence
+    ?? strategy?.ai_confidence
+    ?? decision?.selector_confidence
+    ?? strategy?.selector_confidence
+    ?? null;
+
+  return (
+    <div className="adaptive-selector-overview" aria-label={t("Adaptive strategy summary")}>
+      <div className="adaptive-selector-overview-item is-selected-strategy">
+        <small>{t("Selected strategy")}</small>
+        <strong>{t(selectedName)}</strong>
+        <span>{t("Best validated strategy for this asset")}</span>
+      </div>
+      <div className="adaptive-selector-overview-item">
+        <small>{t("Current regime")}</small>
+        <strong>{t(regime)}</strong>
+        <span>{t("Detected from recent market history")}</span>
+      </div>
+      <div className={`adaptive-selector-overview-item tone-${confirmation.tone}`}>
+        <small>{t("Pattern confirmation")}</small>
+        <strong>{confirmation.label}</strong>
+        <span>{t("Local pattern model")}</span>
+      </div>
+      <div className="adaptive-selector-overview-item">
+        <small>{t("Confidence")}</small>
+        <strong>{confidence == null ? "—" : formatPercent(confidence, 1, language)}</strong>
+        <span>{t("Historical similarity confidence")}</span>
+      </div>
+      <div className={`adaptive-selector-overview-item tone-${opportunity.tone}`}>
+        <small>{t("Opportunity status")}</small>
+        <strong>{opportunity.label}</strong>
+        <span>{t("The engine waits for a valid signal")}</span>
+      </div>
+    </div>
+  );
+}
+
 function DragHandle({ strategyCode, dragging, onPointerDown, onMove, t }) {
   return (
     <button
@@ -226,6 +293,24 @@ export const StrategyCard = memo(function StrategyCard({
         )}
       </header>
 
+      {visual.cardDescription && strategy.strategy_code !== "ADAPTIVE_STRATEGY_SELECTOR" && (
+        <div className="strategy-hint-preview" title={t(visual.cardDescription)}>
+          <span className="strategy-hint-icon" aria-hidden="true">i</span>
+          <div>
+            <small>{t("Hint")}</small>
+            <p>{t(visual.cardDescription)}</p>
+          </div>
+        </div>
+      )}
+
+      {strategy.strategy_code === "ADAPTIVE_STRATEGY_SELECTOR" ? (
+        <AdaptiveSelectorOverview
+          strategy={strategy}
+          decision={decision}
+          language={language}
+          t={t}
+        />
+      ) : (
       <div className="strategy-metrics">
         <div className="strategy-metric metric-wide">
           <span>{t("Market price")}</span>
@@ -262,6 +347,7 @@ export const StrategyCard = memo(function StrategyCard({
           )}
         </div>
       </div>
+      )}
 
       <AdaptiveResearchPanel
         strategy={strategy}

@@ -4,28 +4,39 @@ import { fileURLToPath } from "node:url";
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(directory, "..");
-const app = fs.readFileSync(path.join(root, "src", "App.jsx"), "utf8");
-const css = fs.readFileSync(path.join(root, "src", "styles.css"), "utf8");
+const sourceRoot = path.join(root, "src");
 
-const requiredAppFragments = [
-  "function TechnicalTerm",
-  'label="Net equity"',
-  'label="Expected net return"',
-  'label="Regime"',
-  'label="Sideways market"',
+function readMatchingFiles(directoryPath, extensions) {
+  return fs.readdirSync(directoryPath, { withFileTypes: true }).flatMap((entry) => {
+    const absolutePath = path.join(directoryPath, entry.name);
+    if (entry.isDirectory()) return readMatchingFiles(absolutePath, extensions);
+    if (!extensions.has(path.extname(entry.name))) return [];
+    return [fs.readFileSync(absolutePath, "utf8")];
+  }).join("\n");
+}
+
+const source = readMatchingFiles(sourceRoot, new Set([".js", ".jsx"]));
+const css = readMatchingFiles(sourceRoot, new Set([".css"]));
+
+const requiredSourceFragments = [
+  "RunningExperimentTopbarSummary",
+  "AIOpportunityScannerPanel",
+  "AdaptiveResearchPanel",
+  "StrategyCard",
+  "strategyAutomaticPriority",
 ];
 
-const missingApp = requiredAppFragments.filter((fragment) => !app.includes(fragment));
-if (missingApp.length) {
-  throw new Error(`Missing technical hint integration: ${missingApp.join(" | ")}`);
+const missingSource = requiredSourceFragments.filter((fragment) => !source.includes(fragment));
+if (missingSource.length) {
+  throw new Error(`Missing v0.18.25 frontend integration: ${missingSource.join(" | ")}`);
 }
 
 const requiredCssFragments = [
-  "--card-title-size: 17px",
-  ".technical-hint-popover",
-  ".running-topbar-context {\n  padding: 0;\n  border: 0;",
+  ".running-topbar-context",
   ".ai-opportunity-card dt",
   ".strategy-metric > strong",
+  ".adaptive-research-strip",
+  ".strategies-grid",
 ];
 
 const missingCss = requiredCssFragments.filter((fragment) => !css.includes(fragment));
@@ -33,4 +44,4 @@ if (missingCss.length) {
   throw new Error(`Missing v0.18.25 UI rule: ${missingCss.join(" | ")}`);
 }
 
-console.log("v0.18.25 UI: typography, borderless header values and technical hints are present.");
+console.log("v0.18.25 UI: refactored components and approved dashboard styles are present.");

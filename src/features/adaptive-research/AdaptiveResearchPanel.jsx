@@ -1,5 +1,5 @@
 import { useLiveNow } from "../../hooks/useLiveNow";
-import { decisionSignal, formatDuration, formatMarketPair, formatNumber, formatPercent, formatPrice, parseApiDate, parseJsonObject } from "../../shared/dashboardUtils";
+import { decisionSignal, formatDuration, formatNumber, formatPercent, formatPrice, parseApiDate, parseJsonObject } from "../../shared/dashboardUtils";
 
 export function Countdown({ target, expiredLabel = null }) {
   const now = useLiveNow(Boolean(target));
@@ -12,6 +12,34 @@ export function Countdown({ target, expiredLabel = null }) {
         ? (remaining <= 0 && expiredLabel ? expiredLabel : formatDuration(remaining))
         : "—"}
     </span>
+  );
+}
+
+function AdaptiveResearchCountdownRing({ target, t }) {
+  const now = useLiveNow(Boolean(target));
+  const targetDate = parseApiDate(target);
+  const remaining = targetDate ? targetDate.getTime() - now : null;
+  const researchCycleMs = 12 * 60 * 60 * 1000;
+  const progress = remaining == null
+    ? 0
+    : Math.max(0, Math.min(1, remaining / researchCycleMs));
+  const degrees = Math.round(progress * 360);
+  const displayValue = targetDate
+    ? (remaining <= 0 ? t("Updating…") : formatDuration(remaining))
+    : "—";
+
+  return (
+    <div
+      className="decision-countdown-ring"
+      style={{ "--decision-progress": `${degrees}deg` }}
+      aria-label={`${t("Next adaptive research")}: ${displayValue}`}
+    >
+      <div className="decision-countdown-ring-inner">
+        <small>{t("Next adaptive research")}</small>
+        <strong>{displayValue}</strong>
+        <span>{targetDate ? t("Automatic research cycle") : t("Waiting for schedule")}</span>
+      </div>
+    </div>
   );
 }
 
@@ -32,6 +60,19 @@ export function AdaptiveResearchPanel({
   const value = (key) => strategy?.[key] ?? decision?.[key] ?? null;
   const researchStatus = value("selector_research_status") || "WAITING_FOR_VALID_STRATEGY";
   const researchDetails = parseJsonObject(value("selector_candidate_scores"));
+  const lastResearchCompletedAt = value("selector_last_completed_at")
+    || researchDetails.last_completed_at
+    || researchDetails.completed_at
+    || null;
+  const inferredNextResearchAt = (() => {
+    const completedAt = parseApiDate(lastResearchCompletedAt);
+    if (!completedAt) return null;
+    return new Date(completedAt.getTime() + 60 * 60 * 1000).toISOString();
+  })();
+  const nextResearchAt = value("selector_next_research_at")
+    || researchDetails.next_research_at
+    || researchDetails.context?.next_research_at
+    || inferredNextResearchAt;
   const history = parseJsonObject(researchDetails.history);
   const historySync = parseJsonObject(researchDetails.history_sync);
   const patternAnalysis = parseJsonObject(researchDetails.pattern_analysis);
@@ -80,14 +121,9 @@ export function AdaptiveResearchPanel({
     ?? historySync.stored_candles
     ?? patternAnalysis.history_candles_analyzed
     ?? null;
-  const market = researchDetails.market || patternAnalysis.market || experiment?.market || "—";
   const executionTimeframe = researchDetails.execution_timeframe
     || patternAnalysis.execution_timeframe
     || experiment?.execution_timeframe
-    || "—";
-  const trendTimeframe = researchDetails.trend_timeframe
-    || patternAnalysis.trend_timeframe
-    || experiment?.trend_timeframe
     || "—";
   const similarPatterns = patternAnalysis.similar_pattern_count ?? 0;
   const positiveRate = patternAnalysis.positive_after_cost_rate;
@@ -148,14 +184,8 @@ export function AdaptiveResearchPanel({
       )}
 
       <div className="adaptive-strip-facts">
-        <div className="adaptive-strip-fact">
-          <small>{t("Asset")}</small>
-          <strong>{formatMarketPair(market) || market}</strong>
-        </div>
-        <div className="adaptive-strip-fact">
-          <small>{t("Candles")}</small>
-          <strong>{executionTimeframe} · {trendTimeframe}</strong>
-          <span>{t("Decision · trend")}</span>
+        <div className="adaptive-strip-fact is-decision-countdown">
+          <AdaptiveResearchCountdownRing target={nextResearchAt} t={t} />
         </div>
         <div className="adaptive-strip-fact">
           <small>{t("History")}</small>

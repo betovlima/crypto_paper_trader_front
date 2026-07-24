@@ -829,9 +829,6 @@ export default function App() {
                   <small>{t("Strategies")}</small>
                   <strong>{formatMarketPair(selected.market) || selected.market || "—"}</strong>
                 </div>
-                <span>
-                  {strategies.length} {t("strategies")} · {t("Candle")}: {runningHeaderSummary?.decision_timeframe_label || selected.execution_timeframe || "—"}
-                </span>
               </div>
 
               <section ref={strategiesGridRef} className="strategies-grid" aria-label={t("All strategy results")}>
