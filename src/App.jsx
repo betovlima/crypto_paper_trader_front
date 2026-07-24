@@ -38,9 +38,16 @@ import { StrategyCard } from "./features/strategies/StrategyCard";
 import { AIOpportunityScannerPanel } from "./features/opportunities/AIOpportunityScannerPanel";
 import { SetupDialog, StopDialog, HistoryRetryDialog, ResearchRetryDialog } from "./features/experiments/ExperimentDialogs";
 import { LanguageSelector, RunningExperimentTopbarSummary, ExperimentCycleBar } from "./components/layout/DashboardHeader";
+import { PrimaryNavigation } from "./components/layout/PrimaryNavigation";
+import { MLBacktestPage } from "./features/ml-backtests/MLBacktestPage";
+
+function resolveApplicationPath() {
+  return window.location.pathname.startsWith("/backtests/ml") ? "/backtests/ml" : "/";
+}
 
 export default function App() {
   const [language, setLanguage] = useState(detectInitialLanguage);
+  const [currentPath, setCurrentPath] = useState(resolveApplicationPath);
   const [configuration, setConfiguration] = useState(null);
   const [experiments, setExperiments] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -94,8 +101,25 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
     document.documentElement.lang = INTL_LOCALES[language] || "en-US";
-    document.title = "Crypto Paper Trader";
-  }, [language]);
+    document.title = currentPath === "/backtests/ml"
+      ? "ML Backtest · Crypto Paper Trader"
+      : "Crypto Paper Trader";
+  }, [language, currentPath]);
+
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(resolveApplicationPath());
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigate = useCallback((path) => {
+    const normalized = path.startsWith("/backtests/ml") ? "/backtests/ml" : "/";
+    if (window.location.pathname !== normalized) window.history.pushState({}, "", normalized);
+    setCurrentPath(normalized);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const isMLBacktestPage = currentPath === "/backtests/ml";
 
   const refresh = useCallback(async ({ includeConfiguration = false } = {}) => {
     if (refreshInFlightRef.current) return;
@@ -802,11 +826,22 @@ export default function App() {
         </div>
       </header>
 
-      <ExperimentCycleBar summary={runningHeaderSummary} t={t} />
+      <PrimaryNavigation currentPath={currentPath} onNavigate={navigate} t={t} />
+
+      {!isMLBacktestPage && <ExperimentCycleBar summary={runningHeaderSummary} t={t} />}
 
       {error && <div className="alert" role="alert">{error}</div>}
 
       <main className="workspace">
+        {isMLBacktestPage ? (
+          <MLBacktestPage
+            language={language}
+            t={t}
+            liveExperiment={selected}
+            liveStrategies={strategies}
+            mainApiAvailable={Boolean(configuration)}
+          />
+        ) : (
         <section className="dashboard-column">
           <AIOpportunityScannerPanel
             status={aiScannerStatus}
@@ -881,6 +916,7 @@ export default function App() {
 
           {loading && <div className="loading-indicator">{t("Refreshing…")}</div>}
         </section>
+        )}
       </main>
 
       {isConfigurationOpen && (

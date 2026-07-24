@@ -14,5 +14,5 @@ declare module "react-dom/client" { export const createRoot: any; }
 declare module "react-dom" { export const createPortal: any; }
 declare module "react/jsx-runtime" { export const jsx: any; export const jsxs: any; export const Fragment: any; }
 declare namespace JSX { interface IntrinsicElements { [elemName: string]: any; } }
-interface ImportMetaEnv { readonly VITE_API_URL?: string; readonly DEV: boolean; }
+interface ImportMetaEnv { readonly VITE_API_URL?: string; readonly VITE_ML_API_URL?: string; readonly DEV: boolean; }
 interface ImportMeta { readonly env: ImportMetaEnv; }

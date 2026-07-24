@@ -1,58 +1,48 @@
 # Crypto Paper Trader Front
 
-## front-v0.18.34
+## front-v0.19.2
 
-- Fixes AI Opportunity Scanner score hints that were displaced from their help buttons.
-- Renders each score hint in a viewport-safe React Portal anchored to its button.
-- Keeps the hint open while the pointer moves from the button into the hint content.
-- Supports click-to-pin, outside-click close, Escape close, scrolling and viewport resizing.
+- Keeps the horizontal `Dashboard | ML Backtest` navigation without a sidebar.
+- Adds a **Parameters** action to `/backtests/ml`.
+- Loads form defaults, accepted timeframes, limits, costs, model settings, indicators, walk-forward rules and simulation rules from the ML API database.
+- Allows administrators to edit database parameters by category without changing `.env`, JavaScript or Python files.
+- Uses the database polling interval and recent-execution limit returned by the ML API.
+- Shows the database as the active parameter source.
+- Preserves an immutable database-parameter snapshot inside every backtest execution.
+- Includes Portuguese, English and Spanish copy for parameter labels and descriptions.
 
-## front-v0.18.33
+## front-v0.19.0
 
-- Fixes strategy help popovers being partially covered by neighboring cards.
-- Renders each strategy help popover in a document-level portal so card stacking contexts and grid boundaries cannot clip it.
-- Automatically places the popover above or below the help button and keeps it inside the browser viewport.
-- Removes the duplicate native browser tooltip.
-- Supports hover, keyboard focus, click-to-pin, outside-click close and Escape close.
-- Preserves the approved strategy-card layout and two-line Hint preview.
+- Adds the horizontal `Dashboard | ML Backtest` navigation without a sidebar.
+- Adds `/backtests/ml`, a full-width XGBoost walk-forward dashboard.
+- Consumes `VITE_API_URL` and `VITE_ML_API_URL` independently on the same page.
+- Starts long-period backtests manually through a modal and polls their background progress.
+- Shows capital evolution, risk metrics, model metrics, feature importance, operations, benchmarks and current live-API context.
+- Keeps all candle analysis inside the quantitative ML API; no LLM integration is required.
 
-## front-v0.18.32
+## Machine Learning backtests
 
-- Adds translated presentation metadata for the new `FIBONACCI_TREND_PULLBACK` strategy.
-- Updates the Larry Williams 9.1 trend-follower explanation to describe its Fibonacci 61.8% stop with ATR buffer.
-- Preserves the approved dashboard layout and all existing strategy cards.
+The frontend consumes two independent APIs:
 
-## v0.18.31 — concise interface copy
+- `VITE_API_URL`: existing paper-trading API.
+- `VITE_ML_API_URL`: XGBoost walk-forward backtest API.
 
-This release simplifies the wording used across the main dashboard.
+Open `/backtests/ml` or use the horizontal **ML Backtest** navigation item.
 
-Changes:
+The **Parameters** dialog reads and writes `/v1/ml-settings`. The new-execution form reads `/v1/ml-configuration`. No model, indicator, risk, fee, timeframe, history or simulation value is maintained inside the frontend.
 
-- Removed explanatory text that repeated the selected asset and experiment scope.
-- Reduced the experiment cycle card to labels, values and the shared countdown.
-- Shortened adaptive-strategy states, retries, errors and metric labels.
-- Simplified strategy help text and AI opportunity scanner messages.
-- Added Portuguese and Spanish translations for the revised copy.
-- Added `npm run copy:check` to prevent redundant conversational text from returning.
+The two `VITE_*` values are service addresses required by the browser to locate the independent APIs. They are not trading or Machine Learning parameters.
 
-The API remains on version `0.16.17`.
+## Local execution
 
+```bash
+npm install
+npm run dev
+```
 
-## v0.18.31
+`.env` example:
 
-- Adds a compact countdown ring for the next decision candle.
-- Keeps the adaptive strategy panel in its existing position.
-- Removes duplicated strategy count/timeframe text from the section heading.
-- Standardizes strategy hints to two lines with a compact tooltip.
-
-
-## v0.18.31
-
-The adaptive strategy spinner now represents the dashboard data refresh cycle. The dashboard refreshes at most every 20 seconds, while trading decisions remain tied to the configured decision candle.
-
-
-## v0.18.31
-
-- The dashboard continues refreshing silently every 20 seconds.
-- The circular countdown now represents only the next adaptive research cycle.
-- The countdown uses `selector_next_research_at` from the API.
+```env
+VITE_API_URL=http://127.0.0.1:8000
+VITE_ML_API_URL=http://127.0.0.1:8001
+```
