@@ -1,4 +1,4 @@
-## v0.18.30 — concise interface copy
+## v0.18.31 — concise interface copy
 
 This release simplifies the wording used across the main dashboard.
 
@@ -14,7 +14,7 @@ Changes:
 The API remains on version `0.16.17`.
 
 
-## v0.18.30
+## v0.18.31
 
 - Adds a compact countdown ring for the next decision candle.
 - Keeps the adaptive strategy panel in its existing position.
@@ -22,12 +22,12 @@ The API remains on version `0.16.17`.
 - Standardizes strategy hints to two lines with a compact tooltip.
 
 
-## v0.18.30
+## v0.18.31
 
 The adaptive strategy spinner now represents the dashboard data refresh cycle. The dashboard refreshes at most every 20 seconds, while trading decisions remain tied to the configured decision candle.
 
 
-## v0.18.30
+## v0.18.31
 
 - The dashboard continues refreshing silently every 20 seconds.
 - The circular countdown now represents only the next adaptive research cycle.

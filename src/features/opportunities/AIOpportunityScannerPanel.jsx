@@ -22,6 +22,51 @@ function isRankedOpportunity(opportunity) {
   );
 }
 
+
+function opportunityRegimeTone(regime) {
+  const normalized = String(regime || "").toUpperCase();
+  if (normalized.includes("DOWN") || normalized.includes("BEAR")) return "down";
+  if (normalized.includes("UP") || normalized.includes("BULL")) return "up";
+  if (normalized.includes("TRANSITION")) return "transition";
+  if (normalized.includes("SIDEWAYS") || normalized.includes("RANGE")) return "sideways";
+  return "neutral";
+}
+
+function OpportunityScanCountdownRing({ target, lastCompletedAt, processing, t }) {
+  const now = useLiveNow(Boolean(target) && !processing);
+  const targetDate = parseApiDate(target);
+  const completedDate = parseApiDate(lastCompletedAt);
+  const remaining = targetDate ? targetDate.getTime() - now : null;
+  const inferredCycleMs = targetDate && completedDate
+    ? Math.max(60_000, targetDate.getTime() - completedDate.getTime())
+    : 5 * 60 * 1000;
+  const progress = remaining == null
+    ? 0
+    : Math.max(0, Math.min(1, remaining / inferredCycleMs));
+  const degrees = Math.round(progress * 360);
+  const displayValue = processing
+    ? t("In progress")
+    : targetDate
+      ? formatDuration(remaining)
+      : "—";
+
+  return (
+    <span className="ai-next-scan-card">
+      <span
+        className="ai-next-scan-ring"
+        style={{ "--scan-progress": `${degrees}deg` }}
+        aria-label={`${t("Next scan")}: ${displayValue}`}
+      >
+        <strong>{displayValue}</strong>
+      </span>
+      <span className="ai-next-scan-copy">
+        <small>{t("Next scan")}</small>
+        <strong>{processing ? t("After current scan") : t("Automatic scan")}</strong>
+      </span>
+    </span>
+  );
+}
+
 function AIOpportunityScore({ opportunity, language, t }) {
   const confidence = Math.max(0, Math.min(Number(opportunity.confidence) || 0, 1));
   const upwardProbability = Math.max(0, Math.min(Number(opportunity.upward_probability) || 0, 1));
@@ -172,10 +217,12 @@ export function AIOpportunityScannerPanel({ status, opportunities, language, t }
         <span><small>{t("Analyzed")}</small><strong>{analyzedMarkets}</strong></span>
         <span><small>{t("In analysis")}</small><strong>{learningMarkets}</strong></span>
         <span><small>{t("Ranked")}</small><strong>{qualifiedMarkets}</strong></span>
-        <span className="ai-next-scan">
-          <small>{t("Next scan")}</small>
-          <strong>{processing ? t("After current scan") : <Countdown target={status?.next_scan_at} />}</strong>
-        </span>
+        <OpportunityScanCountdownRing
+          target={status?.next_scan_at}
+          lastCompletedAt={status?.last_scan_completed_at}
+          processing={processing}
+          t={t}
+        />
       </div>
 
       {showProgress && (
@@ -263,7 +310,7 @@ export function AIOpportunityScannerPanel({ status, opportunities, language, t }
               <div><dt>{t("Entry zone")}</dt><dd>{formatPrice(opportunity.entry_zone_low, language)} – {formatPrice(opportunity.entry_zone_high, language)}</dd></div>
               <div><dt>{t("Confidence")}</dt><dd>{formatPercent(opportunity.confidence, 1, language)}</dd></div>
               <div><dt>{t("Expected net return")}</dt><dd>{formatPercent(opportunity.expected_net_return, 2, language)}</dd></div>
-              <div><dt>{t("Regime")}</dt><dd>{t(opportunity.regime || "Unknown")}</dd></div>
+              <div><dt>{t("Regime")}</dt><dd className={`ai-opportunity-regime regime-${opportunityRegimeTone(opportunity.regime)}`}>{t(opportunity.regime || "Unknown")}</dd></div>
             </dl>
           </article>
         )) : showEmptyState ? (
