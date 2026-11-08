@@ -1,7 +1,7 @@
 export function PrimaryNavigation({ currentPath, onNavigate, t }) {
   const items = [
     { path: "/", label: t("Dashboard") },
-    { path: "/backtests/ml", label: t("ML Backtest"), badge: "XGBoost" },
+    { path: "/backtests/ml", label: t("ML Backtest"), badge: "LightGBM" },
     { path: "/backtests/btc", label: t("BTC Forecast") },
   ];
 
