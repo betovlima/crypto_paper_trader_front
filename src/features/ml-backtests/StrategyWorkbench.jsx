@@ -219,13 +219,6 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
     )));
   });
 
-  const cancelOptimization = () => action(async () => {
-    const updated = await cancelMLStrategyOptimization(chosen);
-    setDetail(updated);
-    setStrategies((previous) => previous.map((item) => (
-      item.id === updated.id ? { ...item, ...updated } : item
-    )));
-  });
 
 
 
@@ -326,6 +319,14 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             </div>
           )}
           {idleChampion && <p className="alert ml-alert" role="alert">{text.idleLegacy}</p>}
+          <div className="strategy-brief-results">
+            <div><small>Capital final na validação</small><strong>{fmt(metrics.capital_final)} USDT</strong></div>
+            <div><small>Drawdown máximo</small><strong>{metrics.max_drawdown == null ? "—" : fmt(metrics.max_drawdown * 100) + "%"}</strong></div>
+            <div><small>Operações completas</small><strong>{metrics.completed_cycles ?? "—"}</strong></div>
+            <div><small>Execução OOS</small><strong>{finalJob?.status || (detail.execution_job_id ? "QUEUED" : "—")}</strong></div>
+          </div>
+          <details className="strategy-technical-details">
+            <summary>Mostrar diagnósticos, hiperparâmetros e tentativas</summary>
           {best && <div className="strategy-champion">
             <h4>{text.selection}</h4>
             <div className="strategy-metrics">
@@ -384,6 +385,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               </table>
             </div>
           </details>}
+          </details>
         </>
       )}
     </section>
