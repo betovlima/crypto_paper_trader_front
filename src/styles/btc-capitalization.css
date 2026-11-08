@@ -1,0 +1,17 @@
+.btc-capitalization h4 { margin: 20px 0 8px; font-size: 1rem; }
+.btc-capital-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; margin: 16px 0 22px; }
+.btc-capital-form label { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; font-weight: 600; }
+.btc-capital-form input, .btc-capital-form select { width: 100%; min-width: 0; border: 1px solid var(--border-color, #637088); border-radius: 7px; background: var(--surface, transparent); color: inherit; padding: 9px; font: inherit; }
+.btc-capital-form button { min-height: 40px; }
+.btc-capital-chart svg { width: 100%; height: auto; min-height: 210px; }
+.btc-capital-grid { stroke: currentColor; opacity: .13; stroke-dasharray: 4 4; }
+.btc-capital-axis { fill: currentColor; opacity: .7; font-size: 14px; }
+.btc-capital-path { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.btc-capital-v1, .btc-capital-v2, .btc-capital-buy_and_hold { font-weight: 700; }
+.btc-capital-v1 { color: #e09a28; }
+.btc-capital-v2 { color: #0ea5e9; }
+.btc-capital-buy_and_hold { color: #aa70df; }
+.btc-capital-path.btc-capital-v1 { stroke: #e09a28; }
+.btc-capital-path.btc-capital-v2 { stroke: #0ea5e9; }
+.btc-capital-path.btc-capital-buy_and_hold { stroke: #aa70df; }
+.btc-capital-legend { display: flex; flex-wrap: wrap; gap: 18px; padding: 5px 0; }
