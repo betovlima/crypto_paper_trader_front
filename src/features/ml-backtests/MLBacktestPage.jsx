@@ -109,7 +109,11 @@ function NewBacktestDialog({ open, onClose, onSubmit, submitting, configuration,
 
   useEffect(() => {
     if (!open || !configuration?.defaults) return;
-    setForm({ ...configuration.defaults });
+    setForm({
+      ...configuration.defaults,
+      experiment_type: "BTC_DIRECTION_RETURN",
+      symbol: "BTCUSDT",
+    });
   }, [open, configuration]);
 
   useEffect(() => {
