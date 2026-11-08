@@ -83,9 +83,10 @@ function EquityChart({ rows, locale }) {
     </svg>
   </div>;
 }
-export function CapitalizationPanel({ jobId, language }) {
+export function CapitalizationPanel({ jobId, language, modelFamily }) {
   const locale = language === "es" ? "es-ES" : language === "en" ? "en-US" : "pt-BR";
   const t = TEXT[language] || TEXT.pt;
+  const candidate = modelFamily === "LightGBM" ? "LightGBM" : "V2";
   const [params, setParams] = useState(INITIAL);
   const [result, setResult] = useState(null);
   const [running, setRunning] = useState(false);
@@ -141,7 +142,7 @@ export function CapitalizationPanel({ jobId, language }) {
         </label>
       )}
       <button type="submit" className="primary-button" disabled={running}>
-        {running ? t.running : t.run}
+        {running ? t.running : t.run.replace("V2", candidate)}
       </button>
     </form>
     {error && <div className="alert" role="alert">{error}</div>}
@@ -157,7 +158,7 @@ export function CapitalizationPanel({ jobId, language }) {
             <th>{t.orders}</th><th>{t.cycles}</th></tr></thead>
           <tbody>{result.results.map((row) =>
             <tr key={row.code}>
-              <td><strong>{row.code === "BUY_AND_HOLD" ? "Buy and Hold" : row.code}</strong></td>
+              <td><strong>{row.code === "BUY_AND_HOLD" ? "Buy and Hold" : row.code === "V2" ? candidate : row.code}</strong></td>
               <td>{fmt(row.capital_final, locale)} USDT</td><td>{percent(row.total_return, locale)}</td>
               <td>{percent(row.cagr, locale)}</td><td>{percent(row.max_drawdown, locale)}</td>
               <td>{percent(row.exposure, locale)}</td><td>{row.switch_count}</td>
@@ -168,7 +169,7 @@ export function CapitalizationPanel({ jobId, language }) {
       </div>
       <h4>{t.curve}</h4>
       <div className="btc-capital-legend">
-        <span className="btc-capital-v1">V1</span><span className="btc-capital-v2">V2</span>
+        <span className="btc-capital-v1">V1</span><span className="btc-capital-v2">{candidate}</span>
         <span className="btc-capital-buy_and_hold">Buy and Hold</span>
       </div>
       <EquityChart rows={result.results} locale={locale} />
@@ -181,7 +182,7 @@ export function CapitalizationPanel({ jobId, language }) {
             .flatMap((r) => r.actions.slice(-15).map((action, i) => ({ ...action, code: r.code, rowid: i })))
             .sort((a, b) => a.timestamp.localeCompare(b.timestamp)).map((action) =>
               <tr key={action.code + "-" + action.rowid}>
-                <td>{action.code}</td><td>{action.timestamp}</td><td>{action.action}</td>
+                <td>{action.code === "V2" ? candidate : action.code}</td><td>{action.timestamp}</td><td>{action.action}</td>
                 <td>{fmt(action.price, locale)}</td><td>{action.reason}</td>
               </tr>
             )}</tbody>
