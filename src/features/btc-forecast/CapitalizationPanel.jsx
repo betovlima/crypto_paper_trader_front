@@ -5,7 +5,7 @@ import "../../styles/btc-capitalization.css";
 const TEXT = {
   pt: {
     title: "Simulação financeira BTC/CASH", caption: "Usa somente previsões OOS e candles arquivados. Ordens no próximo candle; nenhuma negociação real.",
-    run: "Simular V1 × V2 × Buy and Hold", running: "Calculando…", horizon: "Horizonte da previsão",
+    run: "Simular V1 × V2 × Buy and Hold", running: "Calculando…", horizon: "Analisar horizonte isolado (opcional)",
     capital: "Capital inicial (USDT)", fee: "Taxa por operação (%)", slippage: "Slippage (%)",
     edge: "Retorno adicional para entrada (%)", probability: "Probabilidade mínima de alta (%)",
     exit: "Retorno previsto para saída (%)", strategy: "Estratégia", final: "Capital final",
@@ -18,7 +18,7 @@ const TEXT = {
   },
   en: {
     title: "BTC/CASH financial simulation", caption: "Only archived OOS predictions and candles. Orders on the next candle; no real trading.",
-    run: "Simulate V1 × V2 × Buy and Hold", running: "Calculating…", horizon: "Prediction horizon",
+    run: "Simulate V1 × V2 × Buy and Hold", running: "Calculating…", horizon: "Analyze a single horizon (optional)",
     capital: "Initial capital (USDT)", fee: "Fee per side (%)", slippage: "Slippage (%)",
     edge: "Additional entry edge (%)", probability: "Minimum upside probability (%)",
     exit: "Predicted return for exit (%)", strategy: "Strategy", final: "Final capital",
@@ -31,7 +31,7 @@ const TEXT = {
   },
   es: {
     title: "Simulación financiera BTC/CASH", caption: "Solo predicciones OOS y velas archivadas. Órdenes en la siguiente vela; sin operaciones reales.",
-    run: "Simular V1 × V2 × Buy and Hold", running: "Calculando…", horizon: "Horizonte",
+    run: "Simular V1 × V2 × Buy and Hold", running: "Calculando…", horizon: "Analizar horizonte individual (opcional)",
     capital: "Capital inicial (USDT)", fee: "Comisión por operación (%)", slippage: "Deslizamiento (%)",
     edge: "Retorno adicional para entrada (%)", probability: "Probabilidad mínima de subida (%)",
     exit: "Retorno previsto para salir (%)", strategy: "Estrategia", final: "Capital final",
@@ -44,7 +44,7 @@ const TEXT = {
   },
 };
 const INITIAL = {
-  horizon_hours: 2, initial_capital: 10000, fee_rate: 0.10,
+  horizon_hours: 0, initial_capital: 10000, fee_rate: 0.10,
   slippage_rate: 0.05, entry_edge: 0, min_probability: 50, exit_return: 0,
 };
 function fmt(value, locale, digits = 2) {
@@ -130,11 +130,17 @@ export function CapitalizationPanel({ jobId, language, modelFamily }) {
     </header>
     <p className="btc-chart-note">{t.caption}</p>
     <form className="btc-capital-form" onSubmit={run}>
-      <label>{t.horizon}
-        <select value={params.horizon_hours} onChange={(e) => setField("horizon_hours", Number(e.target.value))}>
-          <option value={2}>2h</option><option value={6}>6h</option><option value={24}>24h</option>
-        </select>
-      </label>
+      <div className="btc-capital-horizons">
+        <strong>2h + 6h + 24h</strong>
+        <small>{language === "pt" ? "Sinal conjunto, consenso de 2 entre 3 previsões" : "Joint signal, agreement from 2 of 3 forecasts"}</small>
+        <details>
+          <summary>{t.horizon}</summary>
+          <select value={params.horizon_hours} onChange={(e) => setField("horizon_hours", Number(e.target.value))}>
+            <option value={0}>{language === "pt" ? "Conjunto (padrão)" : "Combined (default)"}</option>
+            <option value={2}>2h</option><option value={6}>6h</option><option value={24}>24h</option>
+          </select>
+        </details>
+      </div>
       {controls.map(([name, label, min, max, step]) =>
         <label key={name}>{label}
           <input type="number" required step={step} min={min} max={max}
@@ -147,7 +153,7 @@ export function CapitalizationPanel({ jobId, language, modelFamily }) {
     </form>
     {error && <div className="alert" role="alert">{error}</div>}
     {result?.status === "VERIFIED" && <>
-      <p className="btc-chart-note">{result.horizon_hours}h · {result.signal_count} OOS ·
+      <p className="btc-chart-note">{result.horizon_hours === 0 ? "2h + 6h + 24h (conjunto)" : `${result.horizon_hours}h`} · {result.signal_count} OOS ·
         {" "}{new Date(result.period_start).toLocaleDateString(locale)} → {new Date(result.period_end).toLocaleDateString(locale)}
         {" · "}{t.cost}: {percent(result.results[0].required_round_trip_return, locale)}
       </p>
@@ -188,7 +194,7 @@ export function CapitalizationPanel({ jobId, language, modelFamily }) {
             )}</tbody>
         </table>
       </div>
-      <p className="btc-chart-note">{t.note}</p>
+      <p className="btc-chart-note">{result.policy} · {result.note || t.note}</p>
     </>}
   </section>;
 }
