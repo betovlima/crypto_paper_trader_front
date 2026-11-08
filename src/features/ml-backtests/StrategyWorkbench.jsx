@@ -4,12 +4,13 @@ import {
   getMLBacktest, getMLStrategy, listMLStrategies, optimizeMLStrategy,
 } from "../../api/mlBacktestsApi";
 import "../../styles/ml-strategy-workspace.css";
+import { ML_API_URL } from "../../api/mlClient";
 
 const WORDS = {
   pt: {
     title: "Estratégias e otimização LightGBM",
     description: "Crie uma estratégia, otimize hiperparâmetros antes do primeiro teste OOS e execute a vencedora.",
-    name: "Nome da estratégia", source: "Auditoria histórica", horizon: "Horizonte",
+    name: "Nome da estratégia", source: "Auditoria histórica", horizon: "Horizontes utilizados",
     create: "Criar estratégia", chosen: "Estratégia selecionada", update: "Atualizar", cancel: "Cancelar otimização",
     quick: "Otimizar parâmetros", bayes: "CARO · Otimização bayesiana",
     quickHint: "8 tentativas, amostragem Latin Hypercube.",
@@ -27,7 +28,7 @@ const WORDS = {
   },
   en: {
     title: "LightGBM strategy research", description: "Create, tune on pre-OOS history, then execute the champion.",
-    name: "Strategy name", source: "Archived audit", horizon: "Horizon",
+    name: "Strategy name", source: "Archived audit", horizon: "Forecast horizons",
     create: "Create strategy", chosen: "Selected strategy", update: "Refresh", cancel: "Cancel optimization",
     quick: "Optimize parameters", bayes: "CARO · Bayesian optimization",
     quickHint: "8 Latin Hypercube trials.", bayesHint: "24 trials. Crypto-adapted CARO using probabilistic search and risk constraints.",
@@ -44,7 +45,7 @@ const WORDS = {
   },
   es: {
     title: "Estrategias y optimización LightGBM", description: "Cree y optimice antes de OOS y evalúe al ganador.",
-    name: "Nombre", source: "Auditoría", horizon: "Horizonte",
+    name: "Nombre", source: "Auditoría", horizon: "Horizontes utilizados",
     create: "Crear estrategia", chosen: "Estrategia seleccionada", update: "Actualizar", cancel: "Cancelar optimización",
     quick: "Optimizar parámetros", bayes: "CARO · Optimización bayesiana",
     quickHint: "8 intentos Latin Hypercube.", bayesHint: "24 intentos. CARO adaptado a BTC con búsqueda probabilística y límites de riesgo.",
@@ -72,8 +73,8 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
   const [chosen, setChosen] = useState("");
   const [detail, setDetail] = useState(null);
   const [source, setSource] = useState("");
-  const [name, setName] = useState("");
-  const [horizon, setHorizon] = useState(2);
+  const [name, setName] = useState("BTC/CASH LightGBM 2h+6h+24h");
+  const [apiCompatible, setApiCompatible] = useState(true);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [finalJob, setFinalJob] = useState(null);
@@ -90,8 +91,14 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
   useEffect(() => {
     let active = true;
     listMLStrategies().then((rows) => {
-      if (active) { setStrategies(rows); setChosen((previous) => previous || rows[0]?.id || ""); }
-    }).catch((err) => { if (active) setError(err.message); });
+      if (active) { setApiCompatible(true); setError(""); setStrategies(rows); setChosen((previous) => previous || rows[0]?.id || ""); }
+    }).catch((err) => {
+      if (!active) return;
+      if (err.status === 404 && err.path === "/v1/ml-strategies") {
+        setApiCompatible(false);
+        setError(`A ML API em ${ML_API_URL} respondeu 404 para /v1/ml-strategies. O Front está atualizado, mas a API em execução não possui essa rota. Atualize e reinicie a ML API da branch V4.`);
+      } else setError(err.message);
+    });
     return () => { active = false; };
   }, []);
 
@@ -124,9 +131,9 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
   const create = (event) => {
     event.preventDefault();
     action(async () => {
-      const row = await createMLStrategy({ name: name.trim(), source_job_id: source, horizon_hours: Number(horizon) });
+      const row = await createMLStrategy({ name: name.trim(), source_job_id: source });
       setStrategies(await listMLStrategies());
-      setChosen(row.id); setDetail(row); setName("");
+      setChosen(row.id); setDetail(row); setName("BTC/CASH LightGBM 2h+6h+24h");
     });
   };
 
@@ -181,12 +188,8 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             </option>)}
           </select>
         </label>
-        <label><span>{text.horizon}</span>
-          <select value={horizon} onChange={(event) => setHorizon(Number(event.target.value))}>
-            {[2, 6, 24].map((h) => <option key={h} value={h}>{h}h</option>)}
-          </select>
-        </label>
-        <button className="primary-button" type="submit" disabled={!source || !name.trim() || running}>{text.create}</button>
+        <div className="strategy-horizon-summary" role="note"><span>{text.horizon}</span><strong>2h + 6h + 24h</strong><small>1 estratégia · 3 horizontes · 1 otimização</small></div>
+        <button className="primary-button" type="submit" disabled={!apiCompatible || !source || !name.trim() || running}>{text.create}</button>
       </form>
       <p className="strategy-note">{text.noDownload}</p>
       {error && <p className="alert ml-alert" role="alert">{error}</p>}
