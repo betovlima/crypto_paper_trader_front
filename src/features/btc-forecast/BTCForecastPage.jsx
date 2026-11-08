@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
+  downloadMLBacktestAudit,
   getMLBacktest,
   getMLConfiguration,
   listMLBacktests,
@@ -119,6 +120,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
   const [strategy, setStrategy] = useState(MODEL);
   const [pollInterval, setPollInterval] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async (preferredId = "") => {
@@ -177,6 +179,28 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
     }
   };
 
+
+  const downloadAudit = async () => {
+    if (!selectedJob?.id || !selectedJob.audit_available || exporting) return;
+    setExporting(true);
+    try {
+      const archive = await downloadMLBacktestAudit(selectedJob.id);
+      const objectUrl = URL.createObjectURL(archive);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `btc-forecast-audit-${selectedJob.id}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setError("");
+    } catch (err) {
+      setError(err.message || t("Unable to export BTC backtest audit."));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const result = selectedJob?.result;
   const timeline = result?.rotation_timeline || [];
   const comparisons = result?.comparisons || [];
@@ -202,6 +226,15 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
           <p>{t("Historical strategy comparison and execution timeline.")}</p>
         </div>
         <div className="ml-page-actions">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={downloadAudit}
+            disabled={!selectedJob?.audit_available || selectedJob.status !== "COMPLETED" || exporting}
+            title={!selectedJob?.audit_available ? t("Run a new backtest to enable full audit export.") : t("Download complete OOS audit as ZIP")}
+          >
+            {exporting ? t("Exporting…") : t("Export audit ZIP")}
+          </button>
           <button type="button" className="secondary-button" onClick={() => refresh(selectedId)}>{t("Refresh")}</button>
           <button type="button" className="primary-button" onClick={onOpenBacktest}>{t("Open ML Backtest")}</button>
         </div>
@@ -222,6 +255,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
         <div className="btc-selection-notes">
           <strong>{t("Historical execution (out of sample)")}</strong>
           <small>{t("No new forecast models are active yet. LHS and CARO will be added in later stages.")}</small>
+          <small>{t("Full audit ZIP is available only for new executions using the updated ML API.")}</small>
         </div>
       </section>
 
