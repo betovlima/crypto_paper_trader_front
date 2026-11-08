@@ -13,17 +13,17 @@ const WORDS = {
     name: "Nome da estratégia", source: "Auditoria histórica", horizon: "Horizontes utilizados",
     create: "Criar estratégia", chosen: "Estratégia selecionada", update: "Atualizar", cancel: "Cancelar otimização",
     quick: "Otimizar parâmetros", bayes: "CARO · Otimização bayesiana",
-    quickHint: "8 tentativas, amostragem Latin Hypercube.",
-    bayesHint: "24 tentativas. Versão adaptada do CARO para BTC, com busca probabilística e restrições de risco.",
+    quickHint: "8 configurações, cada uma testada em 2h, 6h e 24h.",
+    bayesHint: "24 configurações × 3 horizontes. CARO adaptado ao BTC, com maior custo de CPU.",
     noSource: "Primeiro conclua uma execução BTC Direction & Return com auditoria.",
     noDownload: "Os candles são lidos da auditoria já armazenada na ML API, sem download adicional.",
     selection: "Melhor candidato na validação interna", score: "Score econômico", sharpe: "Sharpe", worst: "Pior período",
-    capital: "Capital final de validação", dd: "Drawdown", brier: "Brier",
+    capital: "Capital médio por horizonte (USDT)", dd: "Drawdown", brier: "Brier",
     confirm: "Executar 24 treinamentos na otimização bayesiana? O custo de CPU pode ser alto.",
     execute: "Executar LightGBM fora da amostra", results: "Ver resultados e gráficos",
     report: "Exportar relatório e auditoria ZIP", progress: "Progresso",
     trials: "Tentativas realizadas", all: "Todas as tentativas",
-    warning: "Os valores acima pertencem à calibração interna. O resultado final OOS só será conhecido após a execução.",
+    warning: "A média de capital resume três simulações independentes, não é uma carteira consolidada. Os dados usados para selecionar parâmetros são anteriores ao teste OOS.",
     error: "Erro", empty: "Nenhuma estratégia", status: "Situação",
   },
   en: {
@@ -31,16 +31,16 @@ const WORDS = {
     name: "Strategy name", source: "Archived audit", horizon: "Forecast horizons",
     create: "Create strategy", chosen: "Selected strategy", update: "Refresh", cancel: "Cancel optimization",
     quick: "Optimize parameters", bayes: "CARO · Bayesian optimization",
-    quickHint: "8 Latin Hypercube trials.", bayesHint: "24 trials. Crypto-adapted CARO using probabilistic search and risk constraints.",
+    quickHint: "8 settings, each tested across 2h, 6h and 24h.", bayesHint: "24 trials. Crypto-adapted CARO using probabilistic search and risk constraints.",
     noSource: "First complete an audited BTC Direction & Return execution.",
     noDownload: "Market candles come from the stored audit. No further exchange download.",
     selection: "Best internal-validation candidate", score: "Economic score", sharpe: "Sharpe", worst: "Worst validation period",
-    capital: "Validation ending capital", dd: "Drawdown", brier: "Brier",
+    capital: "Mean simulated capital per horizon", dd: "Drawdown", brier: "Brier",
     confirm: "Run 24 Bayesian LightGBM training trials? CPU consumption can be significant.",
     execute: "Evaluate LightGBM out of sample", results: "View results and charts",
     report: "Export report and OOS audit ZIP", progress: "Progress",
     trials: "Completed trials", all: "All trials",
-    warning: "Internal validation is not the final OOS result.",
+    warning: "Mean capital summarizes three independent horizon simulations, not one consolidated portfolio. Selection uses pre-OOS data only.",
     error: "Error", empty: "No strategies", status: "Status",
   },
   es: {
@@ -48,16 +48,16 @@ const WORDS = {
     name: "Nombre", source: "Auditoría", horizon: "Horizontes utilizados",
     create: "Crear estrategia", chosen: "Estrategia seleccionada", update: "Actualizar", cancel: "Cancelar optimización",
     quick: "Optimizar parámetros", bayes: "CARO · Optimización bayesiana",
-    quickHint: "8 intentos Latin Hypercube.", bayesHint: "24 intentos. CARO adaptado a BTC con búsqueda probabilística y límites de riesgo.",
+    quickHint: "8 configuraciones, evaluadas en 2h, 6h y 24h.", bayesHint: "24 intentos. CARO adaptado a BTC con búsqueda probabilística y límites de riesgo.",
     noSource: "Primero complete una ejecución auditada de BTC Direction & Return.",
     noDownload: "Los datos provienen de la auditoría almacenada.",
     selection: "Mejor candidato de validación", score: "Score económico", sharpe: "Sharpe", worst: "Peor período",
-    capital: "Capital de validación", dd: "Drawdown", brier: "Brier",
+    capital: "Capital promedio por horizonte", dd: "Drawdown", brier: "Brier",
     confirm: "¿Ejecutar 24 entrenamientos bayesianos de LightGBM?",
     execute: "Ejecutar LightGBM fuera de muestra", results: "Ver resultados",
     report: "Exportar informe y auditoría ZIP", progress: "Progreso",
     trials: "Intentos", all: "Todos los intentos",
-    warning: "La validación interna no es el resultado OOS final.",
+    warning: "El capital es un promedio de tres simulaciones independientes, no una cartera consolidada. El resultado OOS es independiente.",
     error: "Error", empty: "Sin estrategias", status: "Estado",
   },
 };
@@ -169,7 +169,18 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
       <header className="ml-panel-header">
         <div><span>STRATEGY RESEARCH</span><h3>{text.title}</h3><p>{text.description}</p></div>
         <button type="button" className="secondary-button" disabled={running}
-          onClick={() => action(async () => setStrategies(await listMLStrategies()))}>{text.update}</button>
+          onClick={() => action(async () => {
+            try {
+              const rows = await listMLStrategies();
+              setStrategies(rows); setApiCompatible(true);
+            } catch (err) {
+              if (err.status === 404 && err.path === "/v1/ml-strategies") {
+                setApiCompatible(false);
+                throw new Error("A ML API em " + ML_API_URL + " não possui /v1/ml-strategies. Atualize e reinicie a ML API V4.");
+              }
+              throw err;
+            }
+          })}>{text.update}</button>
       </header>
       <div className="strategy-workflow" aria-label="Workflow">
         <span>1. {text.source}</span><span>2. {text.quick}</span>
@@ -229,6 +240,21 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               <div><small>{text.sharpe}</small><strong>{fmt(metrics.sharpe)}</strong></div>
               <div><small>{text.worst}</small><strong>{metrics.worst_fold_return == null ? "—" : fmt(metrics.worst_fold_return * 100) + "%"}</strong></div>
             </div>
+            {metrics.per_horizon && Object.keys(metrics.per_horizon).length > 1 && (
+              <div className="ml-table-wrap">
+                <table className="ml-table">
+                  <thead><tr><th>{text.horizon}</th><th>{text.capital}</th><th>{text.dd}</th><th>{text.sharpe}</th><th>{text.brier}</th></tr></thead>
+                  <tbody>{Object.entries(metrics.per_horizon)
+                    .sort(([a], [b]) => Number(a) - Number(b))
+                    .map(([h, m]) => <tr key={h}>
+                      <td>{h}h</td><td>{fmt(m.capital_final)} USDT</td>
+                      <td>{fmt(m.max_drawdown * 100)}%</td>
+                      <td>{fmt(m.sharpe)}</td><td>{fmt(m.brier, 4)}</td>
+                    </tr>)}
+                  </tbody>
+                </table>
+              </div>
+            )}
             <p className="strategy-note">{text.warning}</p>
             <div className="strategy-parameters">
               {Object.entries(best.parameters || {}).map(([key, value]) =>
