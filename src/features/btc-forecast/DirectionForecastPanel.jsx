@@ -172,7 +172,7 @@ export function DirectionForecastPanel({ result, language, t }) {
       </section>
       {(chosen.folds || []).some((fold) => fold.model_diagnostics) && (
         <section className="ml-panel">
-          <header className="ml-panel-header"><div><span>{t("Model diagnosis")}</span><h3>{t("Actual XGBoost splits and prediction diversity")}</h3></div></header>
+          <header className="ml-panel-header"><div><span>{t("Model diagnosis")}</span><h3>{t(result?.execution?.model_family === "LightGBM" ? "Actual LightGBM splits and prediction diversity" : "Actual XGBoost splits and prediction diversity")}</h3></div></header>
           <div className="ml-table-wrap">
             <table className="ml-table">
               <thead><tr><th>Fold</th><th>{t("Regressor splits")}</th><th>{t("Return predictions distinct")}</th><th>{t("Regressor best iteration")}</th><th>{t("Raw Brier")}</th><th>{t("Calibrated Brier")}</th></tr></thead>
