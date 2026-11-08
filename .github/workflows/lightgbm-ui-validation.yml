@@ -6,6 +6,7 @@ on:
       - feature/lightgbm-ui-v3-20261108
       - feature/crypto-research-workspace-ui-v4-20261108
       - feature/btc-capital-rotation-ui-v5-20261108
+      - feature/one-click-btc-research-ui-v6-20261108
   workflow_dispatch:
 
 jobs:
