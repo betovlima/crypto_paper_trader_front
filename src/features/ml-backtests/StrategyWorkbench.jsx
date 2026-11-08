@@ -355,6 +355,17 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           </div>
           <details className="strategy-technical-details">
             <summary>Mostrar diagnósticos, hiperparâmetros e tentativas</summary>
+          {metrics.forecast_realization_diagnostics?.rows > 0 && (
+            <div className="strategy-entry-diagnostics">
+              <strong>Previsão comparada ao retorno efetivo de 6 horas (somente validação pré-OOS)</strong>
+              <span>Previsões avaliadas: {metrics.forecast_realization_diagnostics.rows}</span>
+              <span>Retorno previsto médio: {fmt(metrics.forecast_realization_diagnostics.mean_predicted_return * 100, 3)}%</span>
+              <span>Retorno realizado médio: {fmt(metrics.forecast_realization_diagnostics.mean_realized_return * 100, 3)}%</span>
+              <span>Erro médio absoluto: {fmt(metrics.forecast_realization_diagnostics.return_mae * 100, 3)}%</span>
+              <span>Correlação: {fmt(metrics.forecast_realization_diagnostics.return_correlation, 3)}</span>
+              <span>Retorno realizado nos sinais aptos: {metrics.forecast_realization_diagnostics.entry_eligible_mean_realized_return == null ? "—" : fmt(metrics.forecast_realization_diagnostics.entry_eligible_mean_realized_return * 100, 3) + "%"}</span>
+            </div>
+          )}
           {metrics.robustness && (
             <div className="strategy-entry-diagnostics">
               <strong>Qualidade da validação pré-OOS</strong>
