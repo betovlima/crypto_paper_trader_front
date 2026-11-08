@@ -23,6 +23,13 @@ assert.ok(page.includes('Number(result?.summary?.trade_count) === 0'), "BTC dash
 assert.ok(oldBacktestPage.includes('Number(result.summary.trade_count) === 0'), "Legacy ML dashboard must not claim prediction skill from CASH-only results");
 assert.ok(oldBacktestPage.includes("baseline_brier_score"), "ML dashboard must display training-only prediction baselines");
 assert.ok(page.includes("downloadMLBacktestAudit"), "UI must offer complete OOS audit download");
+const replayPanel = read("src/features/btc-forecast/ReplayComparisonPanel.jsx");
+assert.ok(page.includes("replayMLBacktest"), "BTC page must replay archived runs through ML API");
+assert.ok(page.includes("replayAndCompare"), "Replay action must be available in the Front");
+assert.ok(page.includes("replay_parent_job_id"), "Replay parent must remain visible");
+assert.ok(replayPanel.includes("fold_return_diversity"), "Original versus V2 fold diversity must be shown");
+assert.ok(replayPanel.includes("brier_skill_score"), "Comparison must display model skill");
+assert.ok(mlApi.includes("/replay"), "Replay endpoint must be integrated in the Front");
 assert.ok(page.includes("audit_available"), "Older executions must not offer incomplete exports");
 assert.ok(oldBacktestPage.includes("options.history_sources"), "History source choices must come from ML API");
 assert.ok(oldBacktestPage.includes('update("history_source"'), "Source selection must persist with job request");

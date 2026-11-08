@@ -11,6 +11,20 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "Replay and compare V1 × V2": "Reexecutar e comparar V1 × V2",
+  "Starting V1 versus V2 replay…": "Iniciando comparação V1 × V2…",
+  "Replay archived candles from this completed run and compare the original with V2. No ZIP path required.": "Reexecuta com os candles da auditoria armazenada e compara com a V2, sem informar arquivos.",
+  "Unable to replay this archived BTC forecast.": "Não foi possível reexecutar esta auditoria do BTC.",
+  "The selected execution has no stored audit in this ML API. Select another completed run with an audit.": "Esta execução não tem ZIP salvo nesta ML API. Selecione outra execução concluída com auditoria.",
+  "Comparison generated from saved execution": "Comparação da execução armazenada",
+  "Verified identical OOS comparison": "Comparação fora da amostra verificada",
+  "Original model versus V2": "Modelo original versus V2",
+  "The models were evaluated on identical archived candles, future labels and temporal folds. No exchange data was downloaded.": "Os modelos foram avaliados nos mesmos candles, rótulos futuros e folds da auditoria original. Nenhuma nova coleta foi realizada.",
+  "Predictions": "Previsões",
+  "Original": "Original",
+  "Change": "Variação",
+  "Distinct predicted returns by fold": "Retornos previstos distintos por fold",
+  "Diagnostic prediction comparison only. Financial BTC/CASH capitalization is not implemented for this model yet.": "Comparação apenas das previsões. A capitalização financeira BTC/CASH ainda não está implementada para este modelo.",
   "Temporal uncertainty": "Incerteza temporal",
   "95% block-bootstrap intervals": "Intervalos de 95% por reamostragem em blocos",
   "Metric": "Métrica",
@@ -494,6 +508,20 @@ const pt = {
 };
 
 const es = {
+  "Replay and compare V1 × V2": "Reejecutar y comparar V1 × V2",
+  "Starting V1 versus V2 replay…": "Iniciando comparación V1 × V2…",
+  "Replay archived candles from this completed run and compare the original with V2. No ZIP path required.": "Reejecuta con las velas de la auditoría almacenada y compara con V2, sin indicar archivos.",
+  "Unable to replay this archived BTC forecast.": "No se pudo reejecutar esta auditoría de BTC.",
+  "The selected execution has no stored audit in this ML API. Select another completed run with an audit.": "Esta ejecución no tiene ZIP guardado en esta API ML. Seleccione otra ejecución completada con auditoría.",
+  "Comparison generated from saved execution": "Comparación de la ejecución almacenada",
+  "Verified identical OOS comparison": "Comparación fuera de muestra verificada",
+  "Original model versus V2": "Modelo original frente a V2",
+  "The models were evaluated on identical archived candles, future labels and temporal folds. No exchange data was downloaded.": "Los modelos se evaluaron con las mismas velas, etiquetas futuras y folds de la auditoría original. No se descargaron nuevos datos.",
+  "Predictions": "Predicciones",
+  "Original": "Original",
+  "Change": "Variación",
+  "Distinct predicted returns by fold": "Retornos previstos distintos por fold",
+  "Diagnostic prediction comparison only. Financial BTC/CASH capitalization is not implemented for this model yet.": "Comparación solo de pronósticos. La capitalización financiera BTC/CASH aún no está implementada para este modelo.",
   "Temporal uncertainty": "Incertidumbre temporal",
   "95% block-bootstrap intervals": "Intervalos del 95% mediante remuestreo por bloques",
   "Metric": "Métrica",

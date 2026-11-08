@@ -99,3 +99,8 @@
 .btc-direct-results .btc-direct-horizons { margin: 12px 0; }
 .btc-direct-results .ml-table-wrap { overflow-x: auto; margin-top: 12px; }
 .btc-direct-results .btc-chart-note { margin-top: 10px; line-height: 1.5; }
+
+.btc-replay-comparison { display: grid; gap: 12px; }
+.btc-replay-comparison-horizon { padding: 12px 0; border-top: 1px solid var(--border); }
+.btc-replay-comparison-horizon h4 { margin: 12px 0 8px; font-size: var(--text-sm); }
+.btc-replay-comparison .ml-table-wrap { overflow-x: auto; }
