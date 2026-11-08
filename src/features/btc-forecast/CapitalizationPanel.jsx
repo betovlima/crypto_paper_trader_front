@@ -83,10 +83,10 @@ function EquityChart({ rows, locale }) {
     </svg>
   </div>;
 }
-export function CapitalizationPanel({ jobId, language, modelFamily }) {
+export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPolicy = false }) {
   const locale = language === "es" ? "es-ES" : language === "en" ? "en-US" : "pt-BR";
   const t = TEXT[language] || TEXT.pt;
-  const candidate = modelFamily === "LightGBM" ? "LightGBM" : "V2";
+  const candidate = optimizedPolicy ? "BTC/CASH LightGBM" : modelFamily === "LightGBM" ? "LightGBM" : "V2";
   const [params, setParams] = useState(INITIAL);
   const [result, setResult] = useState(null);
   const [running, setRunning] = useState(false);
@@ -116,6 +116,25 @@ export function CapitalizationPanel({ jobId, language, modelFamily }) {
       setRunning(false);
     }
   };
+  useEffect(() => {
+    if (!optimizedPolicy || !jobId) return undefined;
+    let active = true;
+    setRunning(true);
+    setError("");
+    capitalizeBTCForecast(jobId, {
+      horizon_hours: 0, initial_capital: 10000,
+      fee_rate: .001, slippage_rate: .0005, entry_edge: 0,
+      min_probability: .5, exit_return: 0,
+    }).then((response) => {
+      if (active) setResult(response);
+    }).catch((err) => {
+      if (active) setError(err.message || "Falha ao calcular o capital OOS");
+    }).finally(() => {
+      if (active) setRunning(false);
+    });
+    return () => { active = false; };
+  }, [jobId, optimizedPolicy]);
+
   const controls = [
     ["initial_capital", t.capital, 100, 1000000000, 100],
     ["fee_rate", t.fee, 0, 5, 0.01],
@@ -132,27 +151,28 @@ export function CapitalizationPanel({ jobId, language, modelFamily }) {
     <form className="btc-capital-form" onSubmit={run}>
       <div className="btc-capital-horizons">
         <strong>2h + 6h + 24h</strong>
-        <small>{language === "pt" ? "Sinal conjunto, consenso de 2 entre 3 previsões" : "Joint signal, agreement from 2 of 3 forecasts"}</small>
-        <details>
+        <small>{optimizedPolicy ? "Critérios de entrada, venda, stops e pesos definidos pela otimização antes do OOS." : (language === "pt" ? "Sinal conjunto, consenso de 2 entre 3 previsões" : "Joint signal, agreement from 2 of 3 forecasts")}</small>
+        {!optimizedPolicy && <details>
           <summary>{t.horizon}</summary>
           <select value={params.horizon_hours} onChange={(e) => setField("horizon_hours", Number(e.target.value))}>
             <option value={0}>{language === "pt" ? "Conjunto (padrão)" : "Combined (default)"}</option>
             <option value={2}>2h</option><option value={6}>6h</option><option value={24}>24h</option>
           </select>
-        </details>
+        </details>}
       </div>
-      {controls.map(([name, label, min, max, step]) =>
+      {(optimizedPolicy ? controls.filter(([name]) => !["entry_edge", "min_probability", "exit_return"].includes(name)) : controls).map(([name, label, min, max, step]) =>
         <label key={name}>{label}
           <input type="number" required step={step} min={min} max={max}
             value={params[name]} onChange={(e) => setField(name, e.target.value)} />
         </label>
       )}
       <button type="submit" className="primary-button" disabled={running}>
-        {running ? t.running : t.run.replace("V2", candidate)}
+        {running ? t.running : optimizedPolicy ? "Recalcular patrimônio BTC/CASH" : t.run.replace("V2", candidate)}
       </button>
     </form>
     {error && <div className="alert" role="alert">{error}</div>}
     {result?.status === "VERIFIED" && <>
+      {result.optimized_policy_applied && <p className="btc-chart-note"><strong>Estratégia otimizada:</strong> entradas, saídas, stops, trailing, realização de lucros e reentrada definidos durante a otimização. Nenhum ajuste no período OOS.</p>}
       <p className="btc-chart-note">{result.horizon_hours === 0 ? "2h + 6h + 24h (conjunto)" : `${result.horizon_hours}h`} · {result.signal_count} OOS ·
         {" "}{new Date(result.period_start).toLocaleDateString(locale)} → {new Date(result.period_end).toLocaleDateString(locale)}
         {" · "}{t.cost}: {percent(result.results[0].required_round_trip_return, locale)}
@@ -164,7 +184,7 @@ export function CapitalizationPanel({ jobId, language, modelFamily }) {
             <th>{t.orders}</th><th>{t.cycles}</th></tr></thead>
           <tbody>{result.results.map((row) =>
             <tr key={row.code}>
-              <td><strong>{row.code === "BUY_AND_HOLD" ? "Buy and Hold" : row.code === "V2" ? candidate : row.code}</strong></td>
+              <td><strong>{row.code === "BUY_AND_HOLD" ? "Buy and Hold" : row.code === "BTC_CASH_ROTATION" ? "BTC/CASH LightGBM" : row.code === "V2" ? candidate : row.code}</strong></td>
               <td>{fmt(row.capital_final, locale)} USDT</td><td>{percent(row.total_return, locale)}</td>
               <td>{percent(row.cagr, locale)}</td><td>{percent(row.max_drawdown, locale)}</td>
               <td>{percent(row.exposure, locale)}</td><td>{row.switch_count}</td>
@@ -175,7 +195,9 @@ export function CapitalizationPanel({ jobId, language, modelFamily }) {
       </div>
       <h4>{t.curve}</h4>
       <div className="btc-capital-legend">
-        <span className="btc-capital-v1">V1</span><span className="btc-capital-v2">{candidate}</span>
+        {result.results.some((row) => row.code === "V1") && <span className="btc-capital-v1">V1</span>}
+        {result.results.some((row) => row.code === "BTC_CASH_ROTATION") && <span className="btc-capital-btc_cash_rotation">BTC/CASH LightGBM</span>}
+        {result.results.some((row) => row.code === "V2") && <span className="btc-capital-v2">{candidate}</span>}
         <span className="btc-capital-buy_and_hold">Buy and Hold</span>
       </div>
       <EquityChart rows={result.results} locale={locale} />
@@ -188,13 +210,21 @@ export function CapitalizationPanel({ jobId, language, modelFamily }) {
             .flatMap((r) => r.actions.slice(-15).map((action, i) => ({ ...action, code: r.code, rowid: i })))
             .sort((a, b) => a.timestamp.localeCompare(b.timestamp)).map((action) =>
               <tr key={action.code + "-" + action.rowid}>
-                <td>{action.code === "V2" ? candidate : action.code}</td><td>{action.timestamp}</td><td>{action.action}</td>
+                <td>{action.code === "BTC_CASH_ROTATION" ? "BTC/CASH LightGBM" : action.code === "V2" ? candidate : action.code}</td><td>{action.timestamp}</td><td>{action.action}</td>
                 <td>{fmt(action.price, locale)}</td><td>{action.reason}</td>
               </tr>
             )}</tbody>
         </table>
       </div>
-      <p className="btc-chart-note">{result.policy} · {result.note || t.note}</p>
+      {result.optimized_policy_applied && result.optimized_policy && (
+        <details className="btc-capital-policy">
+          <summary>Parâmetros vencedores da política BTC/CASH</summary>
+          <div>{Object.entries(result.optimized_policy)
+            .filter(([name]) => name !== "policy.enabled")
+            .map(([name, value]) => <span key={name}><code>{name}</code>: {value}</span>)}</div>
+        </details>
+      )}
+      <p className="btc-chart-note">{result.portfolio_rule || result.policy} · {result.note || t.note}</p>
     </>}
   </section>;
 }
