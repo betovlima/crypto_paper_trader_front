@@ -1,4 +1,4 @@
-import { mlRequestJson } from "./mlClient";
+import { mlRequestBlob, mlRequestJson } from "./mlClient";
 
 export function getMLApiHealth() {
   return mlRequestJson("/health");
@@ -39,4 +39,8 @@ export function cancelMLBacktest(backtestId) {
   return mlRequestJson(`/v1/ml-backtests/${encodeURIComponent(backtestId)}`, {
     method: "DELETE",
   });
+}
+
+export function downloadMLBacktestAudit(backtestId) {
+  return mlRequestBlob(`/v1/ml-backtests/${encodeURIComponent(backtestId)}/audit.zip`);
 }

@@ -66,3 +66,27 @@ export async function mlRequestJson(path, options = {}) {
   if (response.status === 204) return null;
   return response.json();
 }
+
+export async function mlRequestBlob(path) {
+  let response;
+  try {
+    response = await fetch(buildUrl(path), {
+      headers: { Accept: "application/zip" },
+    });
+  } catch (cause) {
+    const error = new Error("Unable to connect to the Machine Learning API.");
+    error.cause = cause;
+    throw error;
+  }
+  if (!response.ok) {
+    const fallback = `HTTP ${response.status}`;
+    let message = fallback;
+    try {
+      message = errorMessage(await response.json(), fallback);
+    } catch {
+      // Preserve the HTTP fallback for non-JSON errors.
+    }
+    throw Object.assign(new Error(message), { status: response.status, path });
+  }
+  return response.blob();
+}
