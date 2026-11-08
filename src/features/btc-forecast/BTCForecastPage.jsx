@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DirectionForecastPanel } from "./DirectionForecastPanel";
 import { ReplayComparisonPanel } from "./ReplayComparisonPanel";
+import { CapitalizationPanel } from "./CapitalizationPanel";
 
 import {
   downloadMLBacktestAudit,
@@ -336,6 +337,10 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
         <>
           <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
           <ReplayComparisonPanel comparison={result.replay_comparison} language={language} t={t} />
+          {selectedJob.status === "COMPLETED" && selectedJob.replay_parent_job_id
+            && result?.replay_comparison?.status === "VERIFIED" && (
+              <CapitalizationPanel key={selectedJob.id} jobId={selectedJob.id} language={language} />
+            )}
         </>
       )}
 
