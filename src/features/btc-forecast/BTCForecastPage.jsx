@@ -336,7 +336,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
 
       {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN" && selectedJob.status === "COMPLETED" && (
         selectedJob.replay_parent_job_id && result?.replay_comparison?.status === "VERIFIED"
-          ? <CapitalizationPanel key={selectedJob.id} jobId={selectedJob.id} language={language} />
+          ? <CapitalizationPanel key={selectedJob.id} jobId={selectedJob.id} language={language} modelFamily={result?.execution?.model_family} />
           : <section className="ml-panel btc-capitalization-gate">
               <header className="ml-panel-header">
                 <div>
@@ -363,7 +363,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
       {result?.experiment_type === "BTC_DIRECTION_RETURN" && (
         <>
           <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
-          <ReplayComparisonPanel comparison={result.replay_comparison} language={language} t={t} />
+          <ReplayComparisonPanel comparison={result.replay_comparison} language={language} t={t} modelFamily={result?.execution?.model_family} />
 
         </>
       )}
