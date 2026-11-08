@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DirectionForecastPanel } from "../btc-forecast/DirectionForecastPanel";
+import { BTCForecastPage } from "../btc-forecast/BTCForecastPage";
+import { StrategyWorkbench } from "./StrategyWorkbench";
 
 import {
   cancelMLBacktest,
@@ -575,9 +576,9 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
     <section className="ml-page">
       <header className="ml-page-heading">
         <div>
-          <span>{t("LightGBM · Walk-forward · Separate API")}</span>
-          <h2>{t("Backtest with Machine Learning")}</h2>
-          <p>{t("Long-period entry and exit research without changing the live paper-trading API.")}</p>
+          <span>LightGBM · Strategy Research · Walk-forward</span>
+          <h2>Laboratório ML · Estratégias BTC/CASH</h2>
+          <p>Criação de estratégias, otimização de hiperparâmetros, execução OOS e relatórios em um único lugar.</p>
         </div>
         <div className="ml-page-actions">
           <button type="button" className="secondary-button" onClick={() => setParametersOpen(true)} disabled={!mlParameters.length}>{t("Parameters")}</button>
@@ -607,6 +608,8 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
           <strong>{t("Manual · No LLM")}</strong>
         </article>
       </section>
+
+      <StrategyWorkbench jobs={jobs} selectedJob={selectedJob} language={language} onOpenExecution={selectJob} />
 
       {result?.experiment_type !== "BTC_DIRECTION_RETURN" && <nav className="ml-section-tabs" aria-label={t("Backtest sections")}>
         {tabs.map(([code, label]) => (
@@ -646,7 +649,8 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
           )}
 
           {result?.experiment_type === "BTC_DIRECTION_RETURN" ? (
-            <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
+            <BTCForecastPage key={selectedJob.id} embedded embeddedJob={selectedJob} language={language} t={t}
+              onOpenBacktest={() => setDialogOpen(true)} onJobCreated={selectJob} />
           ) : result && (
             <>
               {result.execution?.history_coverage?.coverage_status === "PARTIAL" && (
