@@ -16,7 +16,7 @@ const WORDS = {
     bayesHint: "24 tentativas. Versão adaptada do CARO para BTC, com busca probabilística e restrições de risco.",
     noSource: "Primeiro conclua uma execução BTC Direction & Return com auditoria.",
     noDownload: "Os candles são lidos da auditoria já armazenada na ML API, sem download adicional.",
-    selection: "Melhor candidato na validação interna", score: "Score econômico",
+    selection: "Melhor candidato na validação interna", score: "Score econômico", sharpe: "Sharpe", worst: "Pior período",
     capital: "Capital final de validação", dd: "Drawdown", brier: "Brier",
     confirm: "Executar 24 treinamentos na otimização bayesiana? O custo de CPU pode ser alto.",
     execute: "Executar LightGBM fora da amostra", results: "Ver resultados e gráficos",
@@ -33,7 +33,7 @@ const WORDS = {
     quickHint: "8 Latin Hypercube trials.", bayesHint: "24 trials. Crypto-adapted CARO using probabilistic search and risk constraints.",
     noSource: "First complete an audited BTC Direction & Return execution.",
     noDownload: "Market candles come from the stored audit. No further exchange download.",
-    selection: "Best internal-validation candidate", score: "Economic score",
+    selection: "Best internal-validation candidate", score: "Economic score", sharpe: "Sharpe", worst: "Worst validation period",
     capital: "Validation ending capital", dd: "Drawdown", brier: "Brier",
     confirm: "Run 24 Bayesian LightGBM training trials? CPU consumption can be significant.",
     execute: "Evaluate LightGBM out of sample", results: "View results and charts",
@@ -50,7 +50,7 @@ const WORDS = {
     quickHint: "8 intentos Latin Hypercube.", bayesHint: "24 intentos. CARO adaptado a BTC con búsqueda probabilística y límites de riesgo.",
     noSource: "Primero complete una ejecución auditada de BTC Direction & Return.",
     noDownload: "Los datos provienen de la auditoría almacenada.",
-    selection: "Mejor candidato de validación", score: "Score económico",
+    selection: "Mejor candidato de validación", score: "Score económico", sharpe: "Sharpe", worst: "Peor período",
     capital: "Capital de validación", dd: "Drawdown", brier: "Brier",
     confirm: "¿Ejecutar 24 entrenamientos bayesianos de LightGBM?",
     execute: "Ejecutar LightGBM fuera de muestra", results: "Ver resultados",
@@ -223,6 +223,8 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               <div><small>{text.capital}</small><strong>{fmt(metrics.capital_final)} USDT</strong></div>
               <div><small>{text.dd}</small><strong>{fmt(Number(metrics.max_drawdown) * 100)}%</strong></div>
               <div><small>{text.brier}</small><strong>{fmt(metrics.brier, 4)}</strong></div>
+              <div><small>{text.sharpe}</small><strong>{fmt(metrics.sharpe)}</strong></div>
+              <div><small>{text.worst}</small><strong>{metrics.worst_fold_return == null ? "—" : fmt(metrics.worst_fold_return * 100) + "%"}</strong></div>
             </div>
             <p className="strategy-note">{text.warning}</p>
             <div className="strategy-parameters">
