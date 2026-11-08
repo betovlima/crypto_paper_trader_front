@@ -103,4 +103,7 @@ assert.ok(strategy.includes('launchResearchCampaign('), "Completed strategy must
 assert.ok(strategy.includes("needsFreshCampaign(detail)"), "Research controls must expose the new-campaign state");
 assert.ok(strategy.includes("optimizationUnavailable"), "Only running operations should block tuning buttons");
 assert.ok(!strategy.includes("!!detail.execution_job_id}>{text.quick}"), "Final OOS status must not permanently disable reoptimization");
+assert.ok(strategy.includes('["FAILED", "NO_TRADES"]'), "Idle optimization status must be visible in the Front");
+assert.ok(strategy.includes("entry_diagnostics"), "The UI must explain which BTC/CASH entry filters blocked trades");
+assert.ok(strategy.includes("idleChampion"), "Historical all-CASH winners must be flagged instead of being executed OOS");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
