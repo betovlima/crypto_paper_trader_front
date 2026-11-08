@@ -11,7 +11,8 @@ import {
   replayMLBacktest,
 } from "../../api/mlBacktestsApi";
 
-const MODEL = "XGBOOST_WALK_FORWARD";
+const MODEL = "LIGHTGBM_WALK_FORWARD";
+const HISTORICAL_MODEL = "XGBOOST_WALK_FORWARD";
 const BASELINE = "BUY_AND_HOLD";
 const ACTIVE_STATUSES = new Set(["QUEUED", "RUNNING"]);
 
@@ -228,7 +229,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
   const result = selectedJob?.result;
   const timeline = result?.rotation_timeline || [];
   const comparisons = result?.comparisons || [];
-  const supported = comparisons.filter((item) => item.code === MODEL || item.code === BASELINE);
+  const supported = comparisons.filter((item) => item.code === MODEL || item.code === HISTORICAL_MODEL || item.code === BASELINE);
   const activeStrategy = supported.find((item) => item.code === strategy) || supported[0];
   const isBaseline = activeStrategy?.code === BASELINE;
   const actions = useMemo(() => isBaseline ? [] : timeline.flatMap((row) =>
