@@ -321,10 +321,10 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           )}
           {idleChampion && <p className="alert ml-alert" role="alert">{text.idleLegacy}</p>}
           <div className="strategy-brief-results">
-            <div><small>Capital final na validação</small><strong>{fmt(metrics.capital_final)} USDT</strong></div>
+            <div><small>Patrimônio na validação</small><strong>{fmt(metrics.capital_final)} USDT</strong></div>
+            <div><small>Lucro líquido na validação</small><strong>{metrics.net_profit_usd == null ? "—" : fmt(metrics.net_profit_usd) + " USD eq."}</strong></div>
+            <div><small>{metrics.fee_model === "ALPACA_CRYPTO_SPOT_2026" ? "Taxas Alpaca" : "Taxas de operação"}</small><strong>{metrics.fees_paid == null ? "—" : fmt(metrics.fees_paid) + " USD eq."}</strong></div>
             <div><small>Drawdown máximo</small><strong>{metrics.max_drawdown == null ? "—" : fmt(metrics.max_drawdown * 100) + "%"}</strong></div>
-            <div><small>Operações completas</small><strong>{metrics.completed_cycles ?? "—"}</strong></div>
-            <div><small>Execução OOS</small><strong>{finalJob?.status || (detail.execution_job_id ? "QUEUED" : "—")}</strong></div>
           </div>
           <details className="strategy-technical-details">
             <summary>Mostrar diagnósticos, hiperparâmetros e tentativas</summary>
@@ -338,6 +338,11 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           <p className="strategy-note">
             A previsão de retorno define os votos de 2h, 6h e 24h. A probabilidade calibrada permanece como filtro ajustável, sem exigência fixa de 50%.
           </p>
+          {detail.summary?.fee_model === "ALPACA_CRYPTO_SPOT_2026" && (
+            <p className="strategy-note">
+              Custos Alpaca Crypto no treinamento: ordens Taker, taxa entre 0,25% e 0,10% por operação conforme a faixa de volume de 30 dias. Compra paga em BTC e venda em USD. Slippage separado; volume de outras operações da conta não está disponível.
+            </p>
+          )}
           {best && <div className="strategy-champion">
             <h4>{text.selection}</h4>
             <div className="strategy-metrics">
@@ -349,7 +354,8 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               <div><small>{text.worst}</small><strong>{metrics.worst_fold_return == null ? "—" : fmt(metrics.worst_fold_return * 100) + "%"}</strong></div>
               {metrics.completed_cycles != null && <div><small>Ciclos BTC/CASH</small><strong>{metrics.completed_cycles}</strong></div>}
               {metrics.wins != null && <div><small>Compras e vendas lucrativas</small><strong>{metrics.wins} / {metrics.completed_cycles ?? 0}</strong></div>}
-              {metrics.fees_paid != null && <div><small>Taxas acumuladas (USDT)</small><strong>{fmt(metrics.fees_paid)}</strong></div>}
+              {metrics.fees_paid != null && <div><small>Taxas cobradas (USD eq.)</small><strong>{fmt(metrics.fees_paid)}</strong></div>}
+              {metrics.slippage_usd_estimate != null && <div><small>Slippage estimado (USD eq.)</small><strong>{fmt(metrics.slippage_usd_estimate)}</strong></div>}
               {metrics.exposure != null && <div><small>Exposição em BTC</small><strong>{fmt(metrics.exposure * 100)}%</strong></div>}
             </div>
             {metrics.per_horizon && Object.keys(metrics.per_horizon).length > 1 && (
