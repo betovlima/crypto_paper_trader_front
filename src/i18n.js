@@ -11,6 +11,7 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "To compare V1 with V2, choose an original completed run with an audit and use Replay and compare.": "Para comparar V1 e V2, selecione uma execução original concluída com auditoria e clique em Reexecutar e comparar.",
   "Replay and compare V1 × V2": "Reexecutar e comparar V1 × V2",
   "Starting V1 versus V2 replay…": "Iniciando comparação V1 × V2…",
   "Replay archived candles from this completed run and compare the original with V2. No ZIP path required.": "Reexecuta com os candles da auditoria armazenada e compara com a V2, sem informar arquivos.",
@@ -508,6 +509,7 @@ const pt = {
 };
 
 const es = {
+  "To compare V1 with V2, choose an original completed run with an audit and use Replay and compare.": "Para comparar V1 y V2, seleccione una ejecución original completada con auditoría y pulse Reejecutar y comparar.",
   "Replay and compare V1 × V2": "Reejecutar y comparar V1 × V2",
   "Starting V1 versus V2 replay…": "Iniciando comparación V1 × V2…",
   "Replay archived candles from this completed run and compare the original with V2. No ZIP path required.": "Reejecuta con las velas de la auditoría almacenada y compara con V2, sin indicar archivos.",
