@@ -348,7 +348,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest, embedded = false,
 
       {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN" && selectedJob.status === "COMPLETED" && (
         selectedJob.replay_parent_job_id && result?.replay_comparison?.status === "VERIFIED"
-          ? <CapitalizationPanel key={selectedJob.id} jobId={selectedJob.id} language={language}
+          ? <CapitalizationPanel embedded={embedded} key={selectedJob.id} jobId={selectedJob.id} language={language}
               modelFamily={result?.execution?.model_family}
               optimizedPolicy={Boolean(selectedJob?.settings_snapshot?.["policy.enabled"])} />
           : <section className="ml-panel btc-capitalization-gate">
