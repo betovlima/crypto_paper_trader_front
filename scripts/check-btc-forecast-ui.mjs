@@ -34,11 +34,22 @@ assert.ok(page.includes("peak_close_so_far"), "The running price peak must be dr
 assert.ok(page.includes("distance_to_peak"), "The peak-distance chart must use the ML result");
 assert.ok(page.includes("distance_to_peak_at_execution"), "Entry and exit distances must come from the execution-time peak");
 assert.ok(page.includes("BUY_AND_HOLD") && page.includes("XGBOOST_WALK_FORWARD"), "Existing benchmarks must be selectable");
-assert.ok(page.includes('selectedJob?.status === "COMPLETED" && !timeline.length'), "Old jobs must not show fabricated history");
+assert.ok(page.includes('result?.experiment_type !== "BTC_DIRECTION_RETURN" && !timeline.length'), "Old jobs must not show fabricated history");
+const directPage = read("src/features/btc-forecast/DirectionForecastPanel.jsx");
+assert.ok(oldBacktestPage.includes("options.experiment_types"), "Experiment choices must come from the ML API database");
+assert.ok(oldBacktestPage.includes('update("experiment_type"'), "New experiment type must be submitted");
+assert.ok(oldBacktestPage.includes("DirectionForecastPanel"), "ML Backtest must render direct prediction results");
+assert.ok(page.includes("DirectionForecastPanel"), "BTC Forecast tab must render direct prediction results");
+assert.ok(page.includes('result?.experiment_type !== "BTC_DIRECTION_RETURN"'), "Direct forecasts must not be presented as historical BTC/CASH trades");
+assert.ok(directPage.includes("brier_skill_score"), "Direct forecast must display Brier skill");
+assert.ok(directPage.includes("return_mae"), "Direct forecast must display return error");
+assert.ok(directPage.includes("forecast_realized_return"), "Charts must show observed BTC returns");
+assert.ok(directPage.includes("forecast_p_up"), "Charts must show actual predictive probabilities");
+assert.ok(directPage.includes("No BTC/CASH trades"), "Research-only status must be prominent");
 assert.ok(!page.includes("Math.random"), "Forecast interface must not fabricate results");
 assert.ok(styles.includes(".btc-chart-cash") && styles.includes(".btc-chart-held"), "BTC and CASH must have distinct chart styles");
 assert.ok(importedCss.includes("btc-forecast.css"), "Chart styles must be included in the application");
 assert.ok(mlApi.includes("/v1/ml-backtests"), "Existing ML API must remain the data source");
 assert.ok(translations.includes('"BTC Forecast"'), "Forecast page must be translated");
 
-console.log("BTC Forecast navigation, real-data charts and strategy selection checks passed");
+console.log("BTC Forecast, direct OOS predictions, legacy BTC/CASH charts and audit checks passed");
