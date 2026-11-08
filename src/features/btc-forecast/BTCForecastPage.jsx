@@ -118,7 +118,7 @@ function Metric({ label, value, extra }) {
   );
 }
 
-export function BTCForecastPage({ language, t, onOpenBacktest }) {
+export function BTCForecastPage({ language, t, onOpenBacktest, embedded = false, embeddedJob = null, onJobCreated }) {
   const [jobs, setJobs] = useState([]);
   const [selectedId, setSelectedId] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
@@ -152,11 +152,19 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
   }, [t]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!embedded) refresh();
+  }, [embedded, refresh]);
 
   useEffect(() => {
-    if (!pollInterval || !selectedId || !ACTIVE_STATUSES.has(selectedJob?.status)) return undefined;
+    if (embedded) {
+      setSelectedJob(embeddedJob);
+      setSelectedId(embeddedJob?.id || "");
+      setLoading(false);
+    }
+  }, [embedded, embeddedJob]);
+
+  useEffect(() => {
+    if (embedded || !pollInterval || !selectedId || !ACTIVE_STATUSES.has(selectedJob?.status)) return undefined;
     const timer = window.setInterval(async () => {
       try {
         const detail = await getMLBacktest(selectedId);
@@ -197,7 +205,8 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
     setError("");
     try {
       const created = await replayMLBacktest(selectedJob.id);
-      await refresh(created.id);
+      if (embedded && onJobCreated) await onJobCreated(created.id);
+      else await refresh(created.id);
     } catch (err) {
       setError(err.message || t("Unable to replay this archived BTC forecast."));
     } finally {
@@ -244,12 +253,12 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
 
   return (
     <section className="btc-page">
-      <header className="ml-page-heading">
-        <div>
+      <header className={embedded ? "btc-embedded-toolbar" : "ml-page-heading"}>
+        {!embedded && <div>
           <span>{t("BTC Forecast")}</span>
           <h2>{t("BTC/CASH rotations")}</h2>
           <p>{t("Historical strategy comparison and execution timeline.")}</p>
-        </div>
+        </div>}
         <div className="ml-page-actions">
           {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN"
             && !selectedJob?.replay_parent_job_id && (
@@ -273,12 +282,12 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
           >
             {exporting ? t("Exporting…") : t("Export audit ZIP")}
           </button>
-          <button type="button" className="secondary-button" onClick={() => refresh(selectedId)}>{t("Refresh")}</button>
-          <button type="button" className="primary-button" onClick={onOpenBacktest}>{t("Open ML Backtest")}</button>
+          {!embedded && <button type="button" className="secondary-button" onClick={() => refresh(selectedId)}>{t("Refresh")}</button>}
+          {!embedded && <button type="button" className="primary-button" onClick={onOpenBacktest}>{t("Open ML Backtest")}</button>}
         </div>
       </header>
 
-      <section className="btc-selector-panel">
+      {!embedded && <section className="btc-selector-panel">
         <label htmlFor="btc-selected-job">
           <span>{t("Selected backtest")}</span>
           <select id="btc-selected-job" value={selectedId} onChange={(event) => selectJob(event.target.value)} disabled={!jobs.length}>
@@ -303,12 +312,12 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
           {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN" && !selectedJob.audit_available && selectedJob.status === "COMPLETED" &&
             <small>{t("The selected execution has no stored audit in this ML API. Select another completed run with an audit.")}</small>}
         </div>
-      </section>
+      </section>}
 
       {error && <div className="alert" role="alert">{error}</div>}
       {loading && <div className="loading-indicator">{t("Refreshing…")}</div>}
 
-      {!loading && !selectedJob && (
+      {!embedded && !loading && !selectedJob && (
         <section className="ml-empty-state">
           <h2>{t("No BTCUSDT backtests found.")}</h2>
           <p>{t("Run a backtest in ML Backtest to populate this page.")}</p>
@@ -316,17 +325,17 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
         </section>
       )}
 
-      {selectedJob && ACTIVE_STATUSES.has(selectedJob.status) && (
+      {!embedded && selectedJob && ACTIVE_STATUSES.has(selectedJob.status) && (
         <section className="ml-panel">
           <header className="ml-panel-header"><div><span>{t("Execution progress")}</span><h3>{selectedJob.stage || selectedJob.status}</h3></div></header>
           <div className="ml-progress-track"><i style={{ width: `${selectedJob.progress || 0}%` }} /></div>
           <p>{selectedJob.progress || 0}%</p>
         </section>
       )}
-      {selectedJob?.status === "FAILED" && (
+      {!embedded && selectedJob?.status === "FAILED" && (
         <section className="ml-panel ml-failure-panel"><h3>{selectedJob.error_message || t("Execution failed")}</h3></section>
       )}
-      {selectedJob?.status === "COMPLETED" && result?.experiment_type !== "BTC_DIRECTION_RETURN" && !timeline.length && (
+      {!embedded && selectedJob?.status === "COMPLETED" && result?.experiment_type !== "BTC_DIRECTION_RETURN" && !timeline.length && (
         <section className="ml-empty-state">
           <h2>{t("Selected execution has no BTC/CASH trace.")}</h2>
           <p>{t("Previous executions lack the new timeline. Run another ML backtest after updating the ML API.")}</p>
