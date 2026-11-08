@@ -5,6 +5,7 @@ const read = (path) => fs.readFileSync(path, "utf8");
 const app = read("src/App.jsx");
 const navigation = read("src/components/layout/PrimaryNavigation.jsx");
 const page = read("src/features/btc-forecast/BTCForecastPage.jsx");
+const oldBacktestPage = read("src/features/ml-backtests/MLBacktestPage.jsx");
 const styles = read("src/styles/btc-forecast.css");
 const mlApi = read("src/api/mlBacktestsApi.js");
 const importedCss = read("src/styles.css");
@@ -17,6 +18,10 @@ assert.ok(page.includes("listMLBacktests()"), "BTC page must list real ML execut
 assert.ok(page.includes("getMLBacktest("), "BTC page must load the selected execution");
 assert.ok(page.includes("getMLConfiguration()"), "Polling cadence must come from the ML API database");
 assert.ok(page.includes("rotation_timeline"), "Charts must use the recorded simulation timeline");
+assert.ok(page.includes("history_coverage"), "BTC dashboard must warn on partial historical coverage");
+assert.ok(page.includes('Number(result?.summary?.trade_count) === 0'), "BTC dashboard must warn when no trades occur");
+assert.ok(oldBacktestPage.includes('Number(result.summary.trade_count) === 0'), "Legacy ML dashboard must not claim prediction skill from CASH-only results");
+assert.ok(oldBacktestPage.includes("baseline_brier_score"), "ML dashboard must display training-only prediction baselines");
 assert.ok(page.includes("downloadMLBacktestAudit"), "UI must offer complete OOS audit download");
 assert.ok(page.includes("audit_available"), "Older executions must not offer incomplete exports");
 assert.ok(read("src/api/mlBacktestsApi.js").includes("/audit.zip"), "Audit endpoint must be integrated");
