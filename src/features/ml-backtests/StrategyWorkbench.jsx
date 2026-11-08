@@ -62,6 +62,29 @@ const WORDS = {
   },
 };
 
+const POLICY_LABELS = {
+  "policy.entry_probability": "Probabilidade mínima para comprar",
+  "policy.exit_probability": "Probabilidade que aciona venda",
+  "policy.entry_edge": "Ganho líquido adicional esperado",
+  "policy.exit_return": "Retorno previsto para sair",
+  "policy.min_positive_votes": "Horizontes favoráveis para comprar",
+  "policy.stop_loss": "Stop-loss confirmado no fechamento",
+  "policy.trailing_stop": "Trailing stop desde a máxima",
+  "policy.take_profit": "Realização de lucro",
+  "policy.min_hold_bars": "Permanência mínima",
+  "policy.cooldown_bars": "Intervalo antes de recomprar",
+  "policy.weight_2h": "Peso da previsão 2h",
+  "policy.weight_6h": "Peso da previsão 6h",
+  "policy.weight_24h": "Peso da previsão 24h",
+};
+const policyValue = (key, value) => {
+  if (["policy.entry_probability", "policy.exit_probability", "policy.entry_edge",
+       "policy.exit_return", "policy.stop_loss", "policy.trailing_stop",
+       "policy.take_profit"].includes(key)) return (Number(value) * 100).toFixed(2) + "%";
+  if (["policy.min_hold_bars", "policy.cooldown_bars"].includes(key)) return String(value) + " candles";
+  return String(value);
+};
+
 const fmt = (v, digits = 2) => (
   v == null || !Number.isFinite(Number(v)) ? "—"
     : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: digits }).format(Number(v))
@@ -261,7 +284,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             <p className="strategy-note">{text.warning}</p>
             <div className="strategy-parameters">
               {Object.entries(best.parameters || {}).filter(([key]) => key.startsWith("policy.")).map(([key, value]) =>
-                <span key={key}><code>{key}</code>: <strong>{value}</strong></span>)}
+                <span key={key}><small>{POLICY_LABELS[key] || key}</small>: <strong>{policyValue(key, value)}</strong></span>)}
             </div>
             <details><summary>Hiperparâmetros LightGBM selecionados</summary><div className="strategy-parameters">{Object.entries(best.parameters || {}).filter(([key]) => key.startsWith("lightgbm.") || key.startsWith("forecast.")).map(([key, value]) => <span key={key}><code>{key}</code>: <strong>{value}</strong></span>)}</div></details>
             {detail.status === "OPTIMIZED" && <button type="button" className="primary-button"
