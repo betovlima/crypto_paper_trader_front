@@ -88,3 +88,9 @@ export function executeMLStrategy(strategyId) {
 export function downloadMLStrategyReport(strategyId) {
   return mlRequestBlob(`/v1/ml-strategies/${encodeURIComponent(strategyId)}/report.zip`);
 }
+
+export function cancelMLStrategyOptimization(strategyId) {
+  return mlRequestJson(`/v1/ml-strategies/${encodeURIComponent(strategyId)}/optimization`, {
+    method: "DELETE",
+  });
+}
