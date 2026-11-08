@@ -58,3 +58,33 @@ export function capitalizeBTCForecast(backtestId, parameters) {
     body: JSON.stringify(parameters),
   });
 }
+
+export function listMLStrategies() {
+  return mlRequestJson("/v1/ml-strategies");
+}
+
+export function getMLStrategy(strategyId) {
+  return mlRequestJson(`/v1/ml-strategies/${encodeURIComponent(strategyId)}`);
+}
+
+export function createMLStrategy(payload) {
+  return mlRequestJson("/v1/ml-strategies", {
+    method: "POST", body: JSON.stringify(payload),
+  });
+}
+
+export function optimizeMLStrategy(strategyId, payload) {
+  return mlRequestJson(`/v1/ml-strategies/${encodeURIComponent(strategyId)}/optimize`, {
+    method: "POST", body: JSON.stringify(payload),
+  });
+}
+
+export function executeMLStrategy(strategyId) {
+  return mlRequestJson(`/v1/ml-strategies/${encodeURIComponent(strategyId)}/execute`, {
+    method: "POST",
+  });
+}
+
+export function downloadMLStrategyReport(strategyId) {
+  return mlRequestBlob(`/v1/ml-strategies/${encodeURIComponent(strategyId)}/report.zip`);
+}
