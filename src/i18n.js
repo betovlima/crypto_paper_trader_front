@@ -11,6 +11,12 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "Export audit ZIP": "Exportar auditoria ZIP",
+  "Exporting…": "Exportando…",
+  "Unable to export BTC backtest audit.": "Não foi possível exportar a auditoria do backtest de BTC.",
+  "Download complete OOS audit as ZIP": "Baixar auditoria completa fora da amostra em ZIP",
+  "Run a new backtest to enable full audit export.": "Execute um novo backtest para habilitar a exportação completa.",
+  "Full audit ZIP is available only for new executions using the updated ML API.": "O ZIP de auditoria completa está disponível apenas para novas execuções na ML API atualizada.",
   "Distance at execution": "Distância ao topo na execução",
   "Switch distances use the highest close known at execution; local peaks will be analyzed separately.": "A distância em cada operação usa o maior fechamento conhecido na execução. Os topos locais serão analisados separadamente.",
   "BTC Forecast": "Previsão BTC",
@@ -424,6 +430,12 @@ const pt = {
 };
 
 const es = {
+  "Export audit ZIP": "Exportar auditoría ZIP",
+  "Exporting…": "Exportando…",
+  "Unable to export BTC backtest audit.": "No se pudo exportar la auditoría del backtest de BTC.",
+  "Download complete OOS audit as ZIP": "Descargar la auditoría completa fuera de muestra en ZIP",
+  "Run a new backtest to enable full audit export.": "Ejecuta un nuevo backtest para habilitar la exportación completa.",
+  "Full audit ZIP is available only for new executions using the updated ML API.": "El ZIP de auditoría completa solo está disponible en nuevas ejecuciones con la ML API actualizada.",
   "Distance at execution": "Distancia al máximo en la ejecución",
   "Switch distances use the highest close known at execution; local peaks will be analyzed separately.": "La distancia en cada operación usa el máximo cierre conocido en ese momento. Los máximos locales se analizarán por separado.",
   "BTC Forecast": "Pronóstico de BTC",

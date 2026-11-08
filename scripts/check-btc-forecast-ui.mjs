@@ -17,6 +17,9 @@ assert.ok(page.includes("listMLBacktests()"), "BTC page must list real ML execut
 assert.ok(page.includes("getMLBacktest("), "BTC page must load the selected execution");
 assert.ok(page.includes("getMLConfiguration()"), "Polling cadence must come from the ML API database");
 assert.ok(page.includes("rotation_timeline"), "Charts must use the recorded simulation timeline");
+assert.ok(page.includes("downloadMLBacktestAudit"), "UI must offer complete OOS audit download");
+assert.ok(page.includes("audit_available"), "Older executions must not offer incomplete exports");
+assert.ok(read("src/api/mlBacktestsApi.js").includes("/audit.zip"), "Audit endpoint must be integrated");
 assert.ok(page.includes("row.actions"), "Executed trade markers must come from recorded orders");
 assert.ok(page.includes("row.position"), "Position must come from the simulator, not inferred from trades");
 assert.ok(page.includes("peak_close_so_far"), "The running price peak must be drawn");
