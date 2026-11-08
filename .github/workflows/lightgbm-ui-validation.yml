@@ -8,6 +8,7 @@ on:
       - feature/btc-capital-rotation-ui-v5-20261108
       - feature/one-click-btc-research-ui-v6-20261108
       - feature/btc-calibrated-capital-ui-v7-20261108
+      - feature/alpaca-crypto-fees-ui-v8-20261108
   workflow_dispatch:
 
 jobs:
