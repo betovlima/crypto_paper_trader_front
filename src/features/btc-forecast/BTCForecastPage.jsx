@@ -270,7 +270,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest, embedded = false,
                   || !selectedJob.audit_available}
                 title={t("Replay archived candles from this completed run and compare the original with V2. No ZIP path required.")}
               >
-                {replaying ? t("Starting V1 versus V2 replay…") : t("Replay and compare V1 × V2")}
+                {replaying ? t("Starting V1 versus V2 replay…") : embedded ? "Reexecutar e comparar modelos" : t("Replay and compare V1 × V2")}
               </button>
             )}
           <button
@@ -357,7 +357,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest, embedded = false,
                 <>
                   <p>{t("To run the financial simulation, first create a V2 replay from this original audited run. The new run will be selected automatically.")}</p>
                   <button className="primary-button" type="button" onClick={replayAndCompare} disabled={replaying}>
-                    {replaying ? t("Starting V1 versus V2 replay…") : t("Prepare V1 × V2 financial simulation")}
+                    {replaying ? t("Starting V1 versus V2 replay…") : embedded ? "Preparar simulação financeira BTC/CASH" : t("Prepare V1 × V2 financial simulation")}
                   </button>
                 </>
               ) : !selectedJob.audit_available ? (
