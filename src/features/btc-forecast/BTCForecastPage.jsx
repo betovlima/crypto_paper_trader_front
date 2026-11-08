@@ -249,18 +249,19 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
           <p>{t("Historical strategy comparison and execution timeline.")}</p>
         </div>
         <div className="ml-page-actions">
-          <button
-            type="button"
-            className="primary-button"
-            onClick={replayAndCompare}
-            disabled={replaying || selectedJob?.status !== "COMPLETED"
-              || !selectedJob?.audit_available
-              || selectedJob?.experiment_type !== "BTC_DIRECTION_RETURN"
-              || Boolean(selectedJob?.replay_parent_job_id)}
-            title={t("Replay archived candles from this completed run and compare the original with V2. No ZIP path required.")}
-          >
-            {replaying ? t("Starting V1 versus V2 replay…") : t("Replay and compare V1 × V2")}
-          </button>
+          {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN"
+            && !selectedJob?.replay_parent_job_id && (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={replayAndCompare}
+                disabled={replaying || selectedJob.status !== "COMPLETED"
+                  || !selectedJob.audit_available}
+                title={t("Replay archived candles from this completed run and compare the original with V2. No ZIP path required.")}
+              >
+                {replaying ? t("Starting V1 versus V2 replay…") : t("Replay and compare V1 × V2")}
+              </button>
+            )}
           <button
             type="button"
             className="secondary-button"
@@ -293,6 +294,8 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
             ? t("Direct forecasts: probability and future return, without BTC/CASH orders.")
             : t("The original Target/Stop strategy is shown. LHS and CARO are future stages.")}</small>
           <small>{t("Full audit ZIP is available only for new executions using the updated ML API.")}</small>
+          {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN" && !selectedJob?.replay_parent_job_id &&
+            <small>{t("To compare V1 with V2, choose an original completed run with an audit and use Replay and compare.")}</small>}
           <small>{t("Historical market source")}: {selectedJob?.result?.execution?.history_source || selectedJob?.history_source || "MEXC"}</small>
           {selectedJob?.replay_parent_job_id && <small>{t("Comparison generated from saved execution")}: {selectedJob.replay_parent_job_id}</small>}
           {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN" && !selectedJob.audit_available && selectedJob.status === "COMPLETED" &&
