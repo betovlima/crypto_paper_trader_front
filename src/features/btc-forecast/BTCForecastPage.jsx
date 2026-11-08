@@ -253,6 +253,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest, embedded = false,
 
   return (
     <section className="btc-page">
+      {!embedded && (
       <header className={embedded ? "btc-embedded-toolbar" : "ml-page-heading"}>
         {!embedded && <div>
           <span>{t("BTC Forecast")}</span>
@@ -286,6 +287,8 @@ export function BTCForecastPage({ language, t, onOpenBacktest, embedded = false,
           {!embedded && <button type="button" className="primary-button" onClick={onOpenBacktest}>{t("Open ML Backtest")}</button>}
         </div>
       </header>
+
+      )}
 
       {!embedded && <section className="btc-selector-panel">
         <label htmlFor="btc-selected-job">
