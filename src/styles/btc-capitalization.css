@@ -15,3 +15,25 @@
 .btc-capital-path.btc-capital-v2 { stroke: #0ea5e9; }
 .btc-capital-path.btc-capital-buy_and_hold { stroke: #aa70df; }
 .btc-capital-legend { display: flex; flex-wrap: wrap; gap: 18px; padding: 5px 0; }
+
+/* Compact strategy criteria. Never overlap the seven input columns on desktop. */
+.btc-capital-form { grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 16px; }
+.btc-capital-horizons { display: flex; flex-direction: column; justify-content: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.btc-capital-horizons strong { font-size: .96rem; white-space: normal; }
+.btc-capital-horizons small { font-size: .76rem; line-height: 1.35; color: var(--text-muted, #93a2b8); }
+.btc-capital-horizons details { margin-top: 4px; }
+.btc-capital-horizons summary { cursor: pointer; font-size: .78rem; }
+.btc-capital-horizons select { width: 100%; margin-top: 6px; }
+.btc-capital-form button { align-self: end; min-height: 44px; white-space: normal; }
+.btc-capital-btc_cash_rotation { color: #38bdf8; font-weight: 700; }
+.btc-capital-path.btc-capital-btc_cash_rotation { stroke: #38bdf8; stroke-width: 3; }
+.btc-capital-policy { margin: 14px 0; }
+.btc-capital-policy > summary { font-weight: 600; cursor: pointer; }
+.btc-capital-policy > div { display: flex; flex-wrap: wrap; gap: 9px; margin: 10px 0; }
+.btc-capital-policy > div span { font-size: .8rem; padding: 8px; border: 1px solid rgba(125,145,175,.3); border-radius: 7px; }
+@media(max-width: 760px) {
+  .btc-capital-form { grid-template-columns: 1fr 1fr; }
+}
+@media(max-width: 520px) {
+  .btc-capital-form { grid-template-columns: 1fr; }
+}
