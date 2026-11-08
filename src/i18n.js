@@ -11,6 +11,15 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "LightGBM Walk-Forward": "LightGBM Walk-Forward",
+  "Target/Stop LightGBM (BTC/CASH)": "LightGBM Alvo/Stop (BTC/CASH)",
+  "Actual LightGBM splits and prediction diversity": "Divisões reais das árvores LightGBM e variedade de previsões",
+  "Original model versus LightGBM": "Modelo original versus LightGBM",
+  "Financial simulation is available below for verified replays.": "A simulação financeira está disponível abaixo para os replays verificados.",
+  "Create a manual LightGBM walk-forward analysis using up to four years of MEXC history.": "Crie uma análise manual walk-forward com LightGBM usando até quatro anos de histórico da MEXC.",
+  "Training LightGBM with walk-forward validation": "Treinando o LightGBM com validação walk-forward",
+  "LightGBM · Walk-forward · Separate API": "LightGBM · Walk-forward · API separada",
+  "This panel comes from the main API. The four-year LightGBM result comes from the separate ML API, so the two services remain independently deployable.": "Este painel vem da API principal. O resultado de quatro anos do LightGBM vem da API separada de ML, mantendo os serviços independentes.",
   "BTC/CASH financial simulation": "Simulação financeira BTC/CASH",
   "To run the financial simulation, first create a V2 replay from this original audited run. The new run will be selected automatically.": "Para executar a simulação financeira, primeiro gere um replay V2 desta execução original. O replay será selecionado automaticamente.",
   "Prepare V1 × V2 financial simulation": "Preparar simulação financeira V1 × V2",
@@ -514,6 +523,15 @@ const pt = {
 };
 
 const es = {
+  "LightGBM Walk-Forward": "LightGBM Walk-Forward",
+  "Target/Stop LightGBM (BTC/CASH)": "LightGBM Objetivo/Stop (BTC/CASH)",
+  "Actual LightGBM splits and prediction diversity": "Divisiones reales de árboles LightGBM y diversidad de predicciones",
+  "Original model versus LightGBM": "Modelo original frente a LightGBM",
+  "Financial simulation is available below for verified replays.": "La simulación financiera está disponible abajo para repeticiones verificadas.",
+  "Create a manual LightGBM walk-forward analysis using up to four years of MEXC history.": "Crea un análisis manual walk-forward con LightGBM usando hasta cuatro años de historial de MEXC.",
+  "Training LightGBM with walk-forward validation": "Entrenando LightGBM con validación walk-forward",
+  "LightGBM · Walk-forward · Separate API": "LightGBM · Walk-forward · API separada",
+  "This panel comes from the main API. The four-year LightGBM result comes from the separate ML API, so the two services remain independently deployable.": "Este panel procede de la API principal. El resultado de cuatro años de LightGBM procede de la API de ML separada.",
   "BTC/CASH financial simulation": "Simulación financiera BTC/CASH",
   "To run the financial simulation, first create a V2 replay from this original audited run. The new run will be selected automatically.": "Para ejecutar la simulación financiera, primero genere una repetición V2 de esta ejecución original. La nueva ejecución se seleccionará automáticamente.",
   "Prepare V1 × V2 financial simulation": "Preparar simulación financiera V1 × V2",
