@@ -192,7 +192,8 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
       setDetail(stopped);
       return;
     }
-    if (detail.status === "OPTIMIZED" && detail.champion && !detail.execution_job_id) {
+    if (detail.status === "OPTIMIZED" && detail.champion && !detail.execution_job_id
+      && Number(detail.champion.metrics?.completed_cycles) > 0) {
       const job = await executeMLStrategy(detail.id);
       setFinalJob(job);
       setDetail(await getMLStrategy(detail.id));
