@@ -100,10 +100,28 @@ assert.ok(capitalization.includes("BTC_CASH_ROTATION"),
 assert.ok(capitalization.includes("Recalcular patrimônio BTC/CASH"),
   "Final report must be recalculable entirely within the Front");
 assert.ok(strategy.includes('launchResearchCampaign('), "Completed strategy must auto-create a fresh campaign");
-assert.ok(strategy.includes("needsFreshCampaign(detail)"), "Research controls must expose the new-campaign state");
+assert.ok(strategy.includes("needsFreshCampaign(detail)"), "Completed campaigns must remain immutable");
 assert.ok(strategy.includes("optimizationUnavailable"), "Only running operations should block tuning buttons");
 assert.ok(!strategy.includes("!!detail.execution_job_id}>{text.quick}"), "Final OOS status must not permanently disable reoptimization");
 assert.ok(strategy.includes('["FAILED", "NO_TRADES"]'), "Idle optimization status must be visible in the Front");
 assert.ok(strategy.includes("entry_diagnostics"), "The UI must explain which BTC/CASH entry filters blocked trades");
 assert.ok(strategy.includes("idleChampion"), "Historical all-CASH winners must be flagged instead of being executed OOS");
+const actionSection = strategy.slice(
+  strategy.indexOf('<div className="strategy-main-actions"'),
+  strategy.indexOf("</header>", strategy.indexOf('<div className="strategy-main-actions"')),
+);
+assert.equal((actionSection.match(/<button /g) || []).length, 3,
+  "The top strategy toolbar must have exactly Create, Optimize-and-Run, Export buttons");
+assert.equal((strategy.match(/<button /g) || []).length, 3,
+  "No duplicate action buttons may remain below the strategy toolbar");
+assert.ok(strategy.includes("autoExecute: true"),
+  "One click must automatically schedule OOS after optimization");
+assert.ok(strategy.includes('value="BAYESIAN"'),
+  "CARO must be selectable without a fourth action button");
+assert.ok(strategy.includes("strategy-technical-details"),
+  "Optimizer trial and forecast details must be collapsed by default");
+assert.ok(oldBacktestPage.indexOf("<StrategyWorkbench") < oldBacktestPage.indexOf("ml-service-strip"),
+  "Research actions must appear above service status and technical data");
+assert.ok(oldBacktestPage.includes("ml-advanced-utilities"),
+  "Historical data and raw parameters must be kept in advanced details");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
