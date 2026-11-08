@@ -63,4 +63,13 @@ assert.ok(importedCss.includes("btc-forecast.css"), "Chart styles must be includ
 assert.ok(mlApi.includes("/v1/ml-backtests"), "Existing ML API must remain the data source");
 assert.ok(translations.includes('"BTC Forecast"'), "Forecast page must be translated");
 
+const capitalization = read("src/features/btc-forecast/CapitalizationPanel.jsx");
+assert.ok(page.includes("BTC/CASH financial simulation"), "Financial simulation must be discoverable on a completed BTC forecast");
+assert.ok(page.includes("Prepare V1 × V2 financial simulation"), "Original forecasts must offer one-click replay preparation");
+assert.ok(page.includes("result?.replay_comparison?.status === \"VERIFIED\""), "Capitalization requires verified replay provenance");
+assert.ok(page.includes("<CapitalizationPanel"), "Verified V2 replays must display the financial simulator");
+assert.ok(capitalization.includes("capitalizeBTCForecast"), "Financial simulation must call the ML API from the Front");
+assert.ok(mlApi.includes("/capitalization"), "Financial replay endpoint must be wired");
+assert.ok(capitalization.includes("initial_capital") && capitalization.includes("slippage_rate"), "Capital and execution costs must be configurable");
+assert.ok(!capitalization.includes("Math.random"), "Financial simulation must not fabricate trades");
 console.log("BTC Forecast, direct OOS predictions, legacy BTC/CASH charts and audit checks passed");
