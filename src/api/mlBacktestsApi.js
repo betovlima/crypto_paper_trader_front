@@ -35,6 +35,13 @@ export function createMLBacktest(payload) {
   });
 }
 
+// Uses a completed audited ML API job stored in the database. No local ZIP path.
+export function replayMLBacktest(backtestId) {
+  return mlRequestJson(`/v1/ml-backtests/${encodeURIComponent(backtestId)}/replay`, {
+    method: "POST",
+  });
+}
+
 export function cancelMLBacktest(backtestId) {
   return mlRequestJson(`/v1/ml-backtests/${encodeURIComponent(backtestId)}`, {
     method: "DELETE",
