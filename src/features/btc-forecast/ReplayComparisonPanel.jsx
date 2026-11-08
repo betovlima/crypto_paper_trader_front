@@ -78,7 +78,7 @@ export function ReplayComparisonPanel({ comparison, language, t }) {
         </div>
       ))}
       <p className="btc-chart-note">
-        {t("Diagnostic prediction comparison only. Financial BTC/CASH capitalization is not implemented for this model yet.")}
+        {t("Financial simulation is available below for verified V2 replays.")}
       </p>
     </section>
   );
