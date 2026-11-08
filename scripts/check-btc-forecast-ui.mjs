@@ -124,4 +124,16 @@ assert.ok(oldBacktestPage.indexOf("<StrategyWorkbench") < oldBacktestPage.indexO
   "Research actions must appear above service status and technical data");
 assert.ok(oldBacktestPage.includes("ml-advanced-utilities"),
   "Historical data and raw parameters must be kept in advanced details");
+assert.ok(capitalization.includes('result.fee_model === "ALPACA_CRYPTO_SPOT_2026"'),
+  "Crypto OOS reporting must identify Alpaca fee model");
+assert.ok(capitalization.includes("row.net_profit_usd") && capitalization.includes("row.alpaca_fees_usd"),
+  "Net capital profit and actually deducted Alpaca fees must be shown for each strategy");
+assert.ok(capitalization.includes("action.fee_rate") && capitalization.includes("action.fee_tier"),
+  "Each BTC buy and sell must show fee rate and rolling-volume tier");
+assert.ok(capitalization.includes("action.fee_usd_equivalent"),
+  "Each individual trade must show its Alpaca charge in USD");
+assert.ok(capitalization.includes('name === "fee_rate"'),
+  "A redundant fixed commission field must not be shown for Alpaca volume pricing");
+assert.ok(strategy.includes("metrics.net_profit_usd") && strategy.includes("metrics.fees_paid"),
+  "Four compact research KPIs must show net realized simulated profits and broker fees");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
