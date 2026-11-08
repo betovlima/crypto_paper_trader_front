@@ -242,7 +242,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               {metrics.completed_cycles != null && <div><small>Ciclos BTC/CASH</small><strong>{metrics.completed_cycles}</strong></div>}
               {metrics.wins != null && <div><small>Compras e vendas lucrativas</small><strong>{metrics.wins} / {metrics.completed_cycles ?? 0}</strong></div>}
               {metrics.fees_paid != null && <div><small>Taxas acumuladas (USDT)</small><strong>{fmt(metrics.fees_paid)}</strong></div>}
-              {metrics.exposure != null && <div><small>Exposição em BTC</small><strong>{fmt(metrics.exposure * 100)}%</strong></div>
+              {metrics.exposure != null && <div><small>Exposição em BTC</small><strong>{fmt(metrics.exposure * 100)}%</strong></div>}
             </div>
             {metrics.per_horizon && Object.keys(metrics.per_horizon).length > 1 && (
               <div className="ml-table-wrap">
