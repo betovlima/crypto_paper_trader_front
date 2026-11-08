@@ -11,6 +11,11 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "BTC/CASH financial simulation": "Simulação financeira BTC/CASH",
+  "To run the financial simulation, first create a V2 replay from this original audited run. The new run will be selected automatically.": "Para executar a simulação financeira, primeiro gere um replay V2 desta execução original. O replay será selecionado automaticamente.",
+  "Prepare V1 × V2 financial simulation": "Preparar simulação financeira V1 × V2",
+  "Financial simulation is unavailable because the V1/V2 OOS comparison was not verified. Check the replay results.": "A simulação está indisponível porque a comparação fora da amostra entre V1 e V2 não foi validada. Confira o resultado do replay.",
+  "Financial simulation is available below for verified V2 replays.": "A simulação financeira aparece abaixo quando o replay V2 está validado.",
   "To compare V1 with V2, choose an original completed run with an audit and use Replay and compare.": "Para comparar V1 e V2, selecione uma execução original concluída com auditoria e clique em Reexecutar e comparar.",
   "Replay and compare V1 × V2": "Reexecutar e comparar V1 × V2",
   "Starting V1 versus V2 replay…": "Iniciando comparação V1 × V2…",
@@ -25,7 +30,7 @@ const pt = {
   "Original": "Original",
   "Change": "Variação",
   "Distinct predicted returns by fold": "Retornos previstos distintos por fold",
-  "Diagnostic prediction comparison only. Financial BTC/CASH capitalization is not implemented for this model yet.": "Comparação apenas das previsões. A capitalização financeira BTC/CASH ainda não está implementada para este modelo.",
+  "Financial simulation is available below for verified V2 replays.": "Comparação apenas das previsões. A capitalização financeira BTC/CASH ainda não está implementada para este modelo.",
   "Temporal uncertainty": "Incerteza temporal",
   "95% block-bootstrap intervals": "Intervalos de 95% por reamostragem em blocos",
   "Metric": "Métrica",
@@ -509,6 +514,11 @@ const pt = {
 };
 
 const es = {
+  "BTC/CASH financial simulation": "Simulación financiera BTC/CASH",
+  "To run the financial simulation, first create a V2 replay from this original audited run. The new run will be selected automatically.": "Para ejecutar la simulación financiera, primero genere una repetición V2 de esta ejecución original. La nueva ejecución se seleccionará automáticamente.",
+  "Prepare V1 × V2 financial simulation": "Preparar simulación financiera V1 × V2",
+  "Financial simulation is unavailable because the V1/V2 OOS comparison was not verified. Check the replay results.": "La simulación no está disponible porque no se verificó la comparación fuera de muestra entre V1 y V2. Revise el resultado.",
+  "Financial simulation is available below for verified V2 replays.": "La simulación financiera aparece abajo para repeticiones V2 verificadas.",
   "To compare V1 with V2, choose an original completed run with an audit and use Replay and compare.": "Para comparar V1 y V2, seleccione una ejecución original completada con auditoría y pulse Reejecutar y comparar.",
   "Replay and compare V1 × V2": "Reejecutar y comparar V1 × V2",
   "Starting V1 versus V2 replay…": "Iniciando comparación V1 × V2…",
@@ -523,7 +533,7 @@ const es = {
   "Original": "Original",
   "Change": "Variación",
   "Distinct predicted returns by fold": "Retornos previstos distintos por fold",
-  "Diagnostic prediction comparison only. Financial BTC/CASH capitalization is not implemented for this model yet.": "Comparación solo de pronósticos. La capitalización financiera BTC/CASH aún no está implementada para este modelo.",
+  "Financial simulation is available below for verified V2 replays.": "Comparación solo de pronósticos. La capitalización financiera BTC/CASH aún no está implementada para este modelo.",
   "Temporal uncertainty": "Incertidumbre temporal",
   "95% block-bootstrap intervals": "Intervalos del 95% mediante remuestreo por bloques",
   "Metric": "Métrica",
