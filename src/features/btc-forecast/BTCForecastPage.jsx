@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DirectionForecastPanel } from "./DirectionForecastPanel";
 
 import {
   downloadMLBacktestAudit,
@@ -254,7 +255,9 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
         </label>
         <div className="btc-selection-notes">
           <strong>{t("Historical execution (out of sample)")}</strong>
-          <small>{t("No new forecast models are active yet. LHS and CARO will be added in later stages.")}</small>
+          <small>{result?.experiment_type === "BTC_DIRECTION_RETURN"
+            ? t("Direct forecasts: probability and future return, without BTC/CASH orders.")
+            : t("The original Target/Stop strategy is shown. LHS and CARO are future stages.")}</small>
           <small>{t("Full audit ZIP is available only for new executions using the updated ML API.")}</small>
           <small>{t("Historical market source")}: {selectedJob?.result?.execution?.history_source || selectedJob?.history_source || "MEXC"}</small>
         </div>
@@ -281,7 +284,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
       {selectedJob?.status === "FAILED" && (
         <section className="ml-panel ml-failure-panel"><h3>{selectedJob.error_message || t("Execution failed")}</h3></section>
       )}
-      {selectedJob?.status === "COMPLETED" && !timeline.length && (
+      {selectedJob?.status === "COMPLETED" && result?.experiment_type !== "BTC_DIRECTION_RETURN" && !timeline.length && (
         <section className="ml-empty-state">
           <h2>{t("Selected execution has no BTC/CASH trace.")}</h2>
           <p>{t("Previous executions lack the new timeline. Run another ML backtest after updating the ML API.")}</p>
@@ -289,7 +292,11 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
         </section>
       )}
 
-      {!!timeline.length && (
+      {result?.experiment_type === "BTC_DIRECTION_RETURN" && (
+        <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
+      )}
+
+      {!!timeline.length && result?.experiment_type !== "BTC_DIRECTION_RETURN" && (
         <>
           {result?.execution?.history_coverage?.coverage_status === "PARTIAL" && (
             <section className="btc-diagnostic-warning" role="status">

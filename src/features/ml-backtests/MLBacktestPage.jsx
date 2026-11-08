@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DirectionForecastPanel } from "../btc-forecast/DirectionForecastPanel";
 
 import {
   cancelMLBacktest,
@@ -162,6 +163,21 @@ function NewBacktestDialog({ open, onClose, onSubmit, submitting, configuration,
                 <input value={form.symbol} onChange={(event) => update("symbol", event.target.value.toUpperCase())} required />
               </label>
               <label>
+                <span>{t("Experiment type")}</span>
+                <select
+                  value={form.experiment_type || "TARGET_STOP"}
+                  onChange={(event) => update("experiment_type", event.target.value)}
+                >
+                  {(options.experiment_types || ["TARGET_STOP"]).map((type) => (
+                    <option value={type} key={type}>
+                      {type === "BTC_DIRECTION_RETURN"
+                        ? t("BTC Direction & Return")
+                        : t("Target/Stop XGBoost (BTC/CASH)")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
                 <span>{t("Historical market source")}</span>
                 <select value={form.history_source || "MEXC"} onChange={(event) => update("history_source", event.target.value)}>
                   {(options.history_sources || ["MEXC"]).map((source) => (
@@ -193,6 +209,7 @@ function NewBacktestDialog({ open, onClose, onSubmit, submitting, configuration,
                   {(options.trend_timeframes || []).map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </label>
+              {form.experiment_type !== "BTC_DIRECTION_RETURN" && (<>
               <label>
                 <span>{t("Initial capital")}</span>
                 <input type="number" min="1" max={limits.maximum_initial_capital} step="0.01" value={form.initial_capital} onChange={(event) => update("initial_capital", event.target.value)} />
@@ -217,7 +234,14 @@ function NewBacktestDialog({ open, onClose, onSubmit, submitting, configuration,
                 <input type="checkbox" checked={Boolean(form.reinvestment)} onChange={(event) => update("reinvestment", event.target.checked)} />
                 <span>{t("Reinvest available capital")}</span>
               </label>
+              </>)}
             </div>
+            {form.experiment_type === "BTC_DIRECTION_RETURN" && (
+              <div className="ml-dialog-note">
+                <strong>{t("Research mode: prediction only")}</strong>
+                <p>{t("Forecast positive BTC returns and future percentage returns over configured horizons. No BTC/CASH orders, trade costs or capital simulation are produced.")}</p>
+              </div>
+            )}
             {form.history_source === "BINANCE_SPOT_ARCHIVE" && (
               <div className="ml-dialog-note">
                 <strong>{t("Research source: Binance Spot BTCUSDT")}</strong>
@@ -584,11 +608,11 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
         </article>
       </section>
 
-      <nav className="ml-section-tabs" aria-label={t("Backtest sections")}>
+      {result?.experiment_type !== "BTC_DIRECTION_RETURN" && <nav className="ml-section-tabs" aria-label={t("Backtest sections")}>
         {tabs.map(([code, label]) => (
           <button key={code} type="button" className={activeTab === code ? "active" : ""} onClick={() => setActiveTab(code)}>{label}</button>
         ))}
-      </nav>
+      </nav>}
 
       {error && <div className="alert ml-alert" role="alert">{error}</div>}
       {loading && <div className="loading-indicator">{t("Refreshing…")}</div>}
@@ -606,6 +630,7 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
             <div><small>{t("Trend candle")}</small><strong>{selectedJob.trend_timeframe}</strong></div>
             <div><small>{t("Requested period")}</small><strong>{selectedJob.period_years} {t("years")}</strong></div>
             <div><small>{t("Historical market source")}</small><strong>{selectedJob.history_source || "MEXC"}</strong></div>
+            <div><small>{t("Experiment type")}</small><strong>{selectedJob.experiment_type === "BTC_DIRECTION_RETURN" ? t("BTC Direction & Return") : t("Target/Stop XGBoost (BTC/CASH)")}</strong></div>
             <div><small>{t("Created")}</small><strong>{formatDateTime(selectedJob.created_at, language)}</strong></div>
           </section>
 
@@ -620,7 +645,9 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
             </section>
           )}
 
-          {result && (
+          {result?.experiment_type === "BTC_DIRECTION_RETURN" ? (
+            <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
+          ) : result && (
             <>
               {result.execution?.history_coverage?.coverage_status === "PARTIAL" && (
                 <section className="btc-diagnostic-warning" role="status">

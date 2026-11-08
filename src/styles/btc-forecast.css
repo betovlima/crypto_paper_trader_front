@@ -74,3 +74,24 @@
 }
 .btc-diagnostic-warning strong { color: var(--amber); font-size: var(--text-base); }
 .btc-diagnostic-warning p { color: var(--muted); font-size: var(--text-sm); line-height: 1.5; }
+
+.btc-direct-results { display: grid; gap: 16px; min-width: 0; }
+.btc-direct-intro {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 18px 20px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+}
+.btc-direct-intro > div:first-child { display: grid; gap: 6px; max-width: 540px; }
+.btc-direct-intro p { font-size: var(--text-sm); color: var(--muted); line-height: 1.5; }
+.btc-direct-horizons { display: flex; flex-wrap: wrap; gap: 8px; }
+.btc-direct-horizons button {
+  padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border-strong);
+  background: var(--surface-3); color: var(--text); cursor: pointer;
+}
+.btc-direct-horizons button.active { border-color: var(--accent); background: var(--accent-soft); }
+.btc-direct-chart { min-width: 0; overflow-x: auto; }
+.btc-direct-chart h4 { font-size: var(--text-sm); margin-bottom: 12px; }
+.btc-direct-chart svg { display: block; min-width: 450px; width: 100%; height: auto; }
+.btc-direct-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 10px; }
+.btc-direct-legend span { color: var(--muted); font-size: var(--text-xs); display: flex; gap: 6px; align-items: center; }
+.btc-direct-legend i { display: inline-block; width: 15px; height: 3px; border-radius: 2px; }
