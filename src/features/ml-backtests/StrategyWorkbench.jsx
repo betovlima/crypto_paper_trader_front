@@ -8,56 +8,56 @@ import { ML_API_URL } from "../../api/mlClient";
 
 const WORDS = {
   pt: {
-    title: "Estratégias e otimização LightGBM",
-    description: "Crie uma estratégia, otimize hiperparâmetros antes do primeiro teste OOS e execute a vencedora.",
+    title: "Pesquisa de capitalização BTC/CASH",
+    description: "Otimize pontos de entrada, permanência, realização de lucros, proteção de perdas e reinvestimento. O LightGBM fornece as previsões; o patrimônio líquido decide a estratégia vencedora.",
     name: "Nome da estratégia", source: "Auditoria histórica", horizon: "Horizontes utilizados",
     create: "Criar estratégia", chosen: "Estratégia selecionada", update: "Atualizar", cancel: "Cancelar otimização",
-    quick: "Otimizar parâmetros", bayes: "CARO · Otimização bayesiana",
-    quickHint: "8 configurações, cada uma testada em 2h, 6h e 24h.",
-    bayesHint: "24 configurações × 3 horizontes. CARO adaptado ao BTC, com maior custo de CPU.",
+    quick: "Otimizar rotações BTC/CASH", bayes: "CARO · Otimizar capitalização",
+    quickHint: "8 candidatos com regras de compra, venda e hiperparâmetros; uma única carteira reinvestida.",
+    bayesHint: "24 candidatos para maximizar capital líquido com penalidade de drawdown e instabilidade.",
     noSource: "Primeiro conclua uma execução BTC Direction & Return com auditoria.",
     noDownload: "Os candles são lidos da auditoria já armazenada na ML API, sem download adicional.",
     selection: "Melhor candidato na validação interna", score: "Score econômico", sharpe: "Sharpe", worst: "Pior período",
-    capital: "Capital médio por horizonte (USDT)", dd: "Drawdown", brier: "Brier",
+    capital: "Capital final BTC/CASH (USDT)", dd: "Drawdown", brier: "Brier",
     confirm: "Executar 24 treinamentos na otimização bayesiana? O custo de CPU pode ser alto.",
     execute: "Executar LightGBM fora da amostra", results: "Ver resultados e gráficos",
     report: "Exportar relatório e auditoria ZIP", progress: "Progresso",
     trials: "Tentativas realizadas", all: "Todas as tentativas",
-    warning: "A média de capital resume três simulações independentes, não é uma carteira consolidada. Os dados usados para selecionar parâmetros são anteriores ao teste OOS.",
+    warning: "Este é o patrimônio de uma única carteira BTC/CASH com reinvestimento e custos, simulado na validação anterior ao OOS. Ainda não representa lucro garantido no período de teste.",
     error: "Erro", empty: "Nenhuma estratégia", status: "Situação",
   },
   en: {
-    title: "LightGBM strategy research", description: "Create, tune on pre-OOS history, then execute the champion.",
+    title: "BTC/CASH capital growth research", description: "Optimize BTC/CASH entries, exits, profit-taking and capital reinvestment on pre-OOS data.",
     name: "Strategy name", source: "Archived audit", horizon: "Forecast horizons",
     create: "Create strategy", chosen: "Selected strategy", update: "Refresh", cancel: "Cancel optimization",
-    quick: "Optimize parameters", bayes: "CARO · Bayesian optimization",
+    quick: "Optimize BTC/CASH rotations", bayes: "CARO · Optimize compounded capital",
     quickHint: "8 settings, each tested across 2h, 6h and 24h.", bayesHint: "24 trials. Crypto-adapted CARO using probabilistic search and risk constraints.",
     noSource: "First complete an audited BTC Direction & Return execution.",
     noDownload: "Market candles come from the stored audit. No further exchange download.",
     selection: "Best internal-validation candidate", score: "Economic score", sharpe: "Sharpe", worst: "Worst validation period",
-    capital: "Mean simulated capital per horizon", dd: "Drawdown", brier: "Brier",
+    capital: "BTC/CASH ending capital", dd: "Drawdown", brier: "Brier",
     confirm: "Run 24 Bayesian LightGBM training trials? CPU consumption can be significant.",
     execute: "Evaluate LightGBM out of sample", results: "View results and charts",
     report: "Export report and OOS audit ZIP", progress: "Progress",
     trials: "Completed trials", all: "All trials",
-    warning: "Mean capital summarizes three independent horizon simulations, not one consolidated portfolio. Selection uses pre-OOS data only.",
+    warning: "One compounded BTC/CASH portfolio with trading costs. Selection is pre-OOS; this is not the final test result.",
     error: "Error", empty: "No strategies", status: "Status",
   },
   es: {
-    title: "Estrategias y optimización LightGBM", description: "Cree y optimice antes de OOS y evalúe al ganador.",
+    title: "Investigación de capital BTC/CASH", description: "Optimice compra, venta, toma de beneficios y reinversión antes del período OOS.",
     name: "Nombre", source: "Auditoría", horizon: "Horizontes utilizados",
     create: "Crear estrategia", chosen: "Estrategia seleccionada", update: "Actualizar", cancel: "Cancelar optimización",
-    quick: "Optimizar parámetros", bayes: "CARO · Optimización bayesiana",
+    quick: "Optimizar rotaciones BTC/CASH", bayes: "CARO · Optimizar capitalización",
     quickHint: "8 configuraciones, evaluadas en 2h, 6h y 24h.", bayesHint: "24 intentos. CARO adaptado a BTC con búsqueda probabilística y límites de riesgo.",
     noSource: "Primero complete una ejecución auditada de BTC Direction & Return.",
     noDownload: "Los datos provienen de la auditoría almacenada.",
     selection: "Mejor candidato de validación", score: "Score económico", sharpe: "Sharpe", worst: "Peor período",
-    capital: "Capital promedio por horizonte", dd: "Drawdown", brier: "Brier",
+    capital: "Capital final BTC/CASH", dd: "Drawdown", brier: "Brier",
     confirm: "¿Ejecutar 24 entrenamientos bayesianos de LightGBM?",
     execute: "Ejecutar LightGBM fuera de muestra", results: "Ver resultados",
     report: "Exportar informe y auditoría ZIP", progress: "Progreso",
     trials: "Intentos", all: "Todos los intentos",
-    warning: "El capital es un promedio de tres simulaciones independientes, no una cartera consolidada. El resultado OOS es independiente.",
+    warning: "Es una cartera BTC/CASH reinvertida con costos. La selección previa a OOS no garantiza beneficio posterior.",
     error: "Error", empty: "Sin estrategias", status: "Estado",
   },
 };
@@ -239,17 +239,20 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               <div><small>{text.brier}</small><strong>{fmt(metrics.brier, 4)}</strong></div>
               <div><small>{text.sharpe}</small><strong>{fmt(metrics.sharpe)}</strong></div>
               <div><small>{text.worst}</small><strong>{metrics.worst_fold_return == null ? "—" : fmt(metrics.worst_fold_return * 100) + "%"}</strong></div>
+              {metrics.completed_cycles != null && <div><small>Ciclos BTC/CASH</small><strong>{metrics.completed_cycles}</strong></div>}
+              {metrics.wins != null && <div><small>Compras e vendas lucrativas</small><strong>{metrics.wins} / {metrics.completed_cycles ?? 0}</strong></div>}
+              {metrics.fees_paid != null && <div><small>Taxas acumuladas (USDT)</small><strong>{fmt(metrics.fees_paid)}</strong></div>}
+              {metrics.exposure != null && <div><small>Exposição em BTC</small><strong>{fmt(metrics.exposure * 100)}%</strong></div>
             </div>
             {metrics.per_horizon && Object.keys(metrics.per_horizon).length > 1 && (
               <div className="ml-table-wrap">
                 <table className="ml-table">
-                  <thead><tr><th>{text.horizon}</th><th>{text.capital}</th><th>{text.dd}</th><th>{text.sharpe}</th><th>{text.brier}</th></tr></thead>
+                  <thead><tr><th>{text.horizon}</th><th>Brier</th><th>MAE</th><th>Previsões de validação</th></tr></thead>
                   <tbody>{Object.entries(metrics.per_horizon)
                     .sort(([a], [b]) => Number(a) - Number(b))
                     .map(([h, m]) => <tr key={h}>
-                      <td>{h}h</td><td>{fmt(m.capital_final)} USDT</td>
-                      <td>{fmt(m.max_drawdown * 100)}%</td>
-                      <td>{fmt(m.sharpe)}</td><td>{fmt(m.brier, 4)}</td>
+                      <td>{h}h</td><td>{fmt(m.brier, 4)}</td>
+                      <td>{fmt(m.mae, 6)}</td><td>{m.signal_count ?? "—"}</td>
                     </tr>)}
                   </tbody>
                 </table>
@@ -257,9 +260,10 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             )}
             <p className="strategy-note">{text.warning}</p>
             <div className="strategy-parameters">
-              {Object.entries(best.parameters || {}).map(([key, value]) =>
+              {Object.entries(best.parameters || {}).filter(([key]) => key.startsWith("policy.")).map(([key, value]) =>
                 <span key={key}><code>{key}</code>: <strong>{value}</strong></span>)}
             </div>
+            <details><summary>Hiperparâmetros LightGBM selecionados</summary><div className="strategy-parameters">{Object.entries(best.parameters || {}).filter(([key]) => key.startsWith("lightgbm.") || key.startsWith("forecast.")).map(([key, value]) => <span key={key}><code>{key}</code>: <strong>{value}</strong></span>)}</div></details>
             {detail.status === "OPTIMIZED" && <button type="button" className="primary-button"
               disabled={running} onClick={execute}>{text.execute}</button>}
           </div>}
