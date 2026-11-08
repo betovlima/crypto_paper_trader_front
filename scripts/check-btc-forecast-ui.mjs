@@ -143,4 +143,10 @@ assert.ok(strategy.includes("metrics.forecast_realization_diagnostics"),
   "Predicted-vs-realized return diagnostic must be available without OOS leakage");
 assert.ok(strategy.includes("quality_by_trial") && strategy.includes("reason_codes"),
   "A rejected strategy must explain which economic gates failed");
+assert.ok(strategy.includes("same_trades_under_stress") && strategy.includes("stress_completed_cycles"),
+  "V10 financial stress must show equal traded positions rather than zero-trade artificial cash");
+assert.ok(strategy.includes("return_quality") && strategy.includes("mae_skill_vs_training_mean"),
+  "Forecast diagnostics must compare each 2h/6h/24h LightGBM return against training-mean baseline");
+assert.ok(strategy.includes("prediction_amplitude_ratio") && strategy.includes("prediction_correlation"),
+  "Display prediction magnitude and return correlation only inside advanced diagnostics");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
