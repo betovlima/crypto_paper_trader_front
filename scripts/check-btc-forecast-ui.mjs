@@ -87,4 +87,16 @@ assert.ok(!strategy.includes("horizon_hours: Number(horizon)"), "Strategy must s
 assert.ok(strategy.includes('err.status === 404') && strategy.includes("/v1/ml-strategies"), "Missing API route must have actionable diagnosis");
 assert.ok(capitalization.includes("horizon_hours: 0"), "Capitalization must default to combined three-horizon policy");
 assert.ok(capitalization.includes("2h + 6h + 24h"), "Combined financial policy must be visible");
+assert.ok(strategy.includes('quick: "Otimizar rotações BTC/CASH"'),
+  "Research buttons must optimize trade rotations rather than model selection");
+assert.ok(strategy.includes('capital: "Capital final BTC/CASH (USDT)"'),
+  "Research winner must show single fully compounded portfolio");
+assert.ok(strategy.includes('policy.'),
+  "Final trade-policy snapshot must remain visible to users");
+assert.ok(capitalization.includes("optimizedPolicy"),
+  "Financial report must identify optimized policy executions");
+assert.ok(capitalization.includes("BTC_CASH_ROTATION"),
+  "Financial report must show BTC/CASH capital separately from the benchmark");
+assert.ok(capitalization.includes("Recalcular patrimônio BTC/CASH"),
+  "Final report must be recalculable entirely within the Front");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
