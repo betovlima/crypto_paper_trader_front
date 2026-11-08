@@ -18,15 +18,16 @@ function format(value, language, percent = false) {
   return formatted + (percent ? "%" : "");
 }
 
-export function ReplayComparisonPanel({ comparison, language, t }) {
+export function ReplayComparisonPanel({ comparison, language, t, modelFamily }) {
   if (!comparison || comparison.status !== "VERIFIED") return null;
   const horizons = comparison.horizons || [];
+  const candidate = modelFamily === "LightGBM" ? "LightGBM" : "V2";
   return (
     <section className="ml-panel btc-replay-comparison">
       <header className="ml-panel-header">
         <div>
           <span>{t("Verified identical OOS comparison")}</span>
-          <h3>{t("Original model versus V2")}</h3>
+          <h3>{t(modelFamily === "LightGBM" ? "Original model versus LightGBM" : "Original model versus V2")}</h3>
         </div>
       </header>
       <p className="btc-chart-note">
@@ -41,7 +42,7 @@ export function ReplayComparisonPanel({ comparison, language, t }) {
                 <tr>
                   <th>{t("Metric")}</th>
                   <th>{t("Original")}</th>
-                  <th>V2</th>
+                  <th>{candidate}</th>
                   <th>{t("Change")}</th>
                 </tr>
               </thead>
@@ -78,7 +79,7 @@ export function ReplayComparisonPanel({ comparison, language, t }) {
         </div>
       ))}
       <p className="btc-chart-note">
-        {t("Financial simulation is available below for verified V2 replays.")}
+        {t("Financial simulation is available below for verified replays.")}
       </p>
     </section>
   );
