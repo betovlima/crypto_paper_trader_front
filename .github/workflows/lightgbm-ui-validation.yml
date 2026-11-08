@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/lightgbm-ui-v3-20261108
+      - feature/crypto-research-workspace-ui-v4-20261108
   workflow_dispatch:
 
 jobs:
