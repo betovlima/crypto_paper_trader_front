@@ -103,7 +103,8 @@ assert.ok(strategy.includes('launchResearchCampaign('), "Completed strategy must
 assert.ok(strategy.includes("needsFreshCampaign(detail)"), "Completed campaigns must remain immutable");
 assert.ok(strategy.includes("optimizationUnavailable"), "Only running operations should block tuning buttons");
 assert.ok(!strategy.includes("!!detail.execution_job_id}>{text.quick}"), "Final OOS status must not permanently disable reoptimization");
-assert.ok(strategy.includes('["FAILED", "NO_TRADES"]'), "Idle optimization status must be visible in the Front");
+assert.ok(strategy.includes('["FAILED", "NO_TRADES", "INSUFFICIENT_EVIDENCE"]'),
+  "All idle and insufficient evidence statuses must be visible in the Front");
 assert.ok(strategy.includes("entry_diagnostics"), "The UI must explain which BTC/CASH entry filters blocked trades");
 assert.ok(strategy.includes("idleChampion"), "Historical all-CASH winners must be flagged instead of being executed OOS");
 const actionSection = strategy.slice(
@@ -136,4 +137,10 @@ assert.ok(capitalization.includes('name === "fee_rate"'),
   "A redundant fixed commission field must not be shown for Alpaca volume pricing");
 assert.ok(strategy.includes("metrics.net_profit_usd") && strategy.includes("metrics.fees_paid"),
   "Four compact research KPIs must show net realized simulated profits and broker fees");
+assert.ok(strategy.includes("metrics.robustness") && strategy.includes("stress_net_profit_usd"),
+  "Pre-OOS robustness and Alpaca fee stress must be accessible in the collapsed audit");
+assert.ok(strategy.includes("metrics.forecast_realization_diagnostics"),
+  "Predicted-vs-realized return diagnostic must be available without OOS leakage");
+assert.ok(strategy.includes("quality_by_trial") && strategy.includes("reason_codes"),
+  "A rejected strategy must explain which economic gates failed");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
