@@ -83,7 +83,7 @@ function EquityChart({ rows, t, language }) {
   return (
     <div className="ml-equity-chart">
       <div className="ml-chart-legend">
-        <span><i className="is-ml" />{t("XGBoost Walk-Forward")}</span>
+        <span><i className="is-ml" />{t("LightGBM Walk-Forward")}</span>
         <span><i className="is-buy-hold" />{t("Buy and Hold")}</span>
       </div>
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={t("Capital evolution chart")}>
@@ -172,7 +172,7 @@ function NewBacktestDialog({ open, onClose, onSubmit, submitting, configuration,
                     <option value={type} key={type}>
                       {type === "BTC_DIRECTION_RETURN"
                         ? t("BTC Direction & Return")
-                        : t("Target/Stop XGBoost (BTC/CASH)")}
+                        : t("Target/Stop LightGBM (BTC/CASH)")}
                     </option>
                   ))}
                 </select>
@@ -389,7 +389,7 @@ function EmptyBacktest({ onNew, t }) {
     <section className="ml-empty-state">
       <span>ML</span>
       <h2>{t("No Machine Learning backtest has been executed yet")}</h2>
-      <p>{t("Create a manual XGBoost walk-forward analysis using up to four years of MEXC history.")}</p>
+      <p>{t("Create a manual LightGBM walk-forward analysis using up to four years of MEXC history.")}</p>
       <button type="button" className="primary-button" onClick={onNew}>{t("New execution")}</button>
     </section>
   );
@@ -400,7 +400,7 @@ function ProgressPanel({ job, onCancel, cancelling, t }) {
     [12, t("Downloading historical data")],
     [24, t("Calculating technical indicators")],
     [35, t("Creating entry and exit labels")],
-    [73, t("Training XGBoost with walk-forward validation")],
+    [73, t("Training LightGBM with walk-forward validation")],
     [88, t("Simulating out-of-sample operations")],
     [100, t("Generating the report")],
   ];
@@ -575,7 +575,7 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
     <section className="ml-page">
       <header className="ml-page-heading">
         <div>
-          <span>{t("XGBoost · Walk-forward · Separate API")}</span>
+          <span>{t("LightGBM · Walk-forward · Separate API")}</span>
           <h2>{t("Backtest with Machine Learning")}</h2>
           <p>{t("Long-period entry and exit research without changing the live paper-trading API.")}</p>
         </div>
@@ -630,7 +630,7 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
             <div><small>{t("Trend candle")}</small><strong>{selectedJob.trend_timeframe}</strong></div>
             <div><small>{t("Requested period")}</small><strong>{selectedJob.period_years} {t("years")}</strong></div>
             <div><small>{t("Historical market source")}</small><strong>{selectedJob.history_source || "MEXC"}</strong></div>
-            <div><small>{t("Experiment type")}</small><strong>{selectedJob.experiment_type === "BTC_DIRECTION_RETURN" ? t("BTC Direction & Return") : t("Target/Stop XGBoost (BTC/CASH)")}</strong></div>
+            <div><small>{t("Experiment type")}</small><strong>{selectedJob.experiment_type === "BTC_DIRECTION_RETURN" ? t("BTC Direction & Return") : t("Target/Stop LightGBM (BTC/CASH)")}</strong></div>
             <div><small>{t("Created")}</small><strong>{formatDateTime(selectedJob.created_at, language)}</strong></div>
           </section>
 
@@ -820,7 +820,7 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
                   </article>
                   <article className="ml-panel">
                     <header className="ml-panel-header"><div><span>{t("Current paper-trading context")}</span><h3>{liveExperiment?.market || t("No running experiment")}</h3></div></header>
-                    <p className="ml-context-copy">{t("This panel comes from the main API. The four-year XGBoost result comes from the separate ML API, so the two services remain independently deployable.")}</p>
+                    <p className="ml-context-copy">{t("This panel comes from the main API. The four-year LightGBM result comes from the separate ML API, so the two services remain independently deployable.")}</p>
                     <dl className="ml-stat-list compact">
                       <div><dt>{t("Main API status")}</dt><dd>{mainApiAvailable ? t("Connected") : t("Unavailable")}</dd></div>
                       <div><dt>{t("Strategies loaded")}</dt><dd>{liveStrategies?.length || 0}</dd></div>
