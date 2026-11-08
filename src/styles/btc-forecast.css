@@ -95,3 +95,7 @@
 .btc-direct-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 10px; }
 .btc-direct-legend span { color: var(--muted); font-size: var(--text-xs); display: flex; gap: 6px; align-items: center; }
 .btc-direct-legend i { display: inline-block; width: 15px; height: 3px; border-radius: 2px; }
+
+.btc-direct-results .btc-direct-horizons { margin: 12px 0; }
+.btc-direct-results .ml-table-wrap { overflow-x: auto; margin-top: 12px; }
+.btc-direct-results .btc-chart-note { margin-top: 10px; line-height: 1.5; }

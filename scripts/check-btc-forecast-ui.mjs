@@ -42,6 +42,10 @@ assert.ok(oldBacktestPage.includes("DirectionForecastPanel"), "ML Backtest must 
 assert.ok(page.includes("DirectionForecastPanel"), "BTC Forecast tab must render direct prediction results");
 assert.ok(page.includes('result?.experiment_type !== "BTC_DIRECTION_RETURN"'), "Direct forecasts must not be presented as historical BTC/CASH trades");
 assert.ok(directPage.includes("brier_skill_score"), "Direct forecast must display Brier skill");
+assert.ok(directPage.includes("forecast_raw_p_up"), "Raw OOS probabilities must be shown when available");
+assert.ok(directPage.includes("confidence_intervals"), "Temporal confidence intervals must be shown when available");
+assert.ok(directPage.includes("split_nodes_used"), "Effective XGBoost splits must be shown when available");
+assert.ok(directPage.includes("test_calibrated_bins"), "Calibration reliability must be auditable");
 assert.ok(directPage.includes("return_mae"), "Direct forecast must display return error");
 assert.ok(directPage.includes("forecast_realized_return"), "Charts must show observed BTC returns");
 assert.ok(directPage.includes("forecast_p_up"), "Charts must show actual predictive probabilities");
