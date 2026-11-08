@@ -59,12 +59,26 @@ function Metric({ label, value, detail }) {
 export function DirectionForecastPanel({ result, language, t }) {
   const horizons = result?.forecast?.horizons || [];
   const [selectedHours, setSelectedHours] = useState(null);
+  const [selectedFold, setSelectedFold] = useState(null);
   const chosen = horizons.find((item) => item.horizon_hours === selectedHours) || horizons[0];
   if (!chosen) return null;
   const metrics = chosen.metrics || {};
   const rows = chosen.sample || [];
   const locale = language === "pt" ? "pt-BR" : language === "es" ? "es-ES" : "en-US";
   const first = rows[0], last = rows[rows.length - 1];
+  const confidence = chosen.confidence_intervals || null;
+  const foldDiagnosis = (chosen.folds || []).find((fold) => fold.fold === selectedFold)
+    || (chosen.folds || [])[0];
+  const calibration = foldDiagnosis?.model_diagnostics?.calibration;
+  const reliability = calibration?.test_calibrated_bins || [];
+  const intervalText = (key, percentage = false) => {
+    const interval = confidence?.intervals?.[key];
+    if (!interval || interval.lower == null || interval.upper == null) return "—";
+    const formatter = percentage ? percent : number;
+    return formatter(interval.lower, language, percentage ? 2 : 4)
+      + " a " + formatter(interval.upper, language, percentage ? 2 : 4);
+  };
+  const hasRawProbabilities = rows.some((row) => Number.isFinite(Number(row.forecast_raw_p_up)));
 
   return (
     <section className="btc-direct-results">
@@ -91,15 +105,34 @@ export function DirectionForecastPanel({ result, language, t }) {
         <Metric label={t("MAE skill versus zero")} value={percent(metrics.return_mae_skill_vs_zero, language)} />
         <Metric label={t("Out-of-sample forecasts")} value={number(metrics.rows, language, 0)} />
       </section>
+      {confidence && (
+        <section className="ml-panel">
+          <header className="ml-panel-header"><div><span>{t("Temporal uncertainty")}</span><h3>{t("95% block-bootstrap intervals")}</h3></div></header>
+          <div className="ml-table-wrap">
+            <table className="ml-table">
+              <thead><tr><th>{t("Metric")}</th><th>{t("Lower to upper bound")}</th></tr></thead>
+              <tbody>
+                <tr><td>ROC-AUC</td><td>{intervalText("roc_auc")}</td></tr>
+                <tr><td>Brier Skill</td><td>{intervalText("brier_skill_score", true)}</td></tr>
+                <tr><td>{t("MAE skill versus zero")}</td><td>{intervalText("return_mae_skill_vs_zero", true)}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="btc-chart-note">{t("Moving blocks from the observed OOS periods; not a guarantee of future performance.")} {t("Block size")}: {confidence.block_length_candles} · {t("Resamples")}: {confidence.samples}.</p>
+        </section>
+      )}
       <section className="ml-panel btc-direct-chart-card">
         <header className="ml-panel-header">
           <div><span>{t("Direction probability")}</span><h3>{chosen.horizon_hours}h · BTCUSDT</h3></div>
         </header>
         <LineChart
           rows={rows} language={language}
-          title={t("Forecast probability versus training baseline")}
+          title={t("Raw, calibrated and training-baseline probabilities")}
           series={[
-            { key: "forecast_p_up", label: t("Predicted probability"), color: "#42c7aa" },
+            ...(hasRawProbabilities ? [{
+              key: "forecast_raw_p_up", label: t("Raw probability"), color: "#97acfb",
+            }] : []),
+            { key: "forecast_p_up", label: t("Calibrated probability"), color: "#42c7aa" },
             { key: "forecast_baseline_p_up", label: t("Training baseline"), color: "#f5b34e" },
           ]}
         />
@@ -137,6 +170,55 @@ export function DirectionForecastPanel({ result, language, t }) {
           </table>
         </div>
       </section>
+      {(chosen.folds || []).some((fold) => fold.model_diagnostics) && (
+        <section className="ml-panel">
+          <header className="ml-panel-header"><div><span>{t("Model diagnosis")}</span><h3>{t("Actual XGBoost splits and prediction diversity")}</h3></div></header>
+          <div className="ml-table-wrap">
+            <table className="ml-table">
+              <thead><tr><th>Fold</th><th>{t("Regressor splits")}</th><th>{t("Return predictions distinct")}</th><th>{t("Regressor best iteration")}</th><th>{t("Raw Brier")}</th><th>{t("Calibrated Brier")}</th></tr></thead>
+              <tbody>
+                {(chosen.folds || []).map((fold) => {
+                  const diagnosis = fold.model_diagnostics || {};
+                  return <tr key={fold.fold}>
+                    <td>{fold.fold}</td>
+                    <td>{number(diagnosis.regression?.split_nodes_used, language, 0)}</td>
+                    <td>{number(diagnosis.regression?.unique_predictions, language, 0)}</td>
+                    <td>{diagnosis.regression?.best_iteration ?? "—"}</td>
+                    <td>{number(diagnosis.calibration?.test_raw_brier, language, 5)}</td>
+                    <td>{number(diagnosis.calibration?.test_calibrated_brier, language, 5)}</td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="btc-chart-note">{t("A single return value or zero splits indicates a degenerate regressor.")}</p>
+          <div className="btc-direct-horizons" role="group" aria-label={t("Calibration fold")}>
+            {(chosen.folds || []).map((fold) => (
+              <button key={fold.fold} type="button"
+                className={foldDiagnosis?.fold === fold.fold ? "active" : ""}
+                onClick={() => setSelectedFold(fold.fold)}
+              >Fold {fold.fold}</button>
+            ))}
+          </div>
+          {calibration && (
+            <div className="ml-table-wrap">
+              <table className="ml-table">
+                <thead><tr><th>{t("Probability bucket")}</th><th>{t("Predicted mean")}</th><th>{t("Observed rise rate")}</th><th>{t("Forecasts")}</th></tr></thead>
+                <tbody>
+                  {reliability.map((bucket) => (
+                    <tr key={bucket.lower}>
+                      <td>{percent(bucket.lower, language, 0)} – {percent(bucket.upper, language, 0)}</td>
+                      <td>{percent(bucket.mean_predicted, language)}</td>
+                      <td>{percent(bucket.observed_up_rate, language)}</td>
+                      <td>{number(bucket.rows, language, 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
       {first && last && (
         <p className="btc-chart-note">
           {t("Sampled chart window")}: {new Date(first.timestamp).toLocaleDateString(locale, { timeZone: "UTC" })}
