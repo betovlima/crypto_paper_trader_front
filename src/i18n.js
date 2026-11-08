@@ -11,6 +11,8 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "Distance at execution": "Distância ao topo na execução",
+  "Switch distances use the highest close known at execution; local peaks will be analyzed separately.": "A distância em cada operação usa o maior fechamento conhecido na execução. Os topos locais serão analisados separadamente.",
   "BTC Forecast": "Previsão BTC",
   "BTC/CASH rotations": "Rotações BTC/CASH",
   "Historical strategy comparison and execution timeline.": "Comparação histórica de estratégias e linha do tempo das operações.",
@@ -422,6 +424,8 @@ const pt = {
 };
 
 const es = {
+  "Distance at execution": "Distancia al máximo en la ejecución",
+  "Switch distances use the highest close known at execution; local peaks will be analyzed separately.": "La distancia en cada operación usa el máximo cierre conocido en ese momento. Los máximos locales se analizarán por separado.",
   "BTC Forecast": "Pronóstico de BTC",
   "BTC/CASH rotations": "Rotaciones BTC/CASH",
   "Historical strategy comparison and execution timeline.": "Comparación histórica de estrategias y cronología de operaciones.",

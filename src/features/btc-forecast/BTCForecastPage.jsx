@@ -292,20 +292,22 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
             <header className="ml-panel-header"><div><span>{t("Entry and exit events")}</span><h3>{t("Historical execution (out of sample)")}</h3></div></header>
             <div className="ml-table-wrap">
               <table className="ml-table">
-                <thead><tr><th>{t("Time")}</th><th>{t("Action")}</th><th>{t("Execution price")}</th><th>{t("Distance at close")}</th><th>{t("Reason")}</th></tr></thead>
+                <thead><tr><th>{t("Time")}</th><th>{t("Action")}</th><th>{t("Execution price")}</th><th>{t("Distance at execution")}</th><th>{t("Distance at close")}</th><th>{t("Reason")}</th></tr></thead>
                 <tbody>
                   {actions.length ? actions.map((event) => (
                     <tr key={event.id}>
                       <td>{moment(event.timestamp, language)}</td>
                       <td className={event.action === "BUY" ? "btc-buy-text" : "btc-sell-text"}>{event.action}</td>
                       <td>{number(event.execution_price, language, 2)} USDT</td>
+                      <td>{percent(event.distance_to_peak_at_execution, language)}</td>
                       <td>{percent(event.close_distance, language)}</td>
                       <td>{t(event.reason)}</td>
                     </tr>
-                  )) : <tr><td colSpan="5">{t("No BTC/CASH switches in this backtest.")}</td></tr>}
+                  )) : <tr><td colSpan="6">{t("No BTC/CASH switches in this backtest.")}</td></tr>}
                 </tbody>
               </table>
             </div>
+            <p className="btc-chart-note">{t("Switch distances use the highest close known at execution; local peaks will be analyzed separately.")}</p>
           </section>
           <p className="btc-chart-note">{t("This is a historical paper-trading replay, not a live prediction or real trading execution.")}</p>
         </>

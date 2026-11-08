@@ -21,6 +21,7 @@ assert.ok(page.includes("row.actions"), "Executed trade markers must come from r
 assert.ok(page.includes("row.position"), "Position must come from the simulator, not inferred from trades");
 assert.ok(page.includes("peak_close_so_far"), "The running price peak must be drawn");
 assert.ok(page.includes("distance_to_peak"), "The peak-distance chart must use the ML result");
+assert.ok(page.includes("distance_to_peak_at_execution"), "Entry and exit distances must come from the execution-time peak");
 assert.ok(page.includes("BUY_AND_HOLD") && page.includes("XGBOOST_WALK_FORWARD"), "Existing benchmarks must be selectable");
 assert.ok(page.includes('selectedJob?.status === "COMPLETED" && !timeline.length'), "Old jobs must not show fabricated history");
 assert.ok(!page.includes("Math.random"), "Forecast interface must not fabricate results");
