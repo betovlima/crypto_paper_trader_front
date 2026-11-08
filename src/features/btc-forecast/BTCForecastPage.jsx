@@ -350,7 +350,8 @@ export function BTCForecastPage({ language, t, onOpenBacktest, embedded = false,
         selectedJob.replay_parent_job_id && result?.replay_comparison?.status === "VERIFIED"
           ? <CapitalizationPanel embedded={embedded} key={selectedJob.id} jobId={selectedJob.id} language={language}
               modelFamily={result?.execution?.model_family}
-              optimizedPolicy={Boolean(selectedJob?.settings_snapshot?.["policy.enabled"])} />
+              optimizedPolicy={Boolean(selectedJob?.settings_snapshot?.["policy.enabled"])}
+              feeModel={selectedJob?.settings_snapshot?.["policy.fee_model"] || "FIXED"} />
           : <section className="ml-panel btc-capitalization-gate">
               <header className="ml-panel-header">
                 <div>
