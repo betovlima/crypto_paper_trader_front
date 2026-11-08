@@ -40,10 +40,9 @@ import { SetupDialog, StopDialog, HistoryRetryDialog, ResearchRetryDialog } from
 import { LanguageSelector, RunningExperimentTopbarSummary, ExperimentCycleBar } from "./components/layout/DashboardHeader";
 import { PrimaryNavigation } from "./components/layout/PrimaryNavigation";
 import { MLBacktestPage } from "./features/ml-backtests/MLBacktestPage";
-import { BTCForecastPage } from "./features/btc-forecast/BTCForecastPage";
 
 function resolveApplicationPath() {
-  if (window.location.pathname.startsWith("/backtests/btc")) return "/backtests/btc";
+  if (window.location.pathname.startsWith("/backtests/btc")) return "/backtests/ml";
   return window.location.pathname.startsWith("/backtests/ml") ? "/backtests/ml" : "/";
 }
 
@@ -103,12 +102,16 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
     document.documentElement.lang = INTL_LOCALES[language] || "en-US";
-    document.title = currentPath === "/backtests/btc"
-      ? "BTC Forecast · Crypto Paper Trader"
-      : currentPath === "/backtests/ml"
-        ? "ML Backtest · Crypto Paper Trader"
-        : "Crypto Paper Trader";
+    document.title = currentPath === "/backtests/ml"
+      ? "Laboratório ML · Crypto Paper Trader" : "Crypto Paper Trader";
   }, [language, currentPath]);
+
+  useEffect(() => {
+    // Keep previously shared BTC Forecast URLs working inside the unified workspace.
+    if (window.location.pathname.startsWith("/backtests/btc")) {
+      window.history.replaceState({}, "", "/backtests/ml");
+    }
+  }, []);
 
   useEffect(() => {
     const handlePopState = () => setCurrentPath(resolveApplicationPath());
@@ -117,16 +120,14 @@ export default function App() {
   }, []);
 
   const navigate = useCallback((path) => {
-    const normalized = path.startsWith("/backtests/btc")
-      ? "/backtests/btc"
-      : path.startsWith("/backtests/ml") ? "/backtests/ml" : "/";
+    const normalized = path.startsWith("/backtests/btc") || path.startsWith("/backtests/ml")
+      ? "/backtests/ml" : "/";
     if (window.location.pathname !== normalized) window.history.pushState({}, "", normalized);
     setCurrentPath(normalized);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const isMLBacktestPage = currentPath === "/backtests/ml";
-  const isBTCForecastPage = currentPath === "/backtests/btc";
 
   const refresh = useCallback(async ({ includeConfiguration = false } = {}) => {
     if (refreshInFlightRef.current) return;
@@ -835,18 +836,12 @@ export default function App() {
 
       <PrimaryNavigation currentPath={currentPath} onNavigate={navigate} t={t} />
 
-      {!isMLBacktestPage && !isBTCForecastPage && <ExperimentCycleBar summary={runningHeaderSummary} t={t} />}
+      {!isMLBacktestPage && <ExperimentCycleBar summary={runningHeaderSummary} t={t} />}
 
       {error && <div className="alert" role="alert">{error}</div>}
 
       <main className="workspace">
-        {isBTCForecastPage ? (
-          <BTCForecastPage
-            language={language}
-            t={t}
-            onOpenBacktest={() => navigate("/backtests/ml")}
-          />
-        ) : isMLBacktestPage ? (
+        {isMLBacktestPage ? (
           <MLBacktestPage
             language={language}
             t={t}
