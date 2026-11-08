@@ -28,6 +28,7 @@ const WORDS = {
     trials: "Tentativas realizadas", all: "Todas as tentativas",
     warning: "Este é o patrimônio de uma única carteira BTC/CASH com reinvestimento e custos, simulado na validação anterior ao OOS. Ainda não representa lucro garantido no período de teste.",
     noTrades: "Nenhuma compra foi realizada na validação. Não há estratégia vencedora para executar. Consulte os filtros de entrada das tentativas e inicie uma nova otimização.",
+    insufficientEvidence: "Houve compras, mas nenhum candidato demonstrou consistência suficiente. O teste OOS não será iniciado. Veja os motivos na auditoria de robustez.",
     idleLegacy: "Esta campanha antiga foi marcada como otimizada, mas não realizou nenhuma compra. A execução OOS foi bloqueada para evitar tratar CASH como capitalização.",
     error: "Erro", empty: "Nenhuma estratégia", status: "Situação",
   },
@@ -49,6 +50,7 @@ const WORDS = {
     trials: "Completed trials", all: "All trials",
     warning: "One compounded BTC/CASH portfolio with trading costs. Selection is pre-OOS; this is not the final test result.",
     noTrades: "No BTC purchases occurred during validation. There is no viable winner. Review entry filters and start a new campaign.",
+    insufficientEvidence: "Trading occurred, but no candidate met the robustness requirements. Final OOS was not started. Review the validation diagnostics.",
     idleLegacy: "This old campaign was marked optimized without any BTC purchases. OOS execution is blocked.",
     error: "Error", empty: "No strategies", status: "Status",
   },
@@ -70,6 +72,7 @@ const WORDS = {
     trials: "Intentos", all: "Todos los intentos",
     warning: "Es una cartera BTC/CASH reinvertida con costos. La selección previa a OOS no garantiza beneficio posterior.",
     noTrades: "No hubo compras BTC durante la validación. No existe ganador. Revise los filtros y cree una nueva campaña.",
+    insufficientEvidence: "Hubo operaciones, pero ningún candidato demostró suficiente consistencia. No se inició el OOS final. Revise la auditoría.",
     idleLegacy: "Esta campaña antigua fue optimizada sin compras BTC. Se bloqueó la ejecución OOS.",
     error: "Error", empty: "Sin estrategias", status: "Estado",
   },
@@ -274,7 +277,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
       <div className="strategy-workflow strategy-workflow-compact" aria-label="Etapas automáticas">
         <span>1. Otimização</span><span>2. LightGBM OOS</span><span>3. Resultados</span>
       </div>
-      <p className="strategy-note">Após a otimização, a execução fora da amostra começa automaticamente se houver um candidato que realize operações.</p>
+      <p className="strategy-note">Após a otimização, o OOS começa automaticamente somente se houver um candidato com operações suficientes, lucro líquido estável e resistência a custos maiores.</p>
       <div className="strategy-create-grid">
         <label><span>{text.name}</span>
           <input required minLength={3} maxLength={120} value={name}
@@ -300,9 +303,12 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             <strong>{text.progress} · {detail.progress}% · {text.trials}: {detail.trials?.length || 0}/{detail.trials_target}</strong>
             <div className="ml-progress-track"><i style={{ width: String(detail.progress) + "%" }} /></div>
           </div>}
-          {["FAILED", "NO_TRADES"].includes(detail.status) && <p className="alert ml-alert" role="alert">
-            <strong>{detail.status === "NO_TRADES" ? text.noTrades : detail.error_message}</strong>
-            {detail.status === "NO_TRADES" && detail.error_message && <small>{detail.error_message}</small>}
+          {["FAILED", "NO_TRADES", "INSUFFICIENT_EVIDENCE"].includes(detail.status) && <p className="alert ml-alert" role="alert">
+            <strong>{detail.status === "NO_TRADES" ? text.noTrades
+              : detail.status === "INSUFFICIENT_EVIDENCE" ? text.insufficientEvidence
+              : detail.error_message}</strong>
+            {["NO_TRADES", "INSUFFICIENT_EVIDENCE"].includes(detail.status) && detail.error_message
+              && <small>{detail.error_message}</small>}
           </p>}
           {detail.status === "NO_TRADES" && detail.summary?.diagnostic_example && (
             <div className="strategy-entry-diagnostics">
@@ -320,6 +326,27 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             </div>
           )}
           {idleChampion && <p className="alert ml-alert" role="alert">{text.idleLegacy}</p>}
+          {detail.status === "INSUFFICIENT_EVIDENCE" && (
+            <details className="strategy-technical-details">
+              <summary>Por que os candidatos foram reprovados?</summary>
+              <p className="strategy-note">Critérios fixados antes do OOS: no mínimo 6 ciclos, operações em pelo menos 2 dos 3 períodos, rentabilidade em pelo menos 2 períodos, lucro líquido positivo, ganho médio compatível com perda média e rentabilidade preservada com taxas 25% maiores e slippage 2 vezes maior.</p>
+              <div className="ml-table-wrap">
+                <table className="ml-table">
+                  <thead><tr><th>#</th><th>Ciclos</th><th>Períodos ativos</th><th>Períodos positivos</th><th>Lucro com custos maiores</th><th>Critérios não atendidos</th></tr></thead>
+                  <tbody>{(detail.summary?.quality_by_trial || []).map((row) => (
+                    <tr key={row.trial}>
+                      <td>{row.trial}</td>
+                      <td>{row.robustness?.completed_cycles ?? "—"}</td>
+                      <td>{row.robustness?.active_segments ?? "—"}/3</td>
+                      <td>{row.robustness?.profitable_segments ?? "—"}/3</td>
+                      <td>{row.robustness?.stress_net_profit_usd == null ? "—" : fmt(row.robustness.stress_net_profit_usd) + " USD eq."}</td>
+                      <td>{row.robustness?.reason_codes?.join(", ") || row.status}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            </details>
+          )}
           <div className="strategy-brief-results">
             <div><small>Patrimônio na validação</small><strong>{fmt(metrics.capital_final)} USDT</strong></div>
             <div><small>Lucro líquido na validação</small><strong>{metrics.net_profit_usd == null ? "—" : fmt(metrics.net_profit_usd) + " USD eq."}</strong></div>
@@ -328,6 +355,17 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           </div>
           <details className="strategy-technical-details">
             <summary>Mostrar diagnósticos, hiperparâmetros e tentativas</summary>
+          {metrics.robustness && (
+            <div className="strategy-entry-diagnostics">
+              <strong>Qualidade da validação pré-OOS</strong>
+              <span>Ciclos completos: {metrics.robustness.completed_cycles}</span>
+              <span>Ciclos em cada período: {metrics.robustness.segment_cycle_counts.join(" / ")}</span>
+              <span>Períodos com retorno positivo: {metrics.robustness.profitable_segments}/3</span>
+              <span>Relação ganho/perda médios: {fmt(metrics.robustness.avg_gain_loss_ratio, 2)}</span>
+              <span>Maior ganho isolado: {fmt(metrics.robustness.largest_win_share_of_gross_wins * 100, 2)}% dos ganhos</span>
+              <span>Lucro sob custos maiores: {fmt(metrics.robustness.stress_net_profit_usd)} USD eq.</span>
+            </div>
+          )}
           {detail.summary?.training_rows_by_horizon?.["2"]?.selection_start && (
             <p className="strategy-note">
               Validação financeira anterior ao OOS: {new Date(detail.summary.training_rows_by_horizon["2"].selection_start).toLocaleDateString("pt-BR")}
