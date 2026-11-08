@@ -337,11 +337,33 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
         <>
           <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
           <ReplayComparisonPanel comparison={result.replay_comparison} language={language} t={t} />
-          {selectedJob.status === "COMPLETED" && selectedJob.replay_parent_job_id
-            && result?.replay_comparison?.status === "VERIFIED" && (
-              <CapitalizationPanel key={selectedJob.id} jobId={selectedJob.id} language={language} />
-            )}
+
         </>
+      )}
+
+      {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN" && selectedJob.status === "COMPLETED" && (
+        selectedJob.replay_parent_job_id && result?.replay_comparison?.status === "VERIFIED"
+          ? <CapitalizationPanel key={selectedJob.id} jobId={selectedJob.id} language={language} />
+          : <section className="ml-panel btc-capitalization-gate">
+              <header className="ml-panel-header">
+                <div>
+                  <span>BTC Forecast</span>
+                  <h3>{t("BTC/CASH financial simulation")}</h3>
+                </div>
+              </header>
+              {!selectedJob.replay_parent_job_id && selectedJob.audit_available ? (
+                <>
+                  <p>{t("To run the financial simulation, first create a V2 replay from this original audited run. The new run will be selected automatically.")}</p>
+                  <button className="primary-button" type="button" onClick={replayAndCompare} disabled={replaying}>
+                    {replaying ? t("Starting V1 versus V2 replay…") : t("Prepare V1 × V2 financial simulation")}
+                  </button>
+                </>
+              ) : !selectedJob.audit_available ? (
+                <p>{t("The selected execution has no stored audit in this ML API. Select another completed run with an audit.")}</p>
+              ) : (
+                <p role="status">{t("Financial simulation is unavailable because the V1/V2 OOS comparison was not verified. Check the replay results.")}</p>
+              )}
+            </section>
       )}
 
       {!!timeline.length && result?.experiment_type !== "BTC_DIRECTION_RETURN" && (
