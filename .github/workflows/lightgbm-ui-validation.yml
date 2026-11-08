@@ -1,0 +1,23 @@
+name: LightGBM frontend validation
+
+on:
+  push:
+    branches:
+      - feature/lightgbm-ui-v3-20261108
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run btc-forecast:check
+      - run: npm run i18n:check
+      - run: npm run ui:check
