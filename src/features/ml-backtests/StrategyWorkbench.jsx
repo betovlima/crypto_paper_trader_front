@@ -5,6 +5,7 @@ import {
 } from "../../api/mlBacktestsApi";
 import "../../styles/ml-strategy-workspace.css";
 import { ML_API_URL } from "../../api/mlClient";
+import { launchResearchCampaign, needsFreshCampaign } from "./strategyCampaign";
 
 const WORDS = {
   pt: {
@@ -13,6 +14,8 @@ const WORDS = {
     name: "Nome da estratégia", source: "Auditoria histórica", horizon: "Horizontes utilizados",
     create: "Criar estratégia", chosen: "Estratégia selecionada", update: "Atualizar", cancel: "Cancelar otimização",
     quick: "Otimizar rotações BTC/CASH", bayes: "CARO · Otimizar capitalização",
+    quickAgain: "Nova otimização BTC/CASH", bayesAgain: "Nova campanha CARO",
+    historyPreserved: "A estratégia selecionada já possui resultados. Uma nova otimização cria automaticamente outra campanha com a mesma auditoria, preservando a execução e os relatórios anteriores.",
     quickHint: "8 candidatos com regras de compra, venda e hiperparâmetros; uma única carteira reinvestida.",
     bayesHint: "24 candidatos para maximizar capital líquido com penalidade de drawdown e instabilidade.",
     noSource: "Primeiro conclua uma execução BTC Direction & Return com auditoria.",
@@ -31,6 +34,8 @@ const WORDS = {
     name: "Strategy name", source: "Archived audit", horizon: "Forecast horizons",
     create: "Create strategy", chosen: "Selected strategy", update: "Refresh", cancel: "Cancel optimization",
     quick: "Optimize BTC/CASH rotations", bayes: "CARO · Optimize compounded capital",
+    quickAgain: "New BTC/CASH optimization", bayesAgain: "New CARO campaign",
+    historyPreserved: "This strategy already has results. Starting a new optimization creates a separate campaign using the same archived data and preserves all prior reports.",
     quickHint: "8 settings, each tested across 2h, 6h and 24h.", bayesHint: "24 trials. Crypto-adapted CARO using probabilistic search and risk constraints.",
     noSource: "First complete an audited BTC Direction & Return execution.",
     noDownload: "Market candles come from the stored audit. No further exchange download.",
@@ -48,6 +53,8 @@ const WORDS = {
     name: "Nombre", source: "Auditoría", horizon: "Horizontes utilizados",
     create: "Crear estrategia", chosen: "Estrategia seleccionada", update: "Actualizar", cancel: "Cancelar optimización",
     quick: "Optimizar rotaciones BTC/CASH", bayes: "CARO · Optimizar capitalización",
+    quickAgain: "Nueva optimización BTC/CASH", bayesAgain: "Nueva campaña CARO",
+    historyPreserved: "Esta estrategia ya tiene resultados. Una nueva optimización crea otra campaña con la misma auditoría, conservando los informes anteriores.",
     quickHint: "8 configuraciones, evaluadas en 2h, 6h y 24h.", bayesHint: "24 intentos. CARO adaptado a BTC con búsqueda probabilística y límites de riesgo.",
     noSource: "Primero complete una ejecución auditada de BTC Direction & Return.",
     noDownload: "Los datos provienen de la auditoría almacenada.",
@@ -162,7 +169,20 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
 
   const optimize = (mode) => action(async () => {
     if (mode === "BAYESIAN" && !window.confirm(text.confirm)) return;
-    setDetail(await optimizeMLStrategy(chosen, { mode, trials: mode === "BAYESIAN" ? 24 : 8 }));
+    const updated = await launchResearchCampaign({
+      strategy: detail,
+      strategies,
+      mode,
+      createStrategy: createMLStrategy,
+      optimizeStrategy: optimizeMLStrategy,
+      onCreated: (created) => {
+        setStrategies((previous) => [created, ...previous]);
+        setChosen(created.id);
+        setDetail(created);
+        setFinalJob(null);
+      },
+    });
+    setDetail(updated);
   });
 
   const cancelOptimization = () => action(async () => {
@@ -187,6 +207,8 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
 
   const best = detail?.champion;
   const metrics = best?.metrics || {};
+  const hasHistory = needsFreshCampaign(detail);
+  const optimizationUnavailable = running || ["RUNNING", "CANCEL_REQUESTED", "EXECUTING"].includes(detail?.status);
   return (
     <section className="ml-panel strategy-workbench" aria-label={text.title}>
       <header className="ml-panel-header">
@@ -241,12 +263,13 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
         <>
           <div className="strategy-actions">
             <div><button type="button" className="primary-button" onClick={() => optimize("QUICK")}
-              disabled={running || detail.status === "RUNNING" || !!detail.execution_job_id}>{text.quick}</button>
+              disabled={optimizationUnavailable}>{hasHistory ? text.quickAgain : text.quick}</button>
               <small>{text.quickHint}</small></div>
             <div><button type="button" className="secondary-button" onClick={() => optimize("BAYESIAN")}
-              disabled={running || detail.status === "RUNNING" || !!detail.execution_job_id}>{text.bayes}</button>
+              disabled={optimizationUnavailable}>{hasHistory ? text.bayesAgain : text.bayes}</button>
               <small>{text.bayesHint}</small></div>
           </div>
+          {hasHistory && <p className="strategy-note">{text.historyPreserved}</p>}
           {detail.status === "RUNNING" && <div className="strategy-progress" role="status">
             <strong>{text.progress} · {detail.progress}% · {text.trials}: {detail.trials?.length || 0}/{detail.trials_target}</strong>
             <div className="ml-progress-track"><i style={{ width: String(detail.progress) + "%" }} /></div>
