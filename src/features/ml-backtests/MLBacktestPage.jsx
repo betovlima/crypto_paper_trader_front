@@ -584,11 +584,21 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
           <h2>Laboratório ML · Estratégias BTC/CASH</h2>
           <p>Criação de estratégias, otimização de hiperparâmetros, execução OOS e relatórios em um único lugar.</p>
         </div>
-        <div className="ml-page-actions">
-          <button type="button" className="secondary-button" onClick={() => setParametersOpen(true)} disabled={!mlParameters.length}>{t("Parameters")}</button>
-          <button type="button" className="primary-button" onClick={() => setDialogOpen(true)} disabled={!mlConfiguration}>{t("New execution")}</button>
-        </div>
+
       </header>
+
+      <StrategyWorkbench jobs={jobs} selectedJob={selectedJob}
+        language={language} onOpenExecution={selectJob} />
+
+      <details className="ml-advanced-utilities">
+        <summary>Dados históricos e parâmetros avançados</summary>
+        <div className="ml-page-actions">
+          <button type="button" className="secondary-button"
+            onClick={() => setParametersOpen(true)} disabled={!mlParameters.length}>{t("Parameters")}</button>
+          <button type="button" className="secondary-button"
+            onClick={() => setDialogOpen(true)} disabled={!mlConfiguration}>{t("New execution")}</button>
+        </div>
+      </details>
 
       <section className="ml-service-strip" aria-label={t("API connections")}>
         <article>
@@ -612,8 +622,6 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
           <strong>{t("Manual · No LLM")}</strong>
         </article>
       </section>
-
-      <StrategyWorkbench jobs={jobs} selectedJob={selectedJob} language={language} onOpenExecution={selectJob} />
 
       {result?.experiment_type !== "BTC_DIRECTION_RETURN" && <nav className="ml-section-tabs" aria-label={t("Backtest sections")}>
         {tabs.map(([code, label]) => (
