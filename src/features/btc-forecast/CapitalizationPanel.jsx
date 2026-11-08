@@ -83,7 +83,7 @@ function EquityChart({ rows, locale }) {
     </svg>
   </div>;
 }
-export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPolicy = false }) {
+export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPolicy = false, embedded = false }) {
   const locale = language === "es" ? "es-ES" : language === "en" ? "en-US" : "pt-BR";
   const t = TEXT[language] || TEXT.pt;
   const candidate = optimizedPolicy ? "BTC/CASH LightGBM" : modelFamily === "LightGBM" ? "LightGBM" : "V2";
@@ -143,11 +143,7 @@ export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPol
     ["min_probability", t.probability, 0, 100, 1],
     ["exit_return", t.exit, -20, 20, 0.01],
   ];
-  return <section className="ml-panel btc-capitalization">
-    <header className="ml-panel-header">
-      <div><span>BTC Forecast</span><h3>{t.title}</h3></div>
-    </header>
-    <p className="btc-chart-note">{t.caption}</p>
+  const simulatorForm = (
     <form className="btc-capital-form" onSubmit={run}>
       <div className="btc-capital-horizons">
         <strong>2h + 6h + 24h</strong>
@@ -170,6 +166,18 @@ export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPol
         {running ? t.running : optimizedPolicy ? "Recalcular patrimônio BTC/CASH" : t.run.replace("V2", candidate)}
       </button>
     </form>
+  );
+  return <section className="ml-panel btc-capitalization">
+    <header className="ml-panel-header">
+      <div><span>BTC Forecast</span><h3>{t.title}</h3></div>
+    </header>
+    <p className="btc-chart-note">{t.caption}</p>
+    {embedded ? (
+      <details className="btc-capital-advanced-controls">
+        <summary>Simulação manual e custos (avançado)</summary>
+        {simulatorForm}
+      </details>
+    ) : simulatorForm}
     {error && <div className="alert" role="alert">{error}</div>}
     {result?.status === "VERIFIED" && <>
       {result.optimized_policy_applied && <p className="btc-chart-note"><strong>Estratégia otimizada:</strong> entradas, saídas, stops, trailing, realização de lucros e reentrada definidos durante a otimização. Nenhum ajuste no período OOS.</p>}
