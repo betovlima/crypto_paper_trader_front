@@ -27,6 +27,8 @@ const WORDS = {
     report: "Exportar relatório e auditoria ZIP", progress: "Progresso",
     trials: "Tentativas realizadas", all: "Todas as tentativas",
     warning: "Este é o patrimônio de uma única carteira BTC/CASH com reinvestimento e custos, simulado na validação anterior ao OOS. Ainda não representa lucro garantido no período de teste.",
+    noTrades: "Nenhuma compra foi realizada na validação. Não há estratégia vencedora para executar. Consulte os filtros de entrada das tentativas e inicie uma nova otimização.",
+    idleLegacy: "Esta campanha antiga foi marcada como otimizada, mas não realizou nenhuma compra. A execução OOS foi bloqueada para evitar tratar CASH como capitalização.",
     error: "Erro", empty: "Nenhuma estratégia", status: "Situação",
   },
   en: {
@@ -46,6 +48,8 @@ const WORDS = {
     report: "Export report and OOS audit ZIP", progress: "Progress",
     trials: "Completed trials", all: "All trials",
     warning: "One compounded BTC/CASH portfolio with trading costs. Selection is pre-OOS; this is not the final test result.",
+    noTrades: "No BTC purchases occurred during validation. There is no viable winner. Review entry filters and start a new campaign.",
+    idleLegacy: "This old campaign was marked optimized without any BTC purchases. OOS execution is blocked.",
     error: "Error", empty: "No strategies", status: "Status",
   },
   es: {
@@ -65,6 +69,8 @@ const WORDS = {
     report: "Exportar informe y auditoría ZIP", progress: "Progreso",
     trials: "Intentos", all: "Todos los intentos",
     warning: "Es una cartera BTC/CASH reinvertida con costos. La selección previa a OOS no garantiza beneficio posterior.",
+    noTrades: "No hubo compras BTC durante la validación. No existe ganador. Revise los filtros y cree una nueva campaña.",
+    idleLegacy: "Esta campaña antigua fue optimizada sin compras BTC. Se bloqueó la ejecución OOS.",
     error: "Error", empty: "Sin estrategias", status: "Estado",
   },
 };
@@ -208,6 +214,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
   const best = detail?.champion;
   const metrics = best?.metrics || {};
   const hasHistory = needsFreshCampaign(detail);
+  const idleChampion = Boolean(best && (metrics?.completed_cycles === 0 || metrics?.switch_count === 0));
   const optimizationUnavailable = running || ["RUNNING", "CANCEL_REQUESTED", "EXECUTING"].includes(detail?.status);
   return (
     <section className="ml-panel strategy-workbench" aria-label={text.title}>
@@ -275,7 +282,20 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             <div className="ml-progress-track"><i style={{ width: String(detail.progress) + "%" }} /></div>
             <button type="button" className="secondary-button" disabled={running} onClick={cancelOptimization}>{text.cancel}</button>
           </div>}
-          {detail.status === "FAILED" && <p className="alert ml-alert">{detail.error_message}</p>}
+          {["FAILED", "NO_TRADES"].includes(detail.status) && <p className="alert ml-alert" role="alert">
+            <strong>{detail.status === "NO_TRADES" ? text.noTrades : detail.error_message}</strong>
+            {detail.status === "NO_TRADES" && detail.error_message && <small>{detail.error_message}</small>}
+          </p>}
+          {detail.status === "NO_TRADES" && detail.summary?.diagnostic_example && (
+            <div className="strategy-entry-diagnostics">
+              <strong>Por que o modelo não comprou?</strong>
+              <span>Sinais alinhados: {detail.summary.diagnostic_example.total_aligned_signals ?? 0}</span>
+              <span>Passaram pelo filtro de probabilidade: {detail.summary.diagnostic_example.passes_probability ?? 0}</span>
+              <span>Passaram pelo filtro de retorno líquido: {detail.summary.diagnostic_example.passes_expected_return ?? 0}</span>
+              <span>Passaram pelos três filtros: {detail.summary.diagnostic_example.passes_all_entry_filters ?? 0}</span>
+            </div>
+          )}
+          {idleChampion && <p className="alert ml-alert" role="alert">{text.idleLegacy}</p>}
           {best && <div className="strategy-champion">
             <h4>{text.selection}</h4>
             <div className="strategy-metrics">
@@ -310,7 +330,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
                 <span key={key}><small>{POLICY_LABELS[key] || key}</small>: <strong>{policyValue(key, value)}</strong></span>)}
             </div>
             <details><summary>Hiperparâmetros LightGBM selecionados</summary><div className="strategy-parameters">{Object.entries(best.parameters || {}).filter(([key]) => key.startsWith("lightgbm.") || key.startsWith("forecast.")).map(([key, value]) => <span key={key}><code>{key}</code>: <strong>{value}</strong></span>)}</div></details>
-            {detail.status === "OPTIMIZED" && <button type="button" className="primary-button"
+            {detail.status === "OPTIMIZED" && !idleChampion && <button type="button" className="primary-button"
               disabled={running} onClick={execute}>{text.execute}</button>}
           </div>}
           {detail.execution_job_id && <div className="strategy-execution">
@@ -324,11 +344,13 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             <summary>{text.all} ({detail.trials.length})</summary>
             <div className="ml-table-wrap">
               <table className="ml-table">
-                <thead><tr><th>#</th><th>{text.status}</th><th>{text.score}</th><th>{text.capital}</th><th>{text.dd}</th></tr></thead>
+                <thead><tr><th>#</th><th>{text.status}</th><th>{text.score}</th><th>{text.capital}</th><th>{text.dd}</th><th>Passaram nos filtros</th><th>Entradas</th></tr></thead>
                 <tbody>{detail.trials.map((row) => <tr key={row.trial}>
                   <td>{row.trial}</td><td>{row.status}</td>
                   <td>{fmt(row.metrics?.score, 5)}</td><td>{fmt(row.metrics?.capital_final)}</td>
                   <td>{row.metrics?.max_drawdown == null ? "—" : fmt(row.metrics.max_drawdown * 100) + "%"}</td>
+                  <td>{row.metrics?.entry_diagnostics?.passes_all_entry_filters ?? "—"}</td>
+                  <td>{row.metrics?.completed_cycles ?? "—"}</td>
                 </tr>)}</tbody>
               </table>
             </div>
