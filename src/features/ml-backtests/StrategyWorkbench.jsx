@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   cancelMLStrategyOptimization, createMLStrategy, downloadMLStrategyReport, executeMLStrategy,
   getMLBacktest, getMLStrategy, listMLStrategies, optimizeMLStrategy,
@@ -114,6 +114,8 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [finalJob, setFinalJob] = useState(null);
+  const [mode, setMode] = useState("QUICK");
+  const lastOpenedJob = useRef(null);
   const originals = useMemo(() => jobs.filter((job) =>
     job.symbol === "BTCUSDT" && job.experiment_type === "BTC_DIRECTION_RETURN"
     && job.status === "COMPLETED"
@@ -162,6 +164,12 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
     return () => { active = false; window.clearInterval(timer); };
   }, [chosen]);
 
+  useEffect(() => {
+    if (!finalJob || finalJob.status !== "COMPLETED" || lastOpenedJob.current === finalJob.id) return;
+    lastOpenedJob.current = finalJob.id;
+    onOpenExecution(finalJob.id);
+  }, [finalJob?.id, finalJob?.status, onOpenExecution]);
+
   const action = async (callback) => {
     setRunning(true); setError("");
     try { await callback(); }
@@ -169,8 +177,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
     finally { setRunning(false); }
   };
 
-  const create = (event) => {
-    event.preventDefault();
+  const create = () => {
     action(async () => {
       const row = await createMLStrategy({ name: name.trim(), source_job_id: source });
       setStrategies(await listMLStrategies());
@@ -178,12 +185,25 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
     });
   };
 
-  const optimize = (mode) => action(async () => {
+  const optimize = () => action(async () => {
+    if (!detail) throw new Error("Selecione uma estratégia primeiro.");
+    if (detail.status === "RUNNING") {
+      const stopped = await cancelMLStrategyOptimization(detail.id);
+      setDetail(stopped);
+      return;
+    }
+    if (detail.status === "OPTIMIZED" && detail.champion && !detail.execution_job_id) {
+      const job = await executeMLStrategy(detail.id);
+      setFinalJob(job);
+      setDetail(await getMLStrategy(detail.id));
+      return;
+    }
     if (mode === "BAYESIAN" && !window.confirm(text.confirm)) return;
     const updated = await launchResearchCampaign({
       strategy: detail,
       strategies,
       mode,
+      autoExecute: true,
       createStrategy: createMLStrategy,
       optimizeStrategy: optimizeMLStrategy,
       onCreated: (created) => {
@@ -207,12 +227,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
     )));
   });
 
-  const execute = () => action(async () => {
-    const job = await executeMLStrategy(chosen);
-    setFinalJob(job);
-    setDetail(await getMLStrategy(chosen));
-    onOpenExecution(job.id);
-  });
+
 
   const download = () => action(async () => {
     const blob = await downloadMLStrategyReport(chosen);
@@ -227,30 +242,46 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
   const metrics = best?.metrics || {};
   const hasHistory = needsFreshCampaign(detail);
   const idleChampion = Boolean(best && (metrics?.completed_cycles === 0 || metrics?.switch_count === 0));
-  const optimizationUnavailable = running || ["RUNNING", "CANCEL_REQUESTED", "EXECUTING"].includes(detail?.status);
+  const optimizationUnavailable = running || !detail || !apiCompatible || ["CANCEL_REQUESTED", "EXECUTING"].includes(detail?.status);
   return (
     <section className="ml-panel strategy-workbench" aria-label={text.title}>
-      <header className="ml-panel-header">
-        <div><span>STRATEGY RESEARCH</span><h3>{text.title}</h3><p>{text.description}</p></div>
-        <button type="button" className="secondary-button" disabled={running}
-          onClick={() => action(async () => {
-            try {
-              const rows = await listMLStrategies();
-              setStrategies(rows); setApiCompatible(true);
-            } catch (err) {
-              if (err.status === 404 && err.path === "/v1/ml-strategies") {
-                setApiCompatible(false);
-                throw new Error("A ML API em " + ML_API_URL + " não possui /v1/ml-strategies. Atualize e reinicie a ML API V4.");
-              }
-              throw err;
-            }
-          })}>{text.update}</button>
+      <header className="strategy-compact-heading">
+        <div><span>LIGHTGBM · BTC/CASH</span><h3>{text.title}</h3>
+          <p>Uma estratégia, três horizontes e uma pesquisa completa.</p></div>
+        <div className="strategy-main-actions" aria-label="Ações da estratégia">
+          <button type="button" className="secondary-button" disabled={!apiCompatible || !source || name.trim().length < 3 || running}
+            onClick={create}>{text.create}</button>
+          <button type="button" className="primary-button" disabled={optimizationUnavailable}
+            onClick={optimize}>{detail?.status === "RUNNING" ? text.cancel : "Otimizar e executar"}</button>
+          <button type="button" className="secondary-button" disabled={running || !chosen}
+            onClick={download}>{text.report}</button>
+        </div>
       </header>
-      <div className="strategy-workflow" aria-label="Workflow">
-        <span>1. {text.source}</span><span>2. {text.quick}</span>
-        <span>3. LightGBM</span><span>4. {text.report}</span>
+      <div className="strategy-choice strategy-choice-top">
+        <label><span>{text.chosen}</span>
+          <select value={chosen} onChange={(event) => {
+            setChosen(event.target.value); setDetail(null); setFinalJob(null);
+          }}>
+            <option value="">Selecione uma estratégia</option>
+            {strategies.map((row) => <option key={row.id} value={row.id}>
+              {row.name} · {row.id === detail?.id ? detail.status : row.status}
+            </option>)}
+          </select>
+        </label>
+        <label><span>Modo de otimização</span>
+          <select value={mode} onChange={(event) => setMode(event.target.value)}
+            disabled={running || detail?.status === "RUNNING"}>
+            <option value="QUICK">Padrão · 8 candidatos</option>
+            <option value="BAYESIAN">CARO bayesiana · 24 candidatos</option>
+          </select>
+        </label>
+        <strong>{text.status}: {detail?.status || "—"}</strong>
       </div>
-      <form className="strategy-create-grid" onSubmit={create}>
+      <div className="strategy-workflow strategy-workflow-compact" aria-label="Etapas automáticas">
+        <span>1. Otimização</span><span>2. LightGBM OOS</span><span>3. Resultados</span>
+      </div>
+      <p className="strategy-note">Após a otimização, a execução fora da amostra começa automaticamente se houver um candidato que realize operações.</p>
+      <div className="strategy-create-grid">
         <label><span>{text.name}</span>
           <input required minLength={3} maxLength={120} value={name}
             placeholder="BTC/CASH 2h" onChange={(event) => setName(event.target.value)} />
@@ -264,37 +295,16 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           </select>
         </label>
         <div className="strategy-horizon-summary" role="note"><span>{text.horizon}</span><strong>2h + 6h + 24h</strong><small>1 estratégia · 3 horizontes · 1 otimização</small></div>
-        <button className="primary-button" type="submit" disabled={!apiCompatible || !source || !name.trim() || running}>{text.create}</button>
-      </form>
+      </div>
       <p className="strategy-note">{text.noDownload}</p>
       {error && <p className="alert ml-alert" role="alert">{error}</p>}
-      {strategies.length > 0 && (
-        <div className="strategy-choice">
-          <label><span>{text.chosen}</span>
-            <select value={chosen} onChange={(event) => { setChosen(event.target.value); setDetail(null); }}>
-              {strategies.map((row) => <option key={row.id} value={row.id}>
-                {row.name} · {row.id === detail?.id ? detail.status : row.status}
-              </option>)}
-            </select>
-          </label>
-          <strong>{text.status}: {detail?.status || "—"}</strong>
-        </div>
-      )}
+
       {detail && (
         <>
-          <div className="strategy-actions">
-            <div><button type="button" className="primary-button" onClick={() => optimize("QUICK")}
-              disabled={optimizationUnavailable}>{hasHistory ? text.quickAgain : text.quick}</button>
-              <small>{text.quickHint}</small></div>
-            <div><button type="button" className="secondary-button" onClick={() => optimize("BAYESIAN")}
-              disabled={optimizationUnavailable}>{hasHistory ? text.bayesAgain : text.bayes}</button>
-              <small>{text.bayesHint}</small></div>
-          </div>
           {hasHistory && <p className="strategy-note">{text.historyPreserved}</p>}
           {detail.status === "RUNNING" && <div className="strategy-progress" role="status">
             <strong>{text.progress} · {detail.progress}% · {text.trials}: {detail.trials?.length || 0}/{detail.trials_target}</strong>
             <div className="ml-progress-track"><i style={{ width: String(detail.progress) + "%" }} /></div>
-            <button type="button" className="secondary-button" disabled={running} onClick={cancelOptimization}>{text.cancel}</button>
           </div>}
           {["FAILED", "NO_TRADES"].includes(detail.status) && <p className="alert ml-alert" role="alert">
             <strong>{detail.status === "NO_TRADES" ? text.noTrades : detail.error_message}</strong>
@@ -350,16 +360,13 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
                 <span key={key}><small>{POLICY_LABELS[key] || key}</small>: <strong>{policyValue(key, value)}</strong></span>)}
             </div>
             <details><summary>Hiperparâmetros LightGBM selecionados</summary><div className="strategy-parameters">{Object.entries(best.parameters || {}).filter(([key]) => key.startsWith("lightgbm.") || key.startsWith("forecast.")).map(([key, value]) => <span key={key}><code>{key}</code>: <strong>{value}</strong></span>)}</div></details>
-            {detail.status === "OPTIMIZED" && !idleChampion && <button type="button" className="primary-button"
-              disabled={running} onClick={execute}>{text.execute}</button>}
+
           </div>}
           {detail.execution_job_id && <div className="strategy-execution">
             <strong>{finalJob?.status || "QUEUED"} · {finalJob?.progress || 0}%</strong>
-            <button type="button" className="secondary-button"
-              onClick={() => onOpenExecution(detail.execution_job_id)}>{text.results}</button>
+
           </div>}
-          <button type="button" className="secondary-button" disabled={running}
-            onClick={download}>{text.report}</button>
+
           {(detail.trials || []).length > 0 && <details className="strategy-trials">
             <summary>{text.all} ({detail.trials.length})</summary>
             <div className="ml-table-wrap">
