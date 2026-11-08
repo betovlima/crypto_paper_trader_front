@@ -51,3 +51,10 @@ export function cancelMLBacktest(backtestId) {
 export function downloadMLBacktestAudit(backtestId) {
   return mlRequestBlob(`/v1/ml-backtests/${encodeURIComponent(backtestId)}/audit.zip`);
 }
+
+export function capitalizeBTCForecast(backtestId, parameters) {
+  return mlRequestJson(`/v1/ml-backtests/${encodeURIComponent(backtestId)}/capitalization`, {
+    method: "POST",
+    body: JSON.stringify(parameters),
+  });
+}
