@@ -290,6 +290,18 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
 
       {!!timeline.length && (
         <>
+          {result?.execution?.history_coverage?.coverage_status === "PARTIAL" && (
+            <section className="btc-diagnostic-warning" role="status">
+              <strong>{t("Historical coverage is shorter than requested.")}</strong>
+              <p>{t("Requested years")}: {number(result.execution.history_coverage.requested_years, language, 0)} · {t("Available candles")}: {number(result.execution.history_coverage.raw_candles, language, 0)} · {t("Coverage")}: {percent(result.execution.history_coverage.requested_period_coverage_ratio, language)}</p>
+            </section>
+          )}
+          {!isBaseline && Number(result?.summary?.trade_count) === 0 && (
+            <section className="btc-diagnostic-warning" role="status">
+              <strong>{t("No BTC trades were executed.")}</strong>
+              <p>{t("Staying in CASH may beat Buy and Hold, but it does not demonstrate predictive skill.")}</p>
+            </section>
+          )}
           <section className="btc-strategy-selector" aria-label={t("Strategy selection")}>
             <div><span>{t("Strategy selection")}</span><small>{t("Only strategies evaluated by the selected backtest are available.")}</small></div>
             <div className="btc-strategy-buttons">

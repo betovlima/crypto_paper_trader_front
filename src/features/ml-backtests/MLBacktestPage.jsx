@@ -603,6 +603,12 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
 
           {result && (
             <>
+              {result.execution?.history_coverage?.coverage_status === "PARTIAL" && (
+                <section className="btc-diagnostic-warning" role="status">
+                  <strong>{t("Historical coverage is shorter than requested.")}</strong>
+                  <p>{t("Requested years")}: {result.execution.history_coverage.requested_years} · {t("Coverage")}: {formatPercent(result.execution.history_coverage.requested_period_coverage_ratio, language)} · {t("Available candles")}: {formatNumber(result.execution.history_coverage.raw_candles, language, 0)}</p>
+                </section>
+              )}
               {(activeTab === "overview" || activeTab === "results") && (
                 <>
                   <section className="ml-metrics-grid">
@@ -646,6 +652,12 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
                       <div><dt>PR-AUC</dt><dd>{formatNumber(result.models.entry.pr_auc, language, 3)}</dd></div>
                       <div><dt>Log Loss</dt><dd>{formatNumber(result.models.entry.log_loss, language, 3)}</dd></div>
                       <div><dt>Brier Score</dt><dd>{formatNumber(result.models.entry.brier_score, language, 3)}</dd></div>
+                      {result.models.entry.baseline_brier_score != null && (
+                        <div><dt>{t("Training-only Brier baseline")}</dt><dd>{formatNumber(result.models.entry.baseline_brier_score, language, 4)}</dd></div>
+                      )}
+                      {result.models.entry.brier_skill_score != null && (
+                        <div><dt>Brier Skill</dt><dd>{formatNumber(result.models.entry.brier_skill_score, language, 4)}</dd></div>
+                      )}
                       <div><dt>{t("Calibration")}</dt><dd className="positive-text">{t(result.models.entry.calibration)}</dd></div>
                     </dl>
                   </article>
@@ -656,6 +668,12 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
                       <div><dt>PR-AUC</dt><dd>{formatNumber(result.models.exit.pr_auc, language, 3)}</dd></div>
                       <div><dt>Log Loss</dt><dd>{formatNumber(result.models.exit.log_loss, language, 3)}</dd></div>
                       <div><dt>Brier Score</dt><dd>{formatNumber(result.models.exit.brier_score, language, 3)}</dd></div>
+                      {result.models.exit.baseline_brier_score != null && (
+                        <div><dt>{t("Training-only Brier baseline")}</dt><dd>{formatNumber(result.models.exit.baseline_brier_score, language, 4)}</dd></div>
+                      )}
+                      {result.models.exit.brier_skill_score != null && (
+                        <div><dt>Brier Skill</dt><dd>{formatNumber(result.models.exit.brier_skill_score, language, 4)}</dd></div>
+                      )}
                       <div><dt>{t("Calibration")}</dt><dd className="positive-text">{t(result.models.exit.calibration)}</dd></div>
                     </dl>
                   </article>
@@ -715,6 +733,15 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
                       <div><dt>{t("Completed")}</dt><dd>{formatDateTime(selectedJob.completed_at, language)}</dd></div>
                       <div><dt>{t("Candles used")}</dt><dd>{formatNumber(result.execution.candles_used, language, 0)}</dd></div>
                       <div><dt>{t("Walk-forward folds")}</dt><dd>{result.execution.walk_forward_folds}</dd></div>
+                      {result.execution?.history_coverage && (
+                        <>
+                          <div><dt>{t("Requested years")}</dt><dd>{result.execution.history_coverage.requested_years}</dd></div>
+                          <div><dt>{t("Available candles")}</dt><dd>{formatNumber(result.execution.history_coverage.raw_candles, language, 0)}</dd></div>
+                          <div><dt>{t("Coverage")}</dt><dd>{formatPercent(result.execution.history_coverage.requested_period_coverage_ratio, language)}</dd></div>
+                          <div><dt>{t("Missing candles")}</dt><dd>{formatNumber(result.execution.history_coverage.missing_intervals, language, 0)}</dd></div>
+                          <div><dt>{t("Label purge (candles)")}</dt><dd>{result.execution.label_horizon_candles ?? "—"}</dd></div>
+                        </>
+                      )}
                       <div><dt>{t("Parameter source")}</dt><dd>{t(result.execution.parameter_source || "DATABASE")}</dd></div>
                     </dl>
                   </article>
@@ -735,7 +762,11 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
                   <article className="ml-panel">
                     <header className="ml-panel-header"><div><span>{t("Quantitative insights")}</span><h3>{t("Model interpretation without LLM")}</h3></div></header>
                     <ul className="ml-insights-list">
-                      <li>{result.insights.beats_buy_and_hold ? t("The ML strategy outperformed Buy and Hold in the out-of-sample period.") : t("Buy and Hold outperformed the ML strategy in the out-of-sample period.")}</li>
+                      <li>{Number(result.summary.trade_count) === 0
+                        ? t("No BTC trades were executed. Staying in CASH does not demonstrate predictive skill.")
+                        : result.insights.beats_buy_and_hold
+                          ? t("The ML strategy outperformed Buy and Hold in the out-of-sample period.")
+                          : t("Buy and Hold outperformed the ML strategy in the out-of-sample period.")}</li>
                       <li>{t("Entry decisions used a calibrated threshold of")} {formatPercent(result.insights.entry_threshold, language, 0)}.</li>
                       <li>{t("Exit decisions used a calibrated threshold of")} {formatPercent(result.insights.exit_threshold, language, 0)}.</li>
                       <li>{t("The most influential indicators were")}: {result.insights.top_features.map((feature) => t(feature)).join(", ")}.</li>

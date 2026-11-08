@@ -11,6 +11,16 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "Historical coverage is shorter than requested.": "O histórico disponível é menor que o período solicitado.",
+  "Requested years": "Anos solicitados",
+  "Available candles": "Candles disponíveis",
+  "Coverage": "Cobertura",
+  "Missing candles": "Candles ausentes",
+  "Label purge (candles)": "Intervalo de segurança dos rótulos (candles)",
+  "No BTC trades were executed.": "Nenhuma operação de BTC foi executada.",
+  "Staying in CASH may beat Buy and Hold, but it does not demonstrate predictive skill.": "Ficar em CASH pode superar o Buy and Hold, mas não comprova capacidade de previsão.",
+  "No BTC trades were executed. Staying in CASH does not demonstrate predictive skill.": "Nenhuma operação de BTC foi executada. Ficar em CASH não comprova capacidade de previsão.",
+  "Training-only Brier baseline": "Brier da referência calculada no treino",
   "Export audit ZIP": "Exportar auditoria ZIP",
   "Exporting…": "Exportando…",
   "Unable to export BTC backtest audit.": "Não foi possível exportar a auditoria do backtest de BTC.",
@@ -430,6 +440,16 @@ const pt = {
 };
 
 const es = {
+  "Historical coverage is shorter than requested.": "El historial disponible es menor que el período solicitado.",
+  "Requested years": "Años solicitados",
+  "Available candles": "Velas disponibles",
+  "Coverage": "Cobertura",
+  "Missing candles": "Velas ausentes",
+  "Label purge (candles)": "Separación de seguridad de etiquetas (velas)",
+  "No BTC trades were executed.": "No se ejecutaron operaciones con BTC.",
+  "Staying in CASH may beat Buy and Hold, but it does not demonstrate predictive skill.": "Permanecer en CASH puede superar a Buy and Hold, pero no demuestra capacidad predictiva.",
+  "No BTC trades were executed. Staying in CASH does not demonstrate predictive skill.": "No se ejecutaron operaciones con BTC. Permanecer en CASH no demuestra capacidad predictiva.",
+  "Training-only Brier baseline": "Brier de referencia calculado en entrenamiento",
   "Export audit ZIP": "Exportar auditoría ZIP",
   "Exporting…": "Exportando…",
   "Unable to export BTC backtest audit.": "No se pudo exportar la auditoría del backtest de BTC.",

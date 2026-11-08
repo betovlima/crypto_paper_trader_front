@@ -63,3 +63,14 @@
   .btc-page .ml-page-actions { display: flex; flex-wrap: wrap; }
   .btc-page .ml-page-actions button { flex: 1; }
 }
+
+.btc-diagnostic-warning {
+  padding: 15px 18px;
+  border: 1px solid rgba(247, 185, 85, .48);
+  border-radius: 11px;
+  background: rgba(247, 185, 85, .09);
+  display: grid;
+  gap: 6px;
+}
+.btc-diagnostic-warning strong { color: var(--amber); font-size: var(--text-base); }
+.btc-diagnostic-warning p { color: var(--muted); font-size: var(--text-sm); line-height: 1.5; }
