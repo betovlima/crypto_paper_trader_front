@@ -99,4 +99,8 @@ assert.ok(capitalization.includes("BTC_CASH_ROTATION"),
   "Financial report must show BTC/CASH capital separately from the benchmark");
 assert.ok(capitalization.includes("Recalcular patrimônio BTC/CASH"),
   "Final report must be recalculable entirely within the Front");
+assert.ok(strategy.includes('launchResearchCampaign('), "Completed strategy must auto-create a fresh campaign");
+assert.ok(strategy.includes("needsFreshCampaign(detail)"), "Research controls must expose the new-campaign state");
+assert.ok(strategy.includes("optimizationUnavailable"), "Only running operations should block tuning buttons");
+assert.ok(!strategy.includes("!!detail.execution_job_id}>{text.quick}"), "Final OOS status must not permanently disable reoptimization");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
