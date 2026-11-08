@@ -83,7 +83,7 @@ function EquityChart({ rows, locale }) {
     </svg>
   </div>;
 }
-export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPolicy = false, embedded = false }) {
+export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPolicy = false, embedded = false, feeModel = "FIXED" }) {
   const locale = language === "es" ? "es-ES" : language === "en" ? "en-US" : "pt-BR";
   const t = TEXT[language] || TEXT.pt;
   const candidate = optimizedPolicy ? "BTC/CASH LightGBM" : modelFamily === "LightGBM" ? "LightGBM" : "V2";
@@ -147,6 +147,7 @@ export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPol
     <form className="btc-capital-form" onSubmit={run}>
       <div className="btc-capital-horizons">
         <strong>2h + 6h + 24h</strong>
+        {feeModel === "ALPACA_CRYPTO_SPOT_2026" && <small>Taxas Alpaca determinadas automaticamente pela faixa de volume e pelo tipo de ordem Taker. O campo de tarifa fixa não se aplica.</small>
         <small>{optimizedPolicy ? "Critérios de entrada, venda, stops e pesos definidos pela otimização antes do OOS." : (language === "pt" ? "Sinal conjunto, consenso de 2 entre 3 previsões" : "Joint signal, agreement from 2 of 3 forecasts")}</small>
         {!optimizedPolicy && <details>
           <summary>{t.horizon}</summary>
@@ -156,7 +157,10 @@ export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPol
           </select>
         </details>}
       </div>
-      {(optimizedPolicy ? controls.filter(([name]) => !["entry_edge", "min_probability", "exit_return"].includes(name)) : controls).map(([name, label, min, max, step]) =>
+      {(optimizedPolicy ? controls.filter(([name]) =>
+        !["entry_edge", "min_probability", "exit_return"].includes(name)
+        && !(feeModel === "ALPACA_CRYPTO_SPOT_2026" && name === "fee_rate")
+      ) : controls).map(([name, label, min, max, step]) =>
         <label key={name}>{label}
           <input type="number" required step={step} min={min} max={max}
             value={params[name]} onChange={(e) => setField(name, e.target.value)} />
