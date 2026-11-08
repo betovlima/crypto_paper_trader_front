@@ -307,6 +307,12 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               <span>Passaram pelo filtro de probabilidade: {detail.summary.diagnostic_example.passes_probability ?? 0}</span>
               <span>Passaram pelo filtro de retorno líquido: {detail.summary.diagnostic_example.passes_expected_return ?? 0}</span>
               <span>Passaram pelos três filtros: {detail.summary.diagnostic_example.passes_all_entry_filters ?? 0}</span>
+              <span>Probabilidade máxima prevista: {detail.summary.diagnostic_example.max_probability == null ? "—" : fmt(detail.summary.diagnostic_example.max_probability * 100, 3) + "%"}</span>
+              <span>Probabilidade P90: {detail.summary.diagnostic_example.p90_probability == null ? "—" : fmt(detail.summary.diagnostic_example.p90_probability * 100, 3) + "%"}</span>
+              <span>Maior retorno previsto (base 6h): {detail.summary.diagnostic_example.max_predicted_return == null ? "—" : fmt(detail.summary.diagnostic_example.max_predicted_return * 100, 4) + "%"}</span>
+              <span>Retorno previsto P90 (base 6h): {detail.summary.diagnostic_example.p90_predicted_return == null ? "—" : fmt(detail.summary.diagnostic_example.p90_predicted_return * 100, 4) + "%"}</span>
+              <span>Retorno mínimo de entrada, incluindo custos: {detail.summary.diagnostic_example.required_entry_return == null ? "—" : fmt(detail.summary.diagnostic_example.required_entry_return * 100, 4) + "%"}</span>
+              <span>Diagnóstico: {detail.summary.reason_code || detail.summary.diagnostic_example.diagnosis || "—"}</span>
             </div>
           )}
           {idleChampion && <p className="alert ml-alert" role="alert">{text.idleLegacy}</p>}
@@ -358,11 +364,13 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             <summary>{text.all} ({detail.trials.length})</summary>
             <div className="ml-table-wrap">
               <table className="ml-table">
-                <thead><tr><th>#</th><th>{text.status}</th><th>{text.score}</th><th>{text.capital}</th><th>{text.dd}</th><th>Passaram nos filtros</th><th>Entradas</th></tr></thead>
+                <thead><tr><th>#</th><th>{text.status}</th><th>{text.score}</th><th>{text.capital}</th><th>{text.dd}</th><th>Retorno exigido</th><th>Maior retorno previsto</th><th>Passaram nos filtros</th><th>Entradas</th></tr></thead>
                 <tbody>{detail.trials.map((row) => <tr key={row.trial}>
                   <td>{row.trial}</td><td>{row.status}</td>
                   <td>{fmt(row.metrics?.score, 5)}</td><td>{fmt(row.metrics?.capital_final)}</td>
                   <td>{row.metrics?.max_drawdown == null ? "—" : fmt(row.metrics.max_drawdown * 100) + "%"}</td>
+                  <td>{row.metrics?.entry_diagnostics?.required_entry_return == null ? "—" : fmt(row.metrics.entry_diagnostics.required_entry_return * 100, 4) + "%"}</td>
+                  <td>{row.metrics?.entry_diagnostics?.max_predicted_return == null ? "—" : fmt(row.metrics.entry_diagnostics.max_predicted_return * 100, 4) + "%"}</td>
                   <td>{row.metrics?.entry_diagnostics?.passes_all_entry_filters ?? "—"}</td>
                   <td>{row.metrics?.completed_cycles ?? "—"}</td>
                 </tr>)}</tbody>
