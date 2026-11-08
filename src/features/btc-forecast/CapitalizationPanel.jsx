@@ -53,7 +53,7 @@ function fmt(value, locale, digits = 2) {
   }).format(value) : "—";
 }
 function percent(value, locale) {
-  return fmt(value * 100, locale) + "%";
+  return value == null || !Number.isFinite(value) ? "—" : fmt(value * 100, locale) + "%";
 }
 function plotPath(points, min, max, capital) {
   if (!points?.length) return "";
