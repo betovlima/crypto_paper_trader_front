@@ -21,6 +21,7 @@ export function nextCampaignName(strategy, strategies, mode) {
 
 export async function launchResearchCampaign({
   strategy, strategies, mode, createStrategy, optimizeStrategy, onCreated,
+  autoExecute = false,
 }) {
   if (!strategy?.id || !strategy?.source_job_id) {
     throw new Error("Selecione uma estratégia válida antes de otimizar");
@@ -41,5 +42,5 @@ export async function launchResearchCampaign({
     // so it is recoverable from the UI without losing the original results.
     onCreated?.(created);
   }
-  return optimizeStrategy(strategyId, { mode, trials });
+  return optimizeStrategy(strategyId, { mode, trials, ...(autoExecute ? { auto_execute: true } : {}) });
 }
