@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DirectionForecastPanel } from "./DirectionForecastPanel";
+import { ReplayComparisonPanel } from "./ReplayComparisonPanel";
 
 import {
   downloadMLBacktestAudit,
   getMLBacktest,
   getMLConfiguration,
   listMLBacktests,
+  replayMLBacktest,
 } from "../../api/mlBacktestsApi";
 
 const MODEL = "XGBOOST_WALK_FORWARD";
@@ -122,6 +124,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
   const [pollInterval, setPollInterval] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [replaying, setReplaying] = useState(false);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async (preferredId = "") => {
@@ -181,6 +184,25 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
   };
 
 
+  // The source ZIP is retrieved inside the ML API from its stored job audit.
+  // The browser neither uploads files nor asks for local file paths.
+  const replayAndCompare = async () => {
+    if (!selectedJob?.id || replaying || selectedJob.status !== "COMPLETED"
+        || !selectedJob.audit_available
+        || selectedJob.experiment_type !== "BTC_DIRECTION_RETURN"
+        || selectedJob.replay_parent_job_id) return;
+    setReplaying(true);
+    setError("");
+    try {
+      const created = await replayMLBacktest(selectedJob.id);
+      await refresh(created.id);
+    } catch (err) {
+      setError(err.message || t("Unable to replay this archived BTC forecast."));
+    } finally {
+      setReplaying(false);
+    }
+  };
+
   const downloadAudit = async () => {
     if (!selectedJob?.id || !selectedJob.audit_available || exporting) return;
     setExporting(true);
@@ -229,6 +251,18 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
         <div className="ml-page-actions">
           <button
             type="button"
+            className="primary-button"
+            onClick={replayAndCompare}
+            disabled={replaying || selectedJob?.status !== "COMPLETED"
+              || !selectedJob?.audit_available
+              || selectedJob?.experiment_type !== "BTC_DIRECTION_RETURN"
+              || Boolean(selectedJob?.replay_parent_job_id)}
+            title={t("Replay archived candles from this completed run and compare the original with V2. No ZIP path required.")}
+          >
+            {replaying ? t("Starting V1 versus V2 replay…") : t("Replay and compare V1 × V2")}
+          </button>
+          <button
+            type="button"
             className="secondary-button"
             onClick={downloadAudit}
             disabled={!selectedJob?.audit_available || selectedJob.status !== "COMPLETED" || exporting}
@@ -260,6 +294,9 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
             : t("The original Target/Stop strategy is shown. LHS and CARO are future stages.")}</small>
           <small>{t("Full audit ZIP is available only for new executions using the updated ML API.")}</small>
           <small>{t("Historical market source")}: {selectedJob?.result?.execution?.history_source || selectedJob?.history_source || "MEXC"}</small>
+          {selectedJob?.replay_parent_job_id && <small>{t("Comparison generated from saved execution")}: {selectedJob.replay_parent_job_id}</small>}
+          {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN" && !selectedJob.audit_available && selectedJob.status === "COMPLETED" &&
+            <small>{t("The selected execution has no stored audit in this ML API. Select another completed run with an audit.")}</small>}
         </div>
       </section>
 
@@ -293,7 +330,10 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
       )}
 
       {result?.experiment_type === "BTC_DIRECTION_RETURN" && (
-        <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
+        <>
+          <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
+          <ReplayComparisonPanel comparison={result.replay_comparison} language={language} t={t} />
+        </>
       )}
 
       {!!timeline.length && result?.experiment_type !== "BTC_DIRECTION_RETURN" && (
