@@ -348,7 +348,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               </div>
             </details>
           )}
-          {detail.status === "INSUFFICIENT_EVIDENCE" && (
+          {(detail.trials || []).some((trial) => Object.values(trial.metrics?.per_horizon || {}).some((row) => row.return_quality)) && (
             <details className="strategy-technical-details">
               <summary>Qualidade das previsões LightGBM (2h, 6h e 24h, antes do OOS)</summary>
               <p className="strategy-note">Compare a previsão com o retorno efetivo e com uma referência simples: o retorno médio do treinamento. Ganho de habilidade (MAE) positivo indica erro menor que a referência; negativo indica erro maior. Correlação e amplitude próximas de zero sugerem que as previsões não identificam bem a magnitude dos movimentos.</p>
