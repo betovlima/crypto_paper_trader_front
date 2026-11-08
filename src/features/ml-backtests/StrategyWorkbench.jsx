@@ -146,6 +146,11 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
         const row = await getMLStrategy(chosen);
         if (!active) return;
         setDetail(row);
+        // The selector previously kept the creation-time "DRAFT" forever.
+        // Reflect the authoritative persisted status on every poll.
+        setStrategies((previous) => previous.map((item) => (
+          item.id === row.id ? { ...item, ...row } : item
+        )));
         if (row.execution_job_id) {
           const job = await getMLBacktest(row.execution_job_id);
           if (active) setFinalJob(job);
@@ -189,10 +194,17 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
       },
     });
     setDetail(updated);
+    setStrategies((previous) => previous.map((item) => (
+      item.id === updated.id ? { ...item, ...updated } : item
+    )));
   });
 
   const cancelOptimization = () => action(async () => {
-    setDetail(await cancelMLStrategyOptimization(chosen));
+    const updated = await cancelMLStrategyOptimization(chosen);
+    setDetail(updated);
+    setStrategies((previous) => previous.map((item) => (
+      item.id === updated.id ? { ...item, ...updated } : item
+    )));
   });
 
   const execute = () => action(async () => {
@@ -260,7 +272,9 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
         <div className="strategy-choice">
           <label><span>{text.chosen}</span>
             <select value={chosen} onChange={(event) => { setChosen(event.target.value); setDetail(null); }}>
-              {strategies.map((row) => <option key={row.id} value={row.id}>{row.name} · {row.status}</option>)}
+              {strategies.map((row) => <option key={row.id} value={row.id}>
+                {row.name} · {row.id === detail?.id ? detail.status : row.status}
+              </option>)}
             </select>
           </label>
           <strong>{text.status}: {detail?.status || "—"}</strong>
