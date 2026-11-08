@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  createMLStrategy, downloadMLStrategyReport, executeMLStrategy,
+  cancelMLStrategyOptimization, createMLStrategy, downloadMLStrategyReport, executeMLStrategy,
   getMLBacktest, getMLStrategy, listMLStrategies, optimizeMLStrategy,
 } from "../../api/mlBacktestsApi";
 import "../../styles/ml-strategy-workspace.css";
@@ -10,7 +10,7 @@ const WORDS = {
     title: "Estratégias e otimização LightGBM",
     description: "Crie uma estratégia, otimize hiperparâmetros antes do primeiro teste OOS e execute a vencedora.",
     name: "Nome da estratégia", source: "Auditoria histórica", horizon: "Horizonte",
-    create: "Criar estratégia", chosen: "Estratégia selecionada", update: "Atualizar",
+    create: "Criar estratégia", chosen: "Estratégia selecionada", update: "Atualizar", cancel: "Cancelar otimização",
     quick: "Otimizar parâmetros", bayes: "Otimização bayesiana (custosa)",
     quickHint: "8 tentativas, amostragem Latin Hypercube.",
     bayesHint: "24 tentativas e custo elevado de CPU. Usa um modelo probabilístico.",
@@ -28,7 +28,7 @@ const WORDS = {
   en: {
     title: "LightGBM strategy research", description: "Create, tune on pre-OOS history, then execute the champion.",
     name: "Strategy name", source: "Archived audit", horizon: "Horizon",
-    create: "Create strategy", chosen: "Selected strategy", update: "Refresh",
+    create: "Create strategy", chosen: "Selected strategy", update: "Refresh", cancel: "Cancel optimization",
     quick: "Optimize parameters", bayes: "Bayesian optimization (expensive)",
     quickHint: "8 Latin Hypercube trials.", bayesHint: "24 CPU-intensive Bayesian trials.",
     noSource: "First complete an audited BTC Direction & Return execution.",
@@ -45,7 +45,7 @@ const WORDS = {
   es: {
     title: "Estrategias y optimización LightGBM", description: "Cree y optimice antes de OOS y evalúe al ganador.",
     name: "Nombre", source: "Auditoría", horizon: "Horizonte",
-    create: "Crear estrategia", chosen: "Estrategia seleccionada", update: "Actualizar",
+    create: "Crear estrategia", chosen: "Estrategia seleccionada", update: "Actualizar", cancel: "Cancelar optimización",
     quick: "Optimizar parámetros", bayes: "Optimización bayesiana (costosa)",
     quickHint: "8 intentos Latin Hypercube.", bayesHint: "24 intentos, alto consumo de CPU.",
     noSource: "Primero complete una ejecución auditada de BTC Direction & Return.",
@@ -135,6 +135,10 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
     setDetail(await optimizeMLStrategy(chosen, { mode, trials: mode === "BAYESIAN" ? 24 : 8 }));
   });
 
+  const cancelOptimization = () => action(async () => {
+    setDetail(await cancelMLStrategyOptimization(chosen));
+  });
+
   const execute = () => action(async () => {
     const job = await executeMLStrategy(chosen);
     setFinalJob(job);
@@ -209,6 +213,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           {detail.status === "RUNNING" && <div className="strategy-progress" role="status">
             <strong>{text.progress} · {detail.progress}% · {text.trials}: {detail.trials?.length || 0}/{detail.trials_target}</strong>
             <div className="ml-progress-track"><i style={{ width: String(detail.progress) + "%" }} /></div>
+            <button type="button" className="secondary-button" disabled={running} onClick={cancelOptimization}>{text.cancel}</button>
           </div>}
           {detail.status === "FAILED" && <p className="alert ml-alert">{detail.error_message}</p>}
           {best && <div className="strategy-champion">
