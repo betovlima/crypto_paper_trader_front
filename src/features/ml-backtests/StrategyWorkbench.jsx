@@ -329,20 +329,44 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           {detail.status === "INSUFFICIENT_EVIDENCE" && (
             <details className="strategy-technical-details">
               <summary>Por que os candidatos foram reprovados?</summary>
-              <p className="strategy-note">Critérios fixados antes do OOS: no mínimo 6 ciclos, operações em pelo menos 2 dos 3 períodos, rentabilidade em pelo menos 2 períodos, lucro líquido positivo, ganho médio compatível com perda média e rentabilidade preservada com taxas 25% maiores e slippage 2 vezes maior.</p>
+              <p className="strategy-note">Critérios fixados antes do OOS: no mínimo 6 ciclos, operações distribuídas, rentabilidade em pelo menos 2 períodos, lucro líquido positivo e resultados resistentes aos custos. O teste de estresse da V10 mantém exatamente os mesmos horários, preços e quantidades de operações da agenda original (compras e vendas); somente as taxas e as quantidades de BTC/USD são recalculadas. As taxas 25% maiores e o slippage 2 vezes maior são hipóteses de estresse, não tarifas da Alpaca.</p>
               <div className="ml-table-wrap">
                 <table className="ml-table">
-                  <thead><tr><th>#</th><th>Ciclos</th><th>Períodos ativos</th><th>Períodos positivos</th><th>Lucro com custos maiores</th><th>Critérios não atendidos</th></tr></thead>
+                  <thead><tr><th>#</th><th>Ciclos</th><th>Mesmas operações no estresse?</th><th>Períodos ativos</th><th>Períodos positivos</th><th>Lucro com custos maiores</th><th>Critérios não atendidos</th></tr></thead>
                   <tbody>{(detail.summary?.quality_by_trial || []).map((row) => (
                     <tr key={row.trial}>
                       <td>{row.trial}</td>
                       <td>{row.robustness?.completed_cycles ?? "—"}</td>
+                      <td>{row.robustness == null ? "—" : row.robustness.same_trades_under_stress ? "Sim" : "Não"}</td>
                       <td>{row.robustness?.active_segments ?? "—"}/3</td>
                       <td>{row.robustness?.profitable_segments ?? "—"}/3</td>
                       <td>{row.robustness?.stress_net_profit_usd == null ? "—" : fmt(row.robustness.stress_net_profit_usd) + " USD eq."}</td>
                       <td>{row.robustness?.reason_codes?.join(", ") || row.status}</td>
                     </tr>
                   ))}</tbody>
+                </table>
+              </div>
+            </details>
+          )}
+          {detail.status === "INSUFFICIENT_EVIDENCE" && (
+            <details className="strategy-technical-details">
+              <summary>Qualidade das previsões LightGBM (2h, 6h e 24h, antes do OOS)</summary>
+              <p className="strategy-note">Compare a previsão com o retorno efetivo e com uma referência simples: o retorno médio do treinamento. Ganho de habilidade (MAE) positivo indica erro menor que a referência; negativo indica erro maior. Correlação e amplitude próximas de zero sugerem que as previsões não identificam bem a magnitude dos movimentos.</p>
+              <div className="ml-table-wrap">
+                <table className="ml-table">
+                  <thead><tr><th>Candidato</th><th>Horizonte</th><th>MAE LightGBM</th><th>MAE referência</th><th>Ganho de habilidade</th><th>Correlação</th><th>Amplitude prevista / real</th><th>Acerto direção</th></tr></thead>
+                  <tbody>{detail.trials?.flatMap((trial) => Object.entries(trial.metrics?.per_horizon || {}).map(([horizon, stats]) => {
+                    const q = stats.return_quality || {};
+                    return <tr key={trial.trial + "-" + horizon}>
+                      <td>{trial.trial}</td><td>{horizon}h</td>
+                      <td>{q.model_mae == null ? "—" : fmt(q.model_mae * 100, 4) + "%"}</td>
+                      <td>{q.baseline_mae == null ? "—" : fmt(q.baseline_mae * 100, 4) + "%"}</td>
+                      <td>{q.mae_skill_vs_training_mean == null ? "—" : fmt(q.mae_skill_vs_training_mean * 100, 2) + "%"}</td>
+                      <td>{fmt(q.prediction_correlation, 3)}</td>
+                      <td>{fmt(q.prediction_amplitude_ratio, 3)}</td>
+                      <td>{q.direction_accuracy == null ? "—" : fmt(q.direction_accuracy * 100, 2) + "%"}</td>
+                    </tr>;
+                  }))}</tbody>
                 </table>
               </div>
             </details>
@@ -375,6 +399,9 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               <span>Relação ganho/perda médios: {fmt(metrics.robustness.avg_gain_loss_ratio, 2)}</span>
               <span>Maior ganho isolado: {fmt(metrics.robustness.largest_win_share_of_gross_wins * 100, 2)}% dos ganhos</span>
               <span>Lucro sob custos maiores: {fmt(metrics.robustness.stress_net_profit_usd)} USD eq.</span>
+              <span>Operações congeladas no estresse: {metrics.robustness.same_trades_under_stress ? "Sim" : "Não"}</span>
+              <span>Ciclos no estresse: {metrics.robustness.stress_completed_cycles ?? "—"}</span>
+              <span>Diferença no lucro com custos maiores: {fmt(metrics.robustness.stress_net_profit_delta_usd)} USD eq.</span>
             </div>
           )}
           {detail.summary?.training_rows_by_horizon?.["2"]?.selection_start && (
@@ -420,6 +447,26 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
                   </tbody>
                 </table>
               </div>
+            )}
+            {metrics.per_horizon && Object.values(metrics.per_horizon).some((v) => v.return_quality) && (
+              <details className="strategy-technical-details">
+                <summary>Qualidade do retorno previsto por horizonte (comparação pré-OOS)</summary>
+                <div className="ml-table-wrap">
+                  <table className="ml-table">
+                    <thead><tr><th>Horizonte</th><th>Erro LightGBM</th><th>Erro do retorno médio do treino</th><th>Melhoria no MAE</th><th>Correlação</th><th>Amplitude prevista / real</th></tr></thead>
+                    <tbody>{Object.entries(metrics.per_horizon).map(([h, data]) => {
+                      const q = data.return_quality || {};
+                      return <tr key={h}><td>{h}h</td>
+                        <td>{q.model_mae == null ? "—" : fmt(q.model_mae * 100, 4) + "%"}</td>
+                        <td>{q.baseline_mae == null ? "—" : fmt(q.baseline_mae * 100, 4) + "%"}</td>
+                        <td>{q.mae_skill_vs_training_mean == null ? "—" : fmt(q.mae_skill_vs_training_mean * 100, 2) + "%"}</td>
+                        <td>{fmt(q.prediction_correlation, 3)}</td>
+                        <td>{fmt(q.prediction_amplitude_ratio, 3)}</td>
+                      </tr>;
+                    })}</tbody>
+                  </table>
+                </div>
+              </details>
             )}
             <p className="strategy-note">{text.warning}</p>
             <div className="strategy-parameters">
