@@ -147,7 +147,7 @@ export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPol
     <form className="btc-capital-form" onSubmit={run}>
       <div className="btc-capital-horizons">
         <strong>2h + 6h + 24h</strong>
-        {feeModel === "ALPACA_CRYPTO_SPOT_2026" && <small>Taxas Alpaca determinadas automaticamente pela faixa de volume e pelo tipo de ordem Taker. O campo de tarifa fixa não se aplica.</small>
+        {feeModel === "ALPACA_CRYPTO_SPOT_2026" && <small>Taxas Alpaca determinadas automaticamente pela faixa de volume e pelo tipo de ordem Taker. O campo de tarifa fixa não se aplica.</small>}
         <small>{optimizedPolicy ? "Critérios de entrada, venda, stops e pesos definidos pela otimização antes do OOS." : (language === "pt" ? "Sinal conjunto, consenso de 2 entre 3 previsões" : "Joint signal, agreement from 2 of 3 forecasts")}</small>
         {!optimizedPolicy && <details>
           <summary>{t.horizon}</summary>
