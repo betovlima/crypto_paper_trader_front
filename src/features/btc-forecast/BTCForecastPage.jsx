@@ -284,7 +284,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
             {!jobs.length && <option value="">{t("No completed BTCUSDT backtests found.")}</option>}
             {jobs.map((job) => (
               <option key={job.id} value={job.id}>
-                {moment(job.created_at, language)} · {job.status} · {job.decision_timeframe}
+                {moment(job.created_at, language)} · {job.status} · {job.experiment_type === "BTC_DIRECTION_RETURN" ? (job.replay_parent_job_id ? "V2 / Replay" : "V1 / Original") : "Target/Stop"} · {job.decision_timeframe}
               </option>
             ))}
           </select>
@@ -333,14 +333,6 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
         </section>
       )}
 
-      {result?.experiment_type === "BTC_DIRECTION_RETURN" && (
-        <>
-          <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
-          <ReplayComparisonPanel comparison={result.replay_comparison} language={language} t={t} />
-
-        </>
-      )}
-
       {selectedJob?.experiment_type === "BTC_DIRECTION_RETURN" && selectedJob.status === "COMPLETED" && (
         selectedJob.replay_parent_job_id && result?.replay_comparison?.status === "VERIFIED"
           ? <CapitalizationPanel key={selectedJob.id} jobId={selectedJob.id} language={language} />
@@ -364,6 +356,15 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
                 <p role="status">{t("Financial simulation is unavailable because the V1/V2 OOS comparison was not verified. Check the replay results.")}</p>
               )}
             </section>
+      )}
+
+
+      {result?.experiment_type === "BTC_DIRECTION_RETURN" && (
+        <>
+          <DirectionForecastPanel key={selectedJob.id} result={result} language={language} t={t} />
+          <ReplayComparisonPanel comparison={result.replay_comparison} language={language} t={t} />
+
+        </>
       )}
 
       {!!timeline.length && result?.experiment_type !== "BTC_DIRECTION_RETURN" && (
