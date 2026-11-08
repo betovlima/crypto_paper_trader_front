@@ -256,6 +256,7 @@ export function BTCForecastPage({ language, t, onOpenBacktest }) {
           <strong>{t("Historical execution (out of sample)")}</strong>
           <small>{t("No new forecast models are active yet. LHS and CARO will be added in later stages.")}</small>
           <small>{t("Full audit ZIP is available only for new executions using the updated ML API.")}</small>
+          <small>{t("Historical market source")}: {selectedJob?.result?.execution?.history_source || selectedJob?.history_source || "MEXC"}</small>
         </div>
       </section>
 

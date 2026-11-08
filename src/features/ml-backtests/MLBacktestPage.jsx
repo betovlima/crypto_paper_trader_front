@@ -162,6 +162,18 @@ function NewBacktestDialog({ open, onClose, onSubmit, submitting, configuration,
                 <input value={form.symbol} onChange={(event) => update("symbol", event.target.value.toUpperCase())} required />
               </label>
               <label>
+                <span>{t("Historical market source")}</span>
+                <select value={form.history_source || "MEXC"} onChange={(event) => update("history_source", event.target.value)}>
+                  {(options.history_sources || ["MEXC"]).map((source) => (
+                    <option key={source} value={source}>
+                      {source === "BINANCE_SPOT_ARCHIVE"
+                        ? t("Binance Spot archives (historical research)")
+                        : t("MEXC Spot (exchange candles)")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
                 <span>{t("Period")}</span>
                 <select value={form.period_years} onChange={(event) => update("period_years", event.target.value)}>
                   {periodOptions.map((year) => (
@@ -206,6 +218,12 @@ function NewBacktestDialog({ open, onClose, onSubmit, submitting, configuration,
                 <span>{t("Reinvest available capital")}</span>
               </label>
             </div>
+            {form.history_source === "BINANCE_SPOT_ARCHIVE" && (
+              <div className="ml-dialog-note">
+                <strong>{t("Research source: Binance Spot BTCUSDT")}</strong>
+                <p>{t("This run uses only Binance Spot prices, never MEXC. Exchange prices and liquidity may differ. Archived data ends before the most recent UTC day.")}</p>
+              </div>
+            )}
             <div className="ml-dialog-note">
               <strong>{t("Database-backed defaults")}</strong>
               <p>{t("The form, model, indicators, limits, costs and simulation rules are loaded from the ML API database. No trading parameter is read from a configuration file.")}</p>
@@ -587,6 +605,7 @@ export function MLBacktestPage({ language, t, liveExperiment, liveStrategies, ma
             <div><small>{t("Decision candle")}</small><strong>{selectedJob.decision_timeframe}</strong></div>
             <div><small>{t("Trend candle")}</small><strong>{selectedJob.trend_timeframe}</strong></div>
             <div><small>{t("Requested period")}</small><strong>{selectedJob.period_years} {t("years")}</strong></div>
+            <div><small>{t("Historical market source")}</small><strong>{selectedJob.history_source || "MEXC"}</strong></div>
             <div><small>{t("Created")}</small><strong>{formatDateTime(selectedJob.created_at, language)}</strong></div>
           </section>
 

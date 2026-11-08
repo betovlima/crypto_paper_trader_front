@@ -24,6 +24,9 @@ assert.ok(oldBacktestPage.includes('Number(result.summary.trade_count) === 0'), 
 assert.ok(oldBacktestPage.includes("baseline_brier_score"), "ML dashboard must display training-only prediction baselines");
 assert.ok(page.includes("downloadMLBacktestAudit"), "UI must offer complete OOS audit download");
 assert.ok(page.includes("audit_available"), "Older executions must not offer incomplete exports");
+assert.ok(oldBacktestPage.includes("options.history_sources"), "History source choices must come from ML API");
+assert.ok(oldBacktestPage.includes('update("history_source"'), "Source selection must persist with job request");
+assert.ok(page.includes("selectedJob?.history_source"), "BTC dashboard must display the exchange data source");
 assert.ok(read("src/api/mlBacktestsApi.js").includes("/audit.zip"), "Audit endpoint must be integrated");
 assert.ok(page.includes("row.actions"), "Executed trade markers must come from recorded orders");
 assert.ok(page.includes("row.position"), "Position must come from the simulator, not inferred from trades");

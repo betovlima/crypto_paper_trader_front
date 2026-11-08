@@ -11,6 +11,11 @@ export const INTL_LOCALES = {
 };
 
 const pt = {
+  "Historical market source": "Fonte histórica de mercado",
+  "Binance Spot archives (historical research)": "Arquivos Binance Spot (pesquisa histórica)",
+  "MEXC Spot (exchange candles)": "MEXC Spot (candles da corretora)",
+  "Research source: Binance Spot BTCUSDT": "Fonte de pesquisa: Binance Spot BTCUSDT",
+  "This run uses only Binance Spot prices, never MEXC. Exchange prices and liquidity may differ. Archived data ends before the most recent UTC day.": "Esta execução usa apenas preços Spot da Binance, nunca da MEXC. Preços e liquidez variam entre corretoras. O arquivo histórico não inclui o último dia UTC.",
   "Historical coverage is shorter than requested.": "O histórico disponível é menor que o período solicitado.",
   "Requested years": "Anos solicitados",
   "Available candles": "Candles disponíveis",
@@ -440,6 +445,11 @@ const pt = {
 };
 
 const es = {
+  "Historical market source": "Fuente histórica de mercado",
+  "Binance Spot archives (historical research)": "Archivos Binance Spot (investigación histórica)",
+  "MEXC Spot (exchange candles)": "MEXC Spot (velas del exchange)",
+  "Research source: Binance Spot BTCUSDT": "Fuente de investigación: Binance Spot BTCUSDT",
+  "This run uses only Binance Spot prices, never MEXC. Exchange prices and liquidity may differ. Archived data ends before the most recent UTC day.": "Esta ejecución usa únicamente precios Spot de Binance, nunca de MEXC. Los precios y la liquidez varían entre exchanges. El archivo histórico no incluye el último día UTC.",
   "Historical coverage is shorter than requested.": "El historial disponible es menor que el período solicitado.",
   "Requested years": "Años solicitados",
   "Available candles": "Velas disponibles",
