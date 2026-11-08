@@ -328,6 +328,16 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           </div>
           <details className="strategy-technical-details">
             <summary>Mostrar diagnósticos, hiperparâmetros e tentativas</summary>
+          {detail.summary?.training_rows_by_horizon?.["2"]?.selection_start && (
+            <p className="strategy-note">
+              Validação financeira anterior ao OOS: {new Date(detail.summary.training_rows_by_horizon["2"].selection_start).toLocaleDateString("pt-BR")}
+              {" a "}{new Date(detail.summary.training_rows_by_horizon["2"].selection_end).toLocaleDateString("pt-BR")}
+              {" · "}{detail.summary.training_rows_by_horizon["2"].selection_rows} candles, avaliados em três períodos cronológicos.
+            </p>
+          )}
+          <p className="strategy-note">
+            A previsão de retorno define os votos de 2h, 6h e 24h. A probabilidade calibrada permanece como filtro ajustável, sem exigência fixa de 50%.
+          </p>
           {best && <div className="strategy-champion">
             <h4>{text.selection}</h4>
             <div className="strategy-metrics">
@@ -345,12 +355,12 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             {metrics.per_horizon && Object.keys(metrics.per_horizon).length > 1 && (
               <div className="ml-table-wrap">
                 <table className="ml-table">
-                  <thead><tr><th>{text.horizon}</th><th>Brier</th><th>MAE</th><th>Previsões de validação</th></tr></thead>
+                  <thead><tr><th>{text.horizon}</th><th>Brier</th><th>MAE</th><th>Previsões</th><th>Calibração</th><th>Brier da escolha</th></tr></thead>
                   <tbody>{Object.entries(metrics.per_horizon)
                     .sort(([a], [b]) => Number(a) - Number(b))
                     .map(([h, m]) => <tr key={h}>
                       <td>{h}h</td><td>{fmt(m.brier, 4)}</td>
-                      <td>{fmt(m.mae, 6)}</td><td>{m.signal_count ?? "—"}</td>
+                      <td>{fmt(m.mae, 6)}</td><td>{m.signal_count ?? "—"}</td><td>{m.calibration?.method || "—"}</td><td>{fmt(m.calibration?.selection_brier, 5)}</td>
                     </tr>)}
                   </tbody>
                 </table>
