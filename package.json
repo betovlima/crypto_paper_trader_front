@@ -11,7 +11,8 @@
     "i18n:check": "node scripts/check-i18n.mjs",
     "architecture:check": "node scripts/check-header-boundary.mjs",
     "copy:check": "node scripts/check-copy-style.mjs",
-    "ui:check": "node scripts/check-v01902-ui.mjs"
+    "ui:check": "node scripts/check-v01902-ui.mjs",
+    "btc-forecast:check": "node scripts/check-btc-forecast-ui.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.6.0",
