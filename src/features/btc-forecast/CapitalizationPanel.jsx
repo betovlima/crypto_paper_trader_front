@@ -181,6 +181,13 @@ export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPol
     {error && <div className="alert" role="alert">{error}</div>}
     {result?.status === "VERIFIED" && <>
       {result.optimized_policy_applied && <p className="btc-chart-note"><strong>Estratégia otimizada:</strong> entradas, saídas, stops, trailing, realização de lucros e reentrada definidos durante a otimização. Nenhum ajuste no período OOS.</p>}
+      {result.fee_model === "ALPACA_CRYPTO_SPOT_2026" && (
+        <div className="btc-alpaca-fees">
+          <strong>Custos simulados Alpaca Crypto · {result.fee_liquidity === "TAKER" ? "Taker (ordem a mercado)" : "Maker"}</strong>
+          <p>Tarifa por operação conforme volume negociado nos últimos 30 dias. Compra descontada em BTC, venda descontada em USD. Spread/slippage calculado à parte. Resultado líquido já inclui ambos os custos.</p>
+          <small>Fonte: <a href={result.alpaca_fee_source} target="_blank" rel="noreferrer">Tabela oficial Alpaca Crypto</a>. Cenário estimado com dados BTC/USDT, não confirma preços reais BTC/USD da Alpaca.</small>
+        </div>
+      )}
       <p className="btc-chart-note">{result.horizon_hours === 0 ? "2h + 6h + 24h (conjunto)" : `${result.horizon_hours}h`} · {result.signal_count} OOS ·
         {" "}{new Date(result.period_start).toLocaleDateString(locale)} → {new Date(result.period_end).toLocaleDateString(locale)}
         {" · "}{t.cost}: {percent(result.results[0].required_round_trip_return, locale)}
@@ -189,13 +196,18 @@ export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPol
         <table className="ml-table">
           <thead><tr><th>{t.strategy}</th><th>{t.final}</th><th>{t.result}</th>
             <th>{t.cagr}</th><th>{t.maxdd}</th><th>{t.exposure}</th>
+            <th>Lucro líquido</th><th>Taxas Alpaca</th><th>Slippage estimado</th>
             <th>{t.orders}</th><th>{t.cycles}</th></tr></thead>
           <tbody>{result.results.map((row) =>
             <tr key={row.code}>
               <td><strong>{row.code === "BUY_AND_HOLD" ? "Buy and Hold" : row.code === "BTC_CASH_ROTATION" ? "BTC/CASH LightGBM" : row.code === "V2" ? candidate : row.code}</strong></td>
               <td>{fmt(row.capital_final, locale)} USDT</td><td>{percent(row.total_return, locale)}</td>
               <td>{percent(row.cagr, locale)}</td><td>{percent(row.max_drawdown, locale)}</td>
-              <td>{percent(row.exposure, locale)}</td><td>{row.switch_count}</td>
+              <td>{percent(row.exposure, locale)}</td>
+              <td>{row.net_profit_usd == null ? "—" : fmt(row.net_profit_usd, locale) + " USD"}</td>
+              <td>{row.alpaca_fees_usd == null ? "—" : fmt(row.alpaca_fees_usd, locale) + " USD"}</td>
+              <td>{row.slippage_usd_estimate == null ? "—" : fmt(row.slippage_usd_estimate, locale) + " USD"}</td>
+              <td>{row.switch_count}</td>
               <td>{row.completed_cycles}</td>
             </tr>
           )}</tbody>
@@ -213,13 +225,16 @@ export function CapitalizationPanel({ jobId, language, modelFamily, optimizedPol
       <div className="ml-table-wrap">
         <table className="ml-table">
           <thead><tr><th>{t.strategy}</th><th>{t.time}</th><th>{t.action}</th>
-            <th>{t.price}</th><th>{t.reason}</th></tr></thead>
+            <th>{t.price}</th><th>{t.reason}</th><th>Taxa aplicada</th><th>Taxa (USD)</th><th>Faixa Alpaca</th></tr></thead>
           <tbody>{result.results.filter((r) => r.code !== "BUY_AND_HOLD")
             .flatMap((r) => r.actions.slice(-15).map((action, i) => ({ ...action, code: r.code, rowid: i })))
             .sort((a, b) => a.timestamp.localeCompare(b.timestamp)).map((action) =>
               <tr key={action.code + "-" + action.rowid}>
                 <td>{action.code === "BTC_CASH_ROTATION" ? "BTC/CASH LightGBM" : action.code === "V2" ? candidate : action.code}</td><td>{action.timestamp}</td><td>{action.action}</td>
                 <td>{fmt(action.price, locale)}</td><td>{action.reason}</td>
+                <td>{action.fee_rate == null ? "—" : percent(action.fee_rate, locale)}</td>
+                <td>{action.fee_usd_equivalent == null ? "—" : fmt(action.fee_usd_equivalent, locale)}</td>
+                <td>{action.fee_tier ?? "—"}</td>
               </tr>
             )}</tbody>
         </table>
