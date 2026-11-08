@@ -11,9 +11,11 @@ const mlApi = read("src/api/mlBacktestsApi.js");
 const importedCss = read("src/styles.css");
 const translations = read("src/i18n.js");
 
-assert.ok(app.includes('currentPath === "/backtests/btc"'), "BTC backtest page must be routed");
-assert.ok(app.includes("<BTCForecastPage"), "BTC page must render inside the existing application");
-assert.ok(navigation.includes('path: "/backtests/btc"'), "BTC page must be available in the navigation");
+assert.ok(app.includes('currentPath === "/backtests/ml"'), "Unified ML workspace must be routed");
+assert.ok(app.includes('path.startsWith("/backtests/btc")'), "Old BTC URL must redirect to the unified workspace");
+assert.ok(oldBacktestPage.includes("<BTCForecastPage"), "BTC reporting must be embedded in the unified ML workspace");
+assert.ok(navigation.includes('path: "/backtests/ml"'), "Unified ML workspace must be in navigation");
+assert.ok(!navigation.includes('path: "/backtests/btc"'), "Duplicate BTC navigation must be removed");
 assert.ok(page.includes("listMLBacktests()"), "BTC page must list real ML executions");
 assert.ok(page.includes("getMLBacktest("), "BTC page must load the selected execution");
 assert.ok(page.includes("getMLConfiguration()"), "Polling cadence must come from the ML API database");
@@ -45,8 +47,8 @@ assert.ok(page.includes('result?.experiment_type !== "BTC_DIRECTION_RETURN" && !
 const directPage = read("src/features/btc-forecast/DirectionForecastPanel.jsx");
 assert.ok(oldBacktestPage.includes("options.experiment_types"), "Experiment choices must come from the ML API database");
 assert.ok(oldBacktestPage.includes('update("experiment_type"'), "New experiment type must be submitted");
-assert.ok(oldBacktestPage.includes("DirectionForecastPanel"), "ML Backtest must render direct prediction results");
-assert.ok(page.includes("DirectionForecastPanel"), "BTC Forecast tab must render direct prediction results");
+assert.ok(oldBacktestPage.includes("<BTCForecastPage"), "Single ML workspace must reuse complete BTC reports");
+assert.ok(page.includes("DirectionForecastPanel"), "Embedded BTC report must include direct prediction results");
 assert.ok(page.includes('result?.experiment_type !== "BTC_DIRECTION_RETURN"'), "Direct forecasts must not be presented as historical BTC/CASH trades");
 assert.ok(directPage.includes("brier_skill_score"), "Direct forecast must display Brier skill");
 assert.ok(directPage.includes("forecast_raw_p_up"), "Raw OOS probabilities must be shown when available");
@@ -72,4 +74,11 @@ assert.ok(capitalization.includes("capitalizeBTCForecast"), "Financial simulatio
 assert.ok(mlApi.includes("/capitalization"), "Financial replay endpoint must be wired");
 assert.ok(capitalization.includes("initial_capital") && capitalization.includes("slippage_rate"), "Capital and execution costs must be configurable");
 assert.ok(!capitalization.includes("Math.random"), "Financial simulation must not fabricate trades");
-console.log("BTC Forecast, direct OOS predictions, legacy BTC/CASH charts and audit checks passed");
+const strategy = read("src/features/ml-backtests/StrategyWorkbench.jsx");
+assert.ok(oldBacktestPage.includes("<StrategyWorkbench"), "Strategies must be created in the unified ML workspace");
+assert.ok(strategy.includes("createMLStrategy"), "Strategies must persist in the ML API");
+assert.ok(strategy.includes("optimizeMLStrategy") && strategy.includes("BAYESIAN"), "Regular and Bayesian optimization must work from the Front");
+assert.ok(strategy.includes("executeMLStrategy"), "OOS LightGBM run must start in the Front");
+assert.ok(strategy.includes("downloadMLStrategyReport"), "Research package must be exported in the Front");
+assert.ok(mlApi.includes("/v1/ml-strategies"), "Research endpoints must be connected");
+console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
