@@ -81,4 +81,10 @@ assert.ok(strategy.includes("optimizeMLStrategy") && strategy.includes("BAYESIAN
 assert.ok(strategy.includes("executeMLStrategy"), "OOS LightGBM run must start in the Front");
 assert.ok(strategy.includes("downloadMLStrategyReport"), "Research package must be exported in the Front");
 assert.ok(mlApi.includes("/v1/ml-strategies"), "Research endpoints must be connected");
+assert.ok(strategy.includes("2h + 6h + 24h"), "Strategy wizard must show all horizons together");
+assert.ok(!strategy.includes("setHorizon("), "Strategy wizard must not select just one prediction horizon");
+assert.ok(!strategy.includes("horizon_hours: Number(horizon)"), "Strategy must send joint research request, not single horizon");
+assert.ok(strategy.includes('err.status === 404') && strategy.includes("/v1/ml-strategies"), "Missing API route must have actionable diagnosis");
+assert.ok(capitalization.includes("horizon_hours: 0"), "Capitalization must default to combined three-horizon policy");
+assert.ok(capitalization.includes("2h + 6h + 24h"), "Combined financial policy must be visible");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
