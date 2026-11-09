@@ -527,7 +527,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               </div>
               <details className="strategy-technical-details">
                 <summary>Últimos extremos confirmados com limite de 2%</summary>
-                <p className="strategy-note">O pivô histórico não era conhecido no momento em que ocorreu. O CSV de operações do ZIP contém os preços efetivos das compras e vendas simuladas, que são diferentes dos preços dos pivôs.</p>
+                <p className="strategy-note">O pivô histórico não era conhecido no momento em que ocorreu. No ZIP, directional_change_extrema.csv registra todos os pivôs e confirmações. O arquivo directional_change_trades.csv registra cada compra e venda simulada, o preço efetivo de execução e as taxas da Alpaca, diferentes dos preços históricos dos pivôs.</p>
                 <div className="ml-table-wrap">
                   <table className="ml-table">
                     <thead><tr><th>Tipo</th><th>Extremo (UTC)</th><th>Preço do extremo</th><th>Confirmação (UTC)</th><th>Preço confirmado</th><th>Atraso</th></tr></thead>
