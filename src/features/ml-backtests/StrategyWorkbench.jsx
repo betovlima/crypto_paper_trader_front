@@ -106,6 +106,65 @@ const fmt = (v, digits = 2) => (
     : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: digits }).format(Number(v))
 );
 
+function DirectionalChangeChart({ chart }) {
+  const points = chart?.prices || [];
+  if (points.length < 2) return null;
+  const stamp = (value) => Date.parse(value);
+  const start = stamp(points[0].timestamp);
+  const end = stamp(points[points.length - 1].timestamp);
+  const prices = points.map((p) => Number(p.close));
+  const pivots = (chart.extrema || []).filter((e) =>
+    stamp(e.pivot_timestamp) >= start && stamp(e.confirmed_at) <= end);
+  const values = prices.concat(pivots.flatMap((e) => [e.pivot_close, e.confirmed_close]));
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const width = 900, height = 275, pad = 40;
+  const x = (ts) => pad + (stamp(ts) - start) / Math.max(1, end - start) * (width - pad * 2);
+  const y = (value) => height - pad - (Number(value) - low) / Math.max(.000001, high - low) * (height - pad * 2);
+  const closeLine = points.map((p) => x(p.timestamp).toFixed(2) + "," + y(p.close).toFixed(2)).join(" ");
+  const formatDate = (ts) => new Date(ts).toLocaleString("pt-BR", { timeZone: "UTC", dateStyle: "short", timeStyle: "short" });
+  return <div className="strategy-dc-chart">
+    <strong>Preço BTC · últimos 35 dias da validação · confirmação de 2%</strong>
+    <p className="strategy-note">Verde: fundo histórico. Vermelho: topo histórico. Roxo: momento em que a reversão foi confirmada. Os pontos verdes e vermelhos só são identificáveis depois da confirmação, nunca na hora do pivô.</p>
+    <svg viewBox={"0 0 " + width + " " + height} role="img"
+      aria-label="Preço histórico do Bitcoin, topos e fundos retrospectivos, com suas confirmações posteriores">
+      {[0, .25, .5, .75, 1].map((fraction) => {
+        const value = high - (high - low) * fraction;
+        const lineY = y(value);
+        return <g key={fraction}>
+          <line x1={pad} x2={width - pad} y1={lineY} y2={lineY} className="strategy-dc-grid" />
+          <text x={pad + 3} y={lineY - 5} className="strategy-dc-axis">{fmt(value, 0)}</text>
+        </g>;
+      })}
+      <polyline points={closeLine} className="strategy-dc-price" />
+      {pivots.map((event, index) => {
+        const bottom = event.kind === "BOTTOM_CONFIRMED";
+        const title = (bottom ? "Fundo" : "Topo") +
+          " histórico: " + fmt(event.pivot_close) + " USDT em " +
+          formatDate(event.pivot_timestamp) + " UTC. Reversão confirmada: " +
+          fmt(event.confirmed_close) + " USDT em " +
+          formatDate(event.confirmed_at) + " UTC. Atraso: " + event.lag_candles + " candles.";
+        return <g key={event.kind + index + event.pivot_timestamp}>
+          <line x1={x(event.pivot_timestamp)} y1={y(event.pivot_close)}
+            x2={x(event.confirmed_at)} y2={y(event.confirmed_close)}
+            className="strategy-dc-delay" />
+          <circle cx={x(event.pivot_timestamp)} cy={y(event.pivot_close)} r="4.5"
+            className={bottom ? "strategy-dc-bottom" : "strategy-dc-top"} />
+          <circle cx={x(event.confirmed_at)} cy={y(event.confirmed_close)} r="3"
+            className="strategy-dc-confirmed" />
+          <title>{title}</title>
+        </g>;
+      })}
+      {[0, .5, 1].map((f) => <text key={f}
+        x={pad + f * (width - pad * 2)} y={height - 12}
+        textAnchor={f === 0 ? "start" : f === 1 ? "end" : "middle"}
+        className="strategy-dc-axis">
+        {new Date(start + f * (end - start)).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
+      </text>)}
+    </svg>
+  </div>;
+}
+
 export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, language = "pt" }) {
   const text = WORDS[language] || WORDS.pt;
   const [strategies, setStrategies] = useState([]);
