@@ -121,3 +121,26 @@ test("fixed four-policy BTC event experiment launches from existing three-button
   });
   assert.equal(calls[0].payload.source_job_id, completed.source_job_id);
 });
+
+test("Directional Change study uses four fixed policies through existing UI workflow", async () => {
+  const seen = [];
+  await launchResearchCampaign({
+    strategy: completed,
+    strategies: [completed],
+    mode: "DIRECTIONAL_CHANGE",
+    autoExecute: true,
+    createStrategy: async (payload) => {
+      seen.push({ type: "create", payload });
+      return { ...payload, id: "directional-change-campaign", status: "DRAFT" };
+    },
+    optimizeStrategy: async (id, request) => {
+      seen.push({ type: "optimize", id, request });
+      return { id, status: "RUNNING" };
+    },
+  });
+  assert.match(seen[0].payload.name, /EXTREMOS 2$/);
+  assert.equal(seen[0].payload.source_job_id, completed.source_job_id);
+  assert.deepEqual(seen[1].request, {
+    mode: "DIRECTIONAL_CHANGE", trials: 4, auto_execute: true,
+  });
+});
