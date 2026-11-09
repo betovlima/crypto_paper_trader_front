@@ -12,7 +12,7 @@ const forecast = read("src/features/btc-forecast/BTCForecastPage.jsx");
 
 assert.ok(app.includes('currentPath === "/backtests/ml"'), "The ML workspace route must remain");
 assert.ok(route.includes("CleanBTCResearchPage"), "The live screen must use the clean workspace");
-assert.ok(page.includes('const MODE = "TECHNICAL"'), "Research must use the new causal technical mode");
+assert.ok(page.includes('const MODE = "TREND_REGIMES"'), "Research must use causal daily and 4h trend regime mode");
 assert.equal((page.match(/<button type="button"/g) || []).length, 3,
   "The visible workspace must have only Create, Execute, Export buttons");
 for (const name of ["Criar estratégia", "Executar estratégia", "Exportar resultados"]) {
@@ -24,12 +24,16 @@ for (const fn of ["createMLStrategy", "optimizeMLStrategy", "downloadMLStrategyR
 assert.ok(page.includes("getMLBacktest") && page.includes("audit_available"),
   "Create must reuse a completed archived BTC historical audit");
 assert.ok(page.includes("TRIAL_COUNT = 6"),
-  "One execution must compare six predetermined technical policies");
-assert.ok(page.includes("summary.chosen_only_on_development"),
-  "Chosen candidate must be selected on development, not validation");
+  "One execution must compare six predeclared trend regime policies");
+assert.ok(page.includes("summary.approved_policies") && page.includes("summary.approved_validation"),
+  "Only independently gated policies can remain in the visible strategy list");
 assert.ok(page.includes("summary.buy_hold_baseline"),
   "Buy-and-hold must remain the reference");
 assert.ok(page.includes("summary.cash_baseline"), "CASH must remain the reference");
+assert.ok(page.includes("eligibleStrategies") && page.includes("Nenhuma estratégia aprovada"),
+  "Rejected studies must never persist as selectable active strategies");
+assert.ok(page.includes("rows.map") && page.includes("approvedPolicies.includes"),
+  "Comparison may only display approved policies, not losing candidates");
 assert.ok(page.includes("chart.actions") && page.includes("execution_price"),
   "Chart markers must come from actual simulated next-open fills");
 assert.ok(page.includes("RESEARCH_COMPLETE") && page.includes("RUNNING"),
