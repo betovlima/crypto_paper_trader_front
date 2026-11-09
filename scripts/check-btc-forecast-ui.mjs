@@ -149,4 +149,16 @@ assert.ok(strategy.includes("return_quality") && strategy.includes("mae_skill_vs
   "Forecast diagnostics must compare each 2h/6h/24h LightGBM return against training-mean baseline");
 assert.ok(strategy.includes("prediction_amplitude_ratio") && strategy.includes("prediction_correlation"),
   "Display prediction magnitude and return correlation only inside advanced diagnostics");
+assert.ok(strategy.includes('className="strategy-mode-selector"'),
+  "Research mode options must be presented visibly, not hidden inside a dropdown");
+assert.ok(strategy.includes('type="radio" name="btc-research-mode" value="QUICK"'),
+  "Standard LightGBM mode must be a visible selectable radio");
+assert.ok(strategy.includes('type="radio" name="btc-research-mode" value="BAYESIAN"'),
+  "CARO LightGBM mode must be a visible selectable radio");
+assert.ok(strategy.includes('type="radio" name="btc-research-mode" value="EVENTS"'),
+  "CUSUM and Triple Barrier must be a visible selectable research mode");
+assert.ok(strategy.includes("BTC · eventos CUSUM + Triple Barrier"),
+  "Bitcoin event research must be explicitly labeled in the page");
+assert.ok(!strategy.includes('<select value={mode}'),
+  "Do not conceal the event research mode inside a default Padrão dropdown");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
