@@ -1,5 +1,30 @@
 # Crypto Paper Trader Front
 
+## V14 · BTC trend research: approved strategies only
+
+The primary \`/backtests/ml\` page remains minimal with exactly THREE main
+buttons: **Criar estratégia**, **Executar estratégia**, **Exportar resultados**.
+
+Execute starts the six-scenario BTC 4h/daily/seven-day study using the existing
+archived historical audit. It compares the same capital against Cash and
+Buy & Hold and shows actual simulated fills, drawdown and compounded equity
+for an approved policy ONLY.
+
+The selector is an active worklist: saved drafts/running studies and
+\`approved_policies\` can appear; completed studies with no passing strategy
+are **never shown as active or selectable strategies**. When no candidate
+passes the frozen financial/risk tests, the screen explicitly shows
+"Nenhuma estratégia aprovada" plus benchmarks, rather than promoting a
+relative winner. Rejected trials remain immutable and retrievable from
+**Exportar resultados**, including immediately after execution and upon
+reload of the latest completed rejected result. Previous experiment screens
+are not resurrected.
+
+Requires the paired ML API branch
+\`feature/btc-directional-change-v14-trend-regimes-20261109\`.
+The experiment is PRE-OOS research, not permission for real trading.
+
+
 ## Clean BTC research workspace (V13)
 
 The `/backtests/ml` page now shows one BTC capitalization research workspace
