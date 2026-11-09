@@ -243,7 +243,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
   return (
     <section className="ml-panel strategy-workbench" aria-label={text.title}>
       <header className="strategy-compact-heading">
-        <div><span>LIGHTGBM · BTC/CASH</span><h3>{text.title}</h3>
+        <div><span>{mode === "EVENTS" ? "EVENTOS BTC · CUSUM / TRIPLE BARRIER" : "LIGHTGBM · BTC/CASH"}</span><h3>{text.title}</h3>
           <p>{mode === "EVENTS" || detail?.mode === "EVENTS" ? "Pesquisa por eventos do Bitcoin, com retornos líquidos e validação cronológica." : "Uma estratégia, três horizontes e uma pesquisa completa."}</p></div>
         <div className="strategy-main-actions" aria-label="Ações da estratégia">
           <button type="button" className="secondary-button" disabled={!apiCompatible || !source || name.trim().length < 3 || running}
@@ -266,18 +266,32 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             </option>)}
           </select>
         </label>
-        <label><span>Modo de otimização</span>
-          <select value={mode} onChange={(event) => setMode(event.target.value)}
-            disabled={running || detail?.status === "RUNNING"}>
-            <option value="QUICK">Padrão · 8 candidatos</option>
-            <option value="BAYESIAN">CARO bayesiana · 24 candidatos</option>
-            <option value="EVENTS">BTC · eventos CUSUM + Triple Barrier · 4 políticas</option>
-          </select>
-        </label>
         <strong>{text.status}: {detail?.status || "—"}</strong>
       </div>
+      <fieldset className="strategy-mode-selector" disabled={running || detail?.status === "RUNNING"}>
+        <legend>Tipo de pesquisa</legend>
+        <div className="strategy-mode-options">
+          <label className={`strategy-mode-option ${mode === "QUICK" ? "is-selected" : ""}`}>
+            <input type="radio" name="btc-research-mode" value="QUICK"
+              checked={mode === "QUICK"} onChange={() => setMode("QUICK")} />
+            <span><strong>LightGBM padrão</strong><small>8 candidatos</small></span>
+          </label>
+          <label className={`strategy-mode-option ${mode === "BAYESIAN" ? "is-selected" : ""}`}>
+            <input type="radio" name="btc-research-mode" value="BAYESIAN"
+              checked={mode === "BAYESIAN"} onChange={() => setMode("BAYESIAN")} />
+            <span><strong>CARO bayesiana</strong><small>24 candidatos</small></span>
+          </label>
+          <label className={`strategy-mode-option ${mode === "EVENTS" ? "is-selected" : ""}`}>
+            <input type="radio" name="btc-research-mode" value="EVENTS"
+              checked={mode === "EVENTS"} onChange={() => setMode("EVENTS")} />
+            <span><strong>BTC · eventos CUSUM + Triple Barrier</strong><small>4 políticas · pesquisa sem execução OOS</small></span>
+          </label>
+        </div>
+      </fieldset>
       <div className="strategy-workflow strategy-workflow-compact" aria-label="Etapas automáticas">
-        <span>1. Otimização</span><span>2. LightGBM OOS</span><span>3. Resultados</span>
+        {mode === "EVENTS"
+          ? <><span>1. Detectar eventos BTC</span><span>2. Validar antes do OOS</span><span>3. Auditar resultados</span></>
+          : <><span>1. Otimização</span><span>2. LightGBM OOS</span><span>3. Resultados</span></>}
       </div>
       <p className="strategy-note">{mode === "EVENTS"
         ? "Pesquisa matemática só com candles BTC arquivados: CUSUM, Triple Barrier, reversão e continuação, com validação cronológica e taxas da Alpaca. Não treina LightGBM nem executa negociação/OOS automaticamente."
@@ -295,7 +309,11 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             </option>)}
           </select>
         </label>
-        <div className="strategy-horizon-summary" role="note"><span>{text.horizon}</span><strong>2h + 6h + 24h</strong><small>1 estratégia · 3 horizontes · 1 otimização</small></div>
+        <div className="strategy-horizon-summary" role="note">
+          <span>{mode === "EVENTS" ? "Pesquisa de eventos BTC" : text.horizon}</span>
+          <strong>{mode === "EVENTS" ? "CUSUM + Triple Barrier" : "2h + 6h + 24h"}</strong>
+          <small>{mode === "EVENTS" ? "4 políticas · sem LightGBM ou OOS" : "1 estratégia · 3 horizontes · 1 otimização"}</small>
+        </div>
       </div>
       <p className="strategy-note">{text.noDownload}</p>
       {error && <p className="alert ml-alert" role="alert">{error}</p>}
