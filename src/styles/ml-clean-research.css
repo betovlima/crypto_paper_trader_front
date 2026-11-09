@@ -96,6 +96,18 @@
 .btc-clean-price-line { stroke: #60a5fa; stroke-width: 2.4; fill: none; }
 .btc-clean-buy { fill: #34d399; stroke: var(--surface, #111a2b); stroke-width: 2; }
 .btc-clean-sell { fill: #fb7185; stroke: var(--surface, #111a2b); stroke-width: 2; }
+.btc-clean-chart-container { display: grid; gap: 8px; }
+.btc-clean-chart-period { display: flex; align-items: center; justify-content: flex-end;
+  gap: 9px; color: var(--muted, #94a3b8); font-size: 12px; }
+.btc-clean-chart-period select { background: var(--surface-3, #1e293b);
+  color: var(--text, #e2e8f0); border: 1px solid var(--border, #334155);
+  border-radius: 7px; padding: 7px 10px; font: inherit; cursor: pointer; }
+.btc-clean-exposure-note { display: block; margin: 0 0 12px;
+  padding: 11px 14px; border: 1px solid var(--border, #334155);
+  border-radius: 9px; font-size: 12px; line-height: 1.6;
+  color: var(--muted, #94a3b8); }
+.btc-clean-exposure-note strong { color: var(--text, #e2e8f0); }
+.btc-clean-exposure-note small { display: block; font-size: 11px; margin-top: 3px; }
 .btc-clean-delay-link { stroke: #64748b; opacity: .48; stroke-width: 1.2; stroke-dasharray: 2 5; }
 .btc-clean-fill-link { stroke: #a78bfa; opacity: .65; stroke-width: 1.5; stroke-dasharray: 4 3; }
 .btc-clean-pivot-bottom { fill: #22c55e; stroke: var(--surface, #111a2b); stroke-width: 1.4; }

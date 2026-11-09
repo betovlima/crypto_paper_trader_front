@@ -1,5 +1,29 @@
 # Crypto Paper Trader Front
 
+## V16 · clean BTC full-resolution diagnostic chart
+
+\`/backtests/ml\` keeps exactly three main actions: Criar estratégia,
+Executar estratégia, Exportar resultados. Execute starts the versioned
+\`EXPOSURE_RESEARCH\` study using existing BTC historical audits.
+
+The chart displays all 30-minute candle closes instead of sampled
+line points, with retrospective extrema, later confirmed reversals,
+policy signals and T+30-minute simulated fills. A small in-chart
+dropdown switches the view between the last 10 and 35 days. It does
+not add a main action button.
+
+The selected diagnostic policy has a small explanatory summary:
+fully-in-cash hours, share of positive open-to-close BTC log returns
+not participated in by uninvested exposure, and analogous negative
+BTC moves avoided. Those shares are NOT a dollar profit estimate.
+The 12-policy audit stays exportable; rejected policies never become
+selectable/approved. If none beats Buy and Hold in development, no
+candidate is promoted, while the graph remains diagnostic.
+
+The paired ML API branch is
+\`feature/btc-v16-exposure-research-20261109\`. No live orders.
+
+
 ## V15 · clean causal BTC chart and expanded research
 
 The main ML page keeps exactly three actions: Criar estratégia, Executar
