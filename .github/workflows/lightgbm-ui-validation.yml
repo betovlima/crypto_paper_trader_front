@@ -12,6 +12,7 @@ on:
       - feature/btc-robust-capital-ui-v9-20261108
       - feature/btc-frozen-stress-ui-v10-20261108
       - feature/btc-event-driven-ui-v11-20261108
+      - feature/btc-directional-change-ui-v12-20261108
   workflow_dispatch:
 
 jobs:
