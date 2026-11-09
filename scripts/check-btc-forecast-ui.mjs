@@ -1,170 +1,48 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
 
-const read = (path) => fs.readFileSync(path, "utf8");
+const read = path => fs.readFileSync(path, "utf8");
 const app = read("src/App.jsx");
-const navigation = read("src/components/layout/PrimaryNavigation.jsx");
-const page = read("src/features/btc-forecast/BTCForecastPage.jsx");
-const oldBacktestPage = read("src/features/ml-backtests/MLBacktestPage.jsx");
-const styles = read("src/styles/btc-forecast.css");
-const mlApi = read("src/api/mlBacktestsApi.js");
-const importedCss = read("src/styles.css");
-const translations = read("src/i18n.js");
-
-assert.ok(app.includes('currentPath === "/backtests/ml"'), "Unified ML workspace must be routed");
-assert.ok(app.includes('path.startsWith("/backtests/btc")'), "Old BTC URL must redirect to the unified workspace");
-assert.ok(oldBacktestPage.includes("<BTCForecastPage"), "BTC reporting must be embedded in the unified ML workspace");
-assert.ok(navigation.includes('path: "/backtests/ml"'), "Unified ML workspace must be in navigation");
-assert.ok(!navigation.includes('path: "/backtests/btc"'), "Duplicate BTC navigation must be removed");
-assert.ok(page.includes("listMLBacktests()"), "BTC page must list real ML executions");
-assert.ok(page.includes("getMLBacktest("), "BTC page must load the selected execution");
-assert.ok(page.includes("getMLConfiguration()"), "Polling cadence must come from the ML API database");
-assert.ok(page.includes("rotation_timeline"), "Charts must use the recorded simulation timeline");
-assert.ok(page.includes("history_coverage"), "BTC dashboard must warn on partial historical coverage");
-assert.ok(page.includes('Number(result?.summary?.trade_count) === 0'), "BTC dashboard must warn when no trades occur");
-assert.ok(oldBacktestPage.includes('Number(result.summary.trade_count) === 0'), "Legacy ML dashboard must not claim prediction skill from CASH-only results");
-assert.ok(oldBacktestPage.includes("baseline_brier_score"), "ML dashboard must display training-only prediction baselines");
-assert.ok(page.includes("downloadMLBacktestAudit"), "UI must offer complete OOS audit download");
-const replayPanel = read("src/features/btc-forecast/ReplayComparisonPanel.jsx");
-assert.ok(page.includes("replayMLBacktest"), "BTC page must replay archived runs through ML API");
-assert.ok(page.includes("replayAndCompare"), "Replay action must be available in the Front");
-assert.ok(page.includes("replay_parent_job_id"), "Replay parent must remain visible");
-assert.ok(replayPanel.includes("fold_return_diversity"), "Original versus V2 fold diversity must be shown");
-assert.ok(replayPanel.includes("brier_skill_score"), "Comparison must display model skill");
-assert.ok(mlApi.includes("/replay"), "Replay endpoint must be integrated in the Front");
-assert.ok(page.includes("audit_available"), "Older executions must not offer incomplete exports");
-assert.ok(oldBacktestPage.includes("options.history_sources"), "History source choices must come from ML API");
-assert.ok(oldBacktestPage.includes('update("history_source"'), "Source selection must persist with job request");
-assert.ok(page.includes("selectedJob?.history_source"), "BTC dashboard must display the exchange data source");
-assert.ok(read("src/api/mlBacktestsApi.js").includes("/audit.zip"), "Audit endpoint must be integrated");
-assert.ok(page.includes("row.actions"), "Executed trade markers must come from recorded orders");
-assert.ok(page.includes("row.position"), "Position must come from the simulator, not inferred from trades");
-assert.ok(page.includes("peak_close_so_far"), "The running price peak must be drawn");
-assert.ok(page.includes("distance_to_peak"), "The peak-distance chart must use the ML result");
-assert.ok(page.includes("distance_to_peak_at_execution"), "Entry and exit distances must come from the execution-time peak");
-assert.ok(page.includes("BUY_AND_HOLD") && page.includes("XGBOOST_WALK_FORWARD"), "Existing benchmarks must be selectable");
-assert.ok(page.includes('result?.experiment_type !== "BTC_DIRECTION_RETURN" && !timeline.length'), "Old jobs must not show fabricated history");
-const directPage = read("src/features/btc-forecast/DirectionForecastPanel.jsx");
-assert.ok(oldBacktestPage.includes("options.experiment_types"), "Experiment choices must come from the ML API database");
-assert.ok(oldBacktestPage.includes('update("experiment_type"'), "New experiment type must be submitted");
-assert.ok(oldBacktestPage.includes("<BTCForecastPage"), "Single ML workspace must reuse complete BTC reports");
-assert.ok(page.includes("DirectionForecastPanel"), "Embedded BTC report must include direct prediction results");
-assert.ok(page.includes('result?.experiment_type !== "BTC_DIRECTION_RETURN"'), "Direct forecasts must not be presented as historical BTC/CASH trades");
-assert.ok(directPage.includes("brier_skill_score"), "Direct forecast must display Brier skill");
-assert.ok(directPage.includes("forecast_raw_p_up"), "Raw OOS probabilities must be shown when available");
-assert.ok(directPage.includes("confidence_intervals"), "Temporal confidence intervals must be shown when available");
-assert.ok(directPage.includes("split_nodes_used"), "Effective XGBoost splits must be shown when available");
-assert.ok(directPage.includes("test_calibrated_bins"), "Calibration reliability must be auditable");
-assert.ok(directPage.includes("return_mae"), "Direct forecast must display return error");
-assert.ok(directPage.includes("forecast_realized_return"), "Charts must show observed BTC returns");
-assert.ok(directPage.includes("forecast_p_up"), "Charts must show actual predictive probabilities");
-assert.ok(directPage.includes("No BTC/CASH trades"), "Research-only status must be prominent");
-assert.ok(!page.includes("Math.random"), "Forecast interface must not fabricate results");
-assert.ok(styles.includes(".btc-chart-cash") && styles.includes(".btc-chart-held"), "BTC and CASH must have distinct chart styles");
-assert.ok(importedCss.includes("btc-forecast.css"), "Chart styles must be included in the application");
-assert.ok(mlApi.includes("/v1/ml-backtests"), "Existing ML API must remain the data source");
-assert.ok(translations.includes('"BTC Forecast"'), "Forecast page must be translated");
-
-const capitalization = read("src/features/btc-forecast/CapitalizationPanel.jsx");
-assert.ok(page.includes("BTC/CASH financial simulation"), "Financial simulation must be discoverable on a completed BTC forecast");
-assert.ok(page.includes("Prepare V1 × V2 financial simulation"), "Original forecasts must offer one-click replay preparation");
-assert.ok(page.includes("result?.replay_comparison?.status === \"VERIFIED\""), "Capitalization requires verified replay provenance");
-assert.ok(page.includes("<CapitalizationPanel"), "Verified V2 replays must display the financial simulator");
-assert.ok(capitalization.includes("capitalizeBTCForecast"), "Financial simulation must call the ML API from the Front");
-assert.ok(mlApi.includes("/capitalization"), "Financial replay endpoint must be wired");
-assert.ok(capitalization.includes("initial_capital") && capitalization.includes("slippage_rate"), "Capital and execution costs must be configurable");
-assert.ok(!capitalization.includes("Math.random"), "Financial simulation must not fabricate trades");
+const route = read("src/features/ml-backtests/MLBacktestPage.jsx");
+const page = read("src/features/ml-backtests/CleanBTCResearchPage.jsx");
+const css = read("src/styles/ml-clean-research.css");
+const api = read("src/api/mlBacktestsApi.js");
 const strategy = read("src/features/ml-backtests/StrategyWorkbench.jsx");
-assert.ok(oldBacktestPage.includes("<StrategyWorkbench"), "Strategies must be created in the unified ML workspace");
-assert.ok(strategy.includes("createMLStrategy"), "Strategies must persist in the ML API");
-assert.ok(strategy.includes("optimizeMLStrategy") && strategy.includes("BAYESIAN"), "Regular and Bayesian optimization must work from the Front");
-assert.ok(strategy.includes("executeMLStrategy"), "OOS LightGBM run must start in the Front");
-assert.ok(strategy.includes("downloadMLStrategyReport"), "Research package must be exported in the Front");
-assert.ok(mlApi.includes("/v1/ml-strategies"), "Research endpoints must be connected");
-assert.ok(strategy.includes("2h + 6h + 24h"), "Strategy wizard must show all horizons together");
-assert.ok(!strategy.includes("setHorizon("), "Strategy wizard must not select just one prediction horizon");
-assert.ok(!strategy.includes("horizon_hours: Number(horizon)"), "Strategy must send joint research request, not single horizon");
-assert.ok(strategy.includes('err.status === 404') && strategy.includes("/v1/ml-strategies"), "Missing API route must have actionable diagnosis");
-assert.ok(capitalization.includes("horizon_hours: 0"), "Capitalization must default to combined three-horizon policy");
-assert.ok(capitalization.includes("2h + 6h + 24h"), "Combined financial policy must be visible");
-assert.ok(strategy.includes('quick: "Otimizar rotações BTC/CASH"'),
-  "Research buttons must optimize trade rotations rather than model selection");
-assert.ok(strategy.includes('capital: "Capital final BTC/CASH (USDT)"'),
-  "Research winner must show single fully compounded portfolio");
-assert.ok(strategy.includes('policy.'),
-  "Final trade-policy snapshot must remain visible to users");
-assert.ok(capitalization.includes("optimizedPolicy"),
-  "Financial report must identify optimized policy executions");
-assert.ok(capitalization.includes("BTC_CASH_ROTATION"),
-  "Financial report must show BTC/CASH capital separately from the benchmark");
-assert.ok(capitalization.includes("Recalcular patrimônio BTC/CASH"),
-  "Final report must be recalculable entirely within the Front");
-assert.ok(strategy.includes('launchResearchCampaign('), "Completed strategy must auto-create a fresh campaign");
-assert.ok(strategy.includes("needsFreshCampaign(detail)"), "Completed campaigns must remain immutable");
-assert.ok(strategy.includes("optimizationUnavailable"), "Only running operations should block tuning buttons");
-assert.ok(!strategy.includes("!!detail.execution_job_id}>{text.quick}"), "Final OOS status must not permanently disable reoptimization");
-assert.ok(strategy.includes('["FAILED", "NO_TRADES", "INSUFFICIENT_EVIDENCE"]'),
-  "All idle and insufficient evidence statuses must be visible in the Front");
-assert.ok(strategy.includes("entry_diagnostics"), "The UI must explain which BTC/CASH entry filters blocked trades");
-assert.ok(strategy.includes("idleChampion"), "Historical all-CASH winners must be flagged instead of being executed OOS");
-const actionSection = strategy.slice(
-  strategy.indexOf('<div className="strategy-main-actions"'),
-  strategy.indexOf("</header>", strategy.indexOf('<div className="strategy-main-actions"')),
-);
-assert.equal((actionSection.match(/<button /g) || []).length, 3,
-  "The top strategy toolbar must have exactly Create, Optimize-and-Run, Export buttons");
-assert.equal((strategy.match(/<button /g) || []).length, 3,
-  "No duplicate action buttons may remain below the strategy toolbar");
-assert.ok(strategy.includes("autoExecute: true"),
-  "One click must automatically schedule OOS after optimization");
-assert.ok(strategy.includes('value="BAYESIAN"'),
-  "CARO must be selectable without a fourth action button");
-assert.ok(strategy.includes("strategy-technical-details"),
-  "Optimizer trial and forecast details must be collapsed by default");
-assert.ok(oldBacktestPage.indexOf("<StrategyWorkbench") < oldBacktestPage.indexOf("ml-service-strip"),
-  "Research actions must appear above service status and technical data");
-assert.ok(oldBacktestPage.includes("ml-advanced-utilities"),
-  "Historical data and raw parameters must be kept in advanced details");
-assert.ok(capitalization.includes('result.fee_model === "ALPACA_CRYPTO_SPOT_2026"'),
-  "Crypto OOS reporting must identify Alpaca fee model");
-assert.ok(capitalization.includes("row.net_profit_usd") && capitalization.includes("row.alpaca_fees_usd"),
-  "Net capital profit and actually deducted Alpaca fees must be shown for each strategy");
-assert.ok(capitalization.includes("action.fee_rate") && capitalization.includes("action.fee_tier"),
-  "Each BTC buy and sell must show fee rate and rolling-volume tier");
-assert.ok(capitalization.includes("action.fee_usd_equivalent"),
-  "Each individual trade must show its Alpaca charge in USD");
-assert.ok(capitalization.includes('name === "fee_rate"'),
-  "A redundant fixed commission field must not be shown for Alpaca volume pricing");
-assert.ok(strategy.includes("metrics.net_profit_usd") && strategy.includes("metrics.fees_paid"),
-  "Four compact research KPIs must show net realized simulated profits and broker fees");
-assert.ok(strategy.includes("metrics.robustness") && strategy.includes("stress_net_profit_usd"),
-  "Pre-OOS robustness and Alpaca fee stress must be accessible in the collapsed audit");
-assert.ok(strategy.includes("metrics.forecast_realization_diagnostics"),
-  "Predicted-vs-realized return diagnostic must be available without OOS leakage");
-assert.ok(strategy.includes("quality_by_trial") && strategy.includes("reason_codes"),
-  "A rejected strategy must explain which economic gates failed");
-assert.ok(strategy.includes("same_trades_under_stress") && strategy.includes("stress_completed_cycles"),
-  "V10 financial stress must show equal traded positions rather than zero-trade artificial cash");
-assert.ok(strategy.includes("return_quality") && strategy.includes("mae_skill_vs_training_mean"),
-  "Forecast diagnostics must compare each 2h/6h/24h LightGBM return against training-mean baseline");
-assert.ok(strategy.includes("prediction_amplitude_ratio") && strategy.includes("prediction_correlation"),
-  "Display prediction magnitude and return correlation only inside advanced diagnostics");
-assert.ok(strategy.includes('className="strategy-mode-selector"'),
-  "Research mode options must be presented visibly, not hidden inside a dropdown");
-assert.ok(strategy.includes('type="radio" name="btc-research-mode" value="QUICK"'),
-  "Standard LightGBM mode must be a visible selectable radio");
-assert.ok(strategy.includes('type="radio" name="btc-research-mode" value="BAYESIAN"'),
-  "CARO LightGBM mode must be a visible selectable radio");
-assert.ok(strategy.includes('type="radio" name="btc-research-mode" value="EVENTS"'),
-  "CUSUM and Triple Barrier must be a visible selectable research mode");
-assert.ok(strategy.includes("BTC · eventos CUSUM + Triple Barrier"),
-  "Bitcoin event research must be explicitly labeled in the page");
-assert.ok(!strategy.includes('<select value={mode}'),
-  "Do not conceal the event research mode inside a default Padrão dropdown");
-assert.ok(strategy.includes('type="radio" name="btc-research-mode" value="DIRECTIONAL_CHANGE"'),
-  "Historical BTC maxima and minima research must appear in a visible option");
-assert.ok(strategy.includes("DirectionalChangeChart") && strategy.includes("chart_2pct"),
-  "The interface must distinguish extrema from later confirmations in a price chart");
-assert.ok(strategy.includes("directional_change_trades.csv"),
-  "Detailed BTC pivot confirmations and actual fills must be available in the ZIP");
-console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
+const forecast = read("src/features/btc-forecast/BTCForecastPage.jsx");
+
+assert.ok(app.includes('currentPath === "/backtests/ml"'), "The ML workspace route must remain");
+assert.ok(route.includes("CleanBTCResearchPage"), "The live screen must use the clean workspace");
+assert.ok(page.includes('const MODE = "TECHNICAL"'), "Research must use the new causal technical mode");
+assert.equal((page.match(/<button type="button"/g) || []).length, 3,
+  "The visible workspace must have only Create, Execute, Export buttons");
+for (const name of ["Criar estratégia", "Executar estratégia", "Exportar resultados"]) {
+  assert.ok(page.includes(name), "Missing principal action: " + name);
+}
+for (const fn of ["createMLStrategy", "optimizeMLStrategy", "downloadMLStrategyReport", "listMLStrategies"]) {
+  assert.ok(page.includes(fn), "Research action must use ML API: " + fn);
+}
+assert.ok(page.includes("getMLBacktest") && page.includes("audit_available"),
+  "Create must reuse a completed archived BTC historical audit");
+assert.ok(page.includes("TRIAL_COUNT = 6"),
+  "One execution must compare six predetermined technical policies");
+assert.ok(page.includes("summary.chosen_only_on_development"),
+  "Chosen candidate must be selected on development, not validation");
+assert.ok(page.includes("summary.buy_hold_baseline"),
+  "Buy-and-hold must remain the reference");
+assert.ok(page.includes("summary.cash_baseline"), "CASH must remain the reference");
+assert.ok(page.includes("chart.actions") && page.includes("execution_price"),
+  "Chart markers must come from actual simulated next-open fills");
+assert.ok(page.includes("RESEARCH_COMPLETE") && page.includes("RUNNING"),
+  "The user must see progress and research completion");
+assert.ok(page.includes("o período futuro") || page.includes("O período futuro"),
+  "The result must distinguish internal validation from a new independent test");
+assert.ok(!page.includes("executeMLStrategy"),
+  "Technical research cannot trigger live or separate OOS model execution");
+assert.ok(!page.includes("Math.random"), "Do not fabricate financial results");
+assert.ok(css.includes("btc-clean-actions") && css.includes("@media"),
+  "The clean toolbar must be responsive");
+assert.ok(api.includes("/v1/ml-strategies") && api.includes("/report.zip"),
+  "The ML API remains the source of all strategy data and reports");
+assert.ok(strategy.includes("DirectionalChangeChart") && forecast.includes("rotation_timeline"),
+  "Historical technical audit components are retained for old reports, but not displayed on the primary screen");
+console.log("Clean BTC research page: three actions, archived data, comparison and audit checks passed");

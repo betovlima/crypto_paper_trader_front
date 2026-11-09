@@ -1,5 +1,27 @@
 # Crypto Paper Trader Front
 
+## Clean BTC research workspace (V13)
+
+The `/backtests/ml` page now shows one BTC capitalization research workspace
+instead of the legacy forecasting and optimization panels.
+
+The visible controls are exactly **Criar estratégia**, **Executar estratégia**
+and **Exportar resultados**, plus a saved-strategy selector. One execution
+compares six predefined technical policies via the ML API's `TECHNICAL`
+mode, using a previously completed and archived BTC Direction & Return
+history. Re-running a completed campaign creates a new campaign so earlier
+results and ZIPs remain immutable.
+
+The screen reports final compounded capital, buy-and-hold, drawdown, completed
+cycles and a table of all six methods plus CASH and buy-and-hold. Its 35-day
+chart uses only recorded next-open fills. Historical experiments and forecast
+components remain preserved in Git and backend audits but are not displayed
+in the main flow. This mode does not send live orders or execute past OOS.
+
+It requires the accompanying ML API branch
+`feature/btc-directional-change-v13-technical-20261109`.
+
+
 ## front-v0.19.2
 
 - Keeps the horizontal `Dashboard | ML Backtest` navigation without a sidebar.
