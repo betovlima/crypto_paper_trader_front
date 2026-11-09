@@ -478,6 +478,75 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               </div>
             </details>
           )}
+          {detail.mode === "DIRECTIONAL_CHANGE" && detail.summary && (
+            <section className="strategy-dc-results" aria-label="Pesquisa de topos e fundos do Bitcoin">
+              <h4>BTC · máximas e mínimas · Directional Change</h4>
+              <p className="strategy-note">
+                Os extremos locais são retrospectivos. Compras e vendas simuladas somente após confirmação, na abertura do candle seguinte. Capital inicial de 10.000 USD equivalentes, taxas Taker da Alpaca e slippage estimado.
+                {" "}Período anterior ao OOS de {new Date(detail.summary.first_oos_untouched_from).toLocaleDateString("pt-BR")}.
+              </p>
+              <div className="strategy-entry-diagnostics">
+                <strong>Extremos absolutos da validação (OHLC, retrospectivos)</strong>
+                <span>Mínima: {fmt(detail.summary.absolute_ohlc_validation?.minimum?.price)} USDT · {detail.summary.absolute_ohlc_validation?.minimum?.timestamp ? new Date(detail.summary.absolute_ohlc_validation.minimum.timestamp).toLocaleString("pt-BR", { timeZone: "UTC" }) : "—"} UTC</span>
+                <span>Máxima: {fmt(detail.summary.absolute_ohlc_validation?.maximum?.price)} USDT · {detail.summary.absolute_ohlc_validation?.maximum?.timestamp ? new Date(detail.summary.absolute_ohlc_validation.maximum.timestamp).toLocaleString("pt-BR", { timeZone: "UTC" }) : "—"} UTC</span>
+                <span>Validação: {detail.summary.validation_period?.map((date) => new Date(date).toLocaleDateString("pt-BR")).join(" a ")}</span>
+              </div>
+              <DirectionalChangeChart chart={detail.summary.chart_2pct} />
+              <div className="ml-table-wrap">
+                <table className="ml-table">
+                  <thead><tr><th>Confirmação</th><th>Lucro desenvolvimento</th><th>Lucro validação</th><th>Capital final</th><th>Topos / fundos</th><th>Atraso mediano</th><th>Ciclos</th><th>Drawdown</th><th>Taxas Alpaca</th></tr></thead>
+                  <tbody>
+                    {(detail.trials || []).map((trial) => (
+                      <tr key={trial.trial}>
+                        <td>{trial.parameters?.description}</td>
+                        <td>{fmt(trial.metrics?.development?.net_profit_usd)} USD eq.</td>
+                        <td>{fmt(trial.metrics?.net_profit_usd)} USD eq.</td>
+                        <td>{fmt(trial.metrics?.capital_final)} USD eq.</td>
+                        <td>{trial.metrics?.confirmed_tops ?? 0} / {trial.metrics?.confirmed_bottoms ?? 0}</td>
+                        <td>{trial.metrics?.median_confirmation_lag_candles == null ? "—" : fmt(trial.metrics.median_confirmation_lag_candles * .5, 1) + " h"}</td>
+                        <td>{trial.metrics?.completed_cycles ?? 0}</td>
+                        <td>{trial.metrics?.max_drawdown == null ? "—" : fmt(trial.metrics.max_drawdown * 100) + "%"}</td>
+                        <td>{fmt(trial.metrics?.fees_paid)} USD eq.</td>
+                      </tr>
+                    ))}
+                    {["CASH", "BUY_HOLD"].map((name) => {
+                      const base = name === "CASH" ? detail.summary.cash_baseline : detail.summary.buy_hold_baseline;
+                      return <tr key={name}>
+                        <td>{name === "CASH" ? "Capital em CASH" : "Comprar e manter BTC"}</td>
+                        <td>{fmt(base?.development?.net_profit_usd)} USD eq.</td>
+                        <td>{fmt(base?.validation?.net_profit_usd)} USD eq.</td>
+                        <td>{fmt(base?.validation?.capital_final)} USD eq.</td>
+                        <td>—</td><td>—</td>
+                        <td>{base?.validation?.completed_cycles ?? 0}</td>
+                        <td>{base?.validation?.max_drawdown == null ? "—" : fmt(base.validation.max_drawdown * 100) + "%"}</td>
+                        <td>{fmt(base?.validation?.fees_paid)} USD eq.</td>
+                      </tr>;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <details className="strategy-technical-details">
+                <summary>Últimos extremos confirmados com limite de 2%</summary>
+                <p className="strategy-note">O pivô histórico não era conhecido no momento em que ocorreu. O CSV de operações do ZIP contém os preços efetivos das compras e vendas simuladas, que são diferentes dos preços dos pivôs.</p>
+                <div className="ml-table-wrap">
+                  <table className="ml-table">
+                    <thead><tr><th>Tipo</th><th>Extremo (UTC)</th><th>Preço do extremo</th><th>Confirmação (UTC)</th><th>Preço confirmado</th><th>Atraso</th></tr></thead>
+                    <tbody>{(detail.trials?.find((trial) => trial.parameters?.policy === "DC_FIXED_2PCT")?.metrics?.last_confirmations || []).map((point) => (
+                      <tr key={point.kind + point.pivot_timestamp}>
+                        <td>{point.kind === "BOTTOM_CONFIRMED" ? "Fundo" : "Topo"}</td>
+                        <td>{new Date(point.pivot_timestamp).toLocaleString("pt-BR", { timeZone: "UTC" })}</td>
+                        <td>{fmt(point.pivot_close)} USDT</td>
+                        <td>{new Date(point.confirmed_at).toLocaleString("pt-BR", { timeZone: "UTC" })}</td>
+                        <td>{fmt(point.confirmed_close)} USDT</td>
+                        <td>{fmt(point.lag_candles * .5, 1)} h</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              </details>
+              <p className="strategy-note">{detail.summary.research_warning}</p>
+            </section>
+          )}
           {detail.mode === "EVENTS" && detail.summary && (
             <section className="strategy-event-research" aria-label="Resultado da pesquisa de eventos Bitcoin">
               <h4>Pesquisa CUSUM + Triple Barrier · Bitcoin</h4>
@@ -557,7 +626,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               </details>
             </section>
           )}
-          {detail.mode !== "EVENTS" && (<>
+          {!["EVENTS", "DIRECTIONAL_CHANGE"].includes(detail.mode) && (<>
           <div className="strategy-brief-results">
             <div><small>Patrimônio na validação</small><strong>{fmt(metrics.capital_final)} USDT</strong></div>
             <div><small>Lucro líquido na validação</small><strong>{metrics.net_profit_usd == null ? "—" : fmt(metrics.net_profit_usd) + " USD eq."}</strong></div>
