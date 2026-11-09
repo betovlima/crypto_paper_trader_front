@@ -12,7 +12,7 @@ const forecast = read("src/features/btc-forecast/BTCForecastPage.jsx");
 
 assert.ok(app.includes('currentPath === "/backtests/ml"'), "The ML workspace route must remain");
 assert.ok(route.includes("CleanBTCResearchPage"), "The live screen must use the clean workspace");
-assert.ok(page.includes('const MODE = "TREND_REGIMES"'), "Research must use causal daily and 4h trend regime mode");
+assert.ok(page.includes('const MODE = "INDICATOR_LAB"'), "Research must use V15 expanded causal indicator lab");
 assert.equal((page.match(/<button type="button"/g) || []).length, 3,
   "The visible workspace must have only Create, Execute, Export buttons");
 for (const name of ["Criar estratégia", "Executar estratégia", "Exportar resultados"]) {
@@ -23,8 +23,8 @@ for (const fn of ["createMLStrategy", "optimizeMLStrategy", "downloadMLStrategyR
 }
 assert.ok(page.includes("getMLBacktest") && page.includes("audit_available"),
   "Create must reuse a completed archived BTC historical audit");
-assert.ok(page.includes("TRIAL_COUNT = 6"),
-  "One execution must compare six predeclared trend regime policies");
+assert.ok(page.includes("TRIAL_COUNT = 12"),
+  "One execution must compare twelve predeclared technical policies");
 assert.ok(page.includes("summary.approved_policies") && page.includes("summary.approved_validation"),
   "Only independently gated policies can remain in the visible strategy list");
 assert.ok(page.includes("summary.buy_hold_baseline"),
@@ -35,7 +35,18 @@ assert.ok(page.includes("eligibleStrategies") && page.includes("Nenhuma estraté
 assert.ok(page.includes("rows.map") && page.includes("approvedPolicies.includes"),
   "Comparison may only display approved policies, not losing candidates");
 assert.ok(page.includes("chart.actions") && page.includes("execution_price"),
-  "Chart markers must come from actual simulated next-open fills");
+  "Chart markers must come from actual simulated delayed fills");
+for (const key of ["chart.inflections", "chart.signals", "confirmed_at",
+  "pivot_timestamp", "btc-clean-confirmation", "btc-clean-pivot-bottom",
+  "btc-clean-pivot-top", "diagnostic_only"]) {
+  assert.ok(page.includes(key), "Missing causal chart field: " + key);
+}
+assert.ok(page.includes("Confirmação T → execução T+30min"),
+  "Execution delay must be explicitly visible");
+assert.ok(page.includes("summary.chart?.prices?.length > 1"),
+  "Diagnostic chart must remain visible even if every strategy is rejected");
+assert.ok(css.includes(".btc-clean-signal-buy") && css.includes(".btc-clean-pivot-bottom"),
+  "Distinct signals, inflection and simulated fill styles required");
 assert.ok(page.includes("RESEARCH_COMPLETE") && page.includes("RUNNING"),
   "The user must see progress and research completion");
 assert.ok(page.includes("o período futuro") || page.includes("O período futuro"),
