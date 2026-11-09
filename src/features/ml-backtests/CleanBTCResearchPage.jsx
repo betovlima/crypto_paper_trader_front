@@ -5,7 +5,7 @@ import {
 } from "../../api/mlBacktestsApi";
 import "../../styles/ml-clean-research.css";
 
-const MODE = "TECHNICAL";
+const MODE = "TREND_REGIMES";
 const TRIAL_COUNT = 6;
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
 const fmt = (v, digits = 2) => v == null || !Number.isFinite(Number(v))
@@ -17,16 +17,16 @@ const pct = (v) => v == null ? "—" : fmt(Number(v) * 100) + "%";
 const stamp = (v) => v ? new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
 
 const LABELS = {
-  DC_2PCT: "Reversão confirmada · 2%",
-  EMA_9_SLOPE: "Inclinação da EMA 9",
-  EMA_9_21_CROSS: "Cruzamento EMA 9/21",
-  EMA_STOCH_14_3_3: "EMA + estocástico",
-  DONCHIAN_ATR: "Donchian + ATR",
-  EMA_TRAILING_3PCT: "EMA + trailing stop",
+  DAILY_SMA50_BAND: "Tendência diária · SMA 50",
+  DAILY_SMA20_100: "Tendência diária · SMA 20/100",
+  FOUR_HOUR_BREAKOUT: "Donchian 4h + ATR + tendência diária",
+  DUAL_4H_DAILY: "Tendência 4h + confirmação diária",
+  DAILY_VOL_REGIME: "Regimes diários · exposição variável",
+  WEEKLY_TREND_FILTER: "Tendência diária + filtro semanal",
 };
 const STATUS = {
   DRAFT: "Pronta para executar", QUEUED: "Na fila",
-  RUNNING: "Executando comparação", RESEARCH_COMPLETE: "Pesquisa concluída",
+  RUNNING: "Executando pesquisa", RESEARCH_COMPLETE: "Pesquisa concluída",
   FAILED: "Falha na pesquisa", CANCELLED: "Cancelada",
 };
 
@@ -92,11 +92,16 @@ export function CleanBTCResearchPage() {
 
   const refreshList = useCallback(async (keepId = null) => {
     const rows = (await listMLStrategies()).filter(row =>
-      row.mode === MODE || row.name?.startsWith("BTC · Pesquisa técnica ·"));
+      row.mode === MODE || row.name?.startsWith("BTC · Tendências e regimes ·"));
     setStrategies(rows);
     setSelectedId(previous => {
       const candidate = keepId || previous;
-      return rows.some(row => row.id === candidate) ? candidate : (rows[0]?.id || "");
+      if (rows.some(row => row.id === candidate)) return candidate;
+      const active = rows.find(row =>
+        ["DRAFT", "QUEUED", "RUNNING"].includes(row.status) ||
+        (row.status === "RESEARCH_COMPLETE" && row.summary?.approved_policies?.length > 0));
+      // Show the latest rejected study as a result, never as an active strategy option.
+      return active?.id || rows.find(row => row.status === "RESEARCH_COMPLETE")?.id || "";
     });
   }, []);
 
@@ -162,7 +167,7 @@ export function CleanBTCResearchPage() {
     if (!historyId) throw new Error(
       sourceCount ? "Nenhuma auditoria BTC disponível. Conclua uma execução com auditoria na API."
         : "Não há histórico BTC arquivado na API. Crie primeiro uma auditoria histórica.");
-    const name = "BTC · Pesquisa técnica · " + new Date().toLocaleString("pt-BR");
+    const name = "BTC · Tendências e regimes · " + new Date().toLocaleString("pt-BR");
     const created = await createMLStrategy({ name, source_job_id: historyId });
     await refreshList(created.id);
     setSelectedId(created.id);
@@ -174,7 +179,7 @@ export function CleanBTCResearchPage() {
       const historyId = detail?.source_job_id || sourceId;
       if (!historyId) throw new Error("Crie uma estratégia com uma auditoria BTC disponível.");
       working = await createMLStrategy({
-        name: "BTC · Pesquisa técnica · " + new Date().toLocaleString("pt-BR"),
+        name: "BTC · Tendências e regimes · " + new Date().toLocaleString("pt-BR"),
         source_job_id: historyId,
       });
       await refreshList(working.id);
@@ -191,7 +196,7 @@ export function CleanBTCResearchPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "btc-technical-research-" + detail.id + ".zip";
+    link.download = "btc-trend-regimes-" + detail.id + ".zip";
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -200,28 +205,36 @@ export function CleanBTCResearchPage() {
 
   const summary = detail?.summary || {};
   const policies = detail?.trials || [];
-  const selected = summary.chosen_only_on_development;
-  const selectedMetrics = summary.chosen_validation || null;
+  const approvedPolicies = summary.approved_policies || [];
+  const approved = approvedPolicies.length > 0;
+  const selectedMetrics = approved ? summary.approved_validation : null;
   const buyHold = summary.buy_hold_baseline?.validation || null;
-  const rows = useMemo(() => [...policies].sort((a, b) =>
-    Number(b.metrics?.capital_final || 0) - Number(a.metrics?.capital_final || 0)), [policies]);
+  const eligibleStrategies = useMemo(() => strategies.filter(s =>
+    ["DRAFT", "QUEUED", "RUNNING"].includes(s.status) ||
+    (s.status === "RESEARCH_COMPLETE" && s.summary?.approved_policies?.length > 0)),
+  [strategies]);
+  const rows = useMemo(() => policies.filter(t =>
+    approvedPolicies.includes(t.parameters.policy)), [policies, summary.approved_policies]);
   const isRunning = ACTIVE.has(detail?.status);
+  const selectorValue = eligibleStrategies.some(s => s.id === selectedId) ? selectedId : "";
+  const hasReport = detail?.status === "RESEARCH_COMPLETE";
 
   return <section className="btc-clean-page">
     <header className="btc-clean-heading">
       <div>
         <span>BTC / USDT · PESQUISA DE CAPITALIZAÇÃO</span>
         <h2>Estratégias e resultados</h2>
-        <p>Comparamos sinais de compra, venda e proteção do capital usando dados históricos e reinvestimento integral. Sem previsões obrigatórias e sem operações reais.</p>
+        <p>Pesquisamos tendências de 4 horas, 1 dia e 1 semana, com custos e proteção por volatilidade. Estratégias sem aprovação ficam apenas na auditoria.</p>
       </div>
       <span className="btc-clean-simulation">Simulação</span>
     </header>
 
     <section className="btc-clean-toolbar" aria-label="Controles da pesquisa">
       <label className="btc-clean-selection">Estratégia
-        <select value={selectedId} onChange={e => setSelectedId(e.target.value)} disabled={busy || loading}>
-          {!strategies.length && <option value="">Nenhuma estratégia criada</option>}
-          {strategies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        <select value={selectorValue} onChange={e => setSelectedId(e.target.value)}
+          disabled={busy || loading || !eligibleStrategies.length}>
+          <option value="">{eligibleStrategies.length ? "Selecione uma estratégia" : "Nenhuma estratégia aprovada"}</option>
+          {eligibleStrategies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </label>
       <div className="btc-clean-actions">
@@ -234,7 +247,7 @@ export function CleanBTCResearchPage() {
           {isRunning ? "Executando..." : "Executar estratégia"}
         </button>
         <button type="button" className="btc-clean-secondary" onClick={exportReport}
-          disabled={loading || busy || detail?.status !== "RESEARCH_COMPLETE"}>
+          disabled={loading || busy || !hasReport}>
           Exportar resultados
         </button>
       </div>
@@ -252,42 +265,44 @@ export function CleanBTCResearchPage() {
       {detail.error_message || "A execução falhou."}
     </p>}
     {isRunning && <div className="btc-clean-progress" role="status">
-      <div><span>Comparando seis políticas</span><strong>{detail?.progress || 0}%</strong></div>
+      <div><span>Comparando seis hipóteses de tendência e proteção</span><strong>{detail?.progress || 0}%</strong></div>
       <progress max="100" value={detail?.progress || 0}/>
       <small>O resultado e o relatório serão disponibilizados nesta tela quando a pesquisa terminar.</small>
     </div>}
 
     {!policies.length ? <section className="btc-clean-empty">
-      <h3>{detail ? "Estratégia pronta" : "Comece uma nova pesquisa"}</h3>
-      <p>{detail ? "Execute a estratégia para comparar seis métodos de entrada e saída."
-        : "Crie uma estratégia ou execute diretamente a comparação com a última auditoria BTC armazenada."}</p>
+      <h3>{detail ? "Pesquisa pronta" : "Comece uma nova pesquisa"}</h3>
+      <p>{detail ? "Execute a comparação de seis hipóteses de tendência, horizonte e exposição."
+        : "Crie uma estratégia ou execute diretamente com a última auditoria BTC armazenada."}</p>
     </section> : <>
-      <section className="btc-clean-metrics" aria-label="Resultado de validação">
-        <Metric title="Capital final · estratégia selecionada" value={usd(selectedMetrics?.capital_final)}
-          caption="Selecionada exclusivamente pelos dados de desenvolvimento"/>
+      {approved ? <section className="btc-clean-metrics" aria-label="Resultado de validação">
+        <Metric title="Capital final · estratégia aprovada" value={usd(selectedMetrics?.capital_final)}
+          caption="Escolhida no desenvolvimento e aprovada na validação"/>
         <Metric title="Comprar e manter BTC" value={usd(buyHold?.capital_final)}
           caption="Mesmo período de validação"/>
         <Metric title="Drawdown máximo" value={pct(selectedMetrics?.max_drawdown)}
-          caption="Estratégia selecionada"/>
-        <Metric title="Operações concluídas" value={selectedMetrics?.completed_cycles == null
-          ? "—" : fmt(selectedMetrics.completed_cycles, 0)} caption="Compras e vendas completas"/>
-      </section>
+          caption="Estratégia aprovada"/>
+        <Metric title="Operações" value={selectedMetrics?.operation_count == null
+          ? "—" : fmt(selectedMetrics.operation_count, 0)} caption="Compras, vendas e rebalanceamentos"/>
+      </section> : <section className="btc-clean-empty" role="status">
+        <h3>Nenhuma estratégia aprovada</h3>
+        <p>As {summary.candidate_count ?? policies.length} hipóteses foram verificadas. Nenhuma atendeu aos critérios de patrimônio líquido e risco. Os testes rejeitados não ficam na lista de estratégias; o relatório completo continua disponível em Exportar resultados.</p>
+      </section>}
       <section className="btc-clean-panel">
         <div className="btc-clean-panel-title"><div>
-          <span>COMPARAÇÃO · VALIDAÇÃO CRONOLÓGICA</span>
-          <h3>Patrimônio após custos</h3>
+          <span>VALIDAÇÃO CRONOLÓGICA · APENAS ESTRATÉGIAS APROVADAS</span>
+          <h3>{approved ? "Resultado líquido aprovado" : "Referências de capital"}</h3>
         </div><small>Capital inicial: US$ 10.000</small></div>
         <div className="btc-clean-table-scroll"><table>
           <thead><tr><th>Método</th><th>Capital final</th><th>Retorno</th>
             <th>Drawdown máx.</th><th>Operações</th></tr></thead>
           <tbody>
-            {rows.map(t => <tr key={t.parameters.policy} className={selected === t.parameters.policy
-              ? "btc-clean-chosen" : ""}>
+            {rows.map(t => <tr key={t.parameters.policy} className="btc-clean-chosen">
               <td>{LABELS[t.parameters.policy] || t.parameters.description}
-                {selected === t.parameters.policy && <span className="btc-clean-tag">Selecionada no desenvolvimento</span>}
+                <span className="btc-clean-tag">Aprovada na validação</span>
               </td>
               <td>{usd(t.metrics.capital_final)}</td><td>{pct(t.metrics.return_total)}</td>
-              <td>{pct(t.metrics.max_drawdown)}</td><td>{fmt(t.metrics.completed_cycles, 0)}</td>
+              <td>{pct(t.metrics.max_drawdown)}</td><td>{fmt(t.metrics.operation_count, 0)}</td>
             </tr>)}
             <tr className="btc-clean-baseline"><td>Comprar e manter BTC</td>
               <td>{usd(buyHold?.capital_final)}</td><td>{pct(buyHold?.return_total)}</td>
@@ -301,15 +316,15 @@ export function CleanBTCResearchPage() {
           </tbody>
         </table></div>
       </section>
-      <section className="btc-clean-panel">
-        <div className="btc-clean-panel-title"><div><span>COMPRAS E VENDAS EXECUTÁVEIS</span>
+      {approved && <section className="btc-clean-panel">
+        <div className="btc-clean-panel-title"><div><span>COMPRAS E VENDAS EXECUTÁVEIS · ESTRATÉGIA APROVADA</span>
           <h3>Preço do BTC · últimos 35 dias da validação</h3>
         </div><small>Fechamento do sinal → próxima abertura</small></div>
         <PriceChart chart={summary.chart}/>
         <div className="btc-clean-legend"><span><i className="btc-clean-legend-price"/>Preço BTC</span>
           <span><i className="btc-clean-legend-buy"/>Compra</span>
           <span><i className="btc-clean-legend-sell"/>Venda</span></div>
-      </section>
+      </section>}
       <p className="btc-clean-disclaimer">
         {summary.research_warning || "Pesquisa histórica, sem execução real."}
         {" "}Os parâmetros são hipóteses de pesquisa. O período futuro já examinado em versões anteriores não é validação independente.
