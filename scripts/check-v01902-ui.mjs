@@ -1,37 +1,43 @@
 import fs from "node:fs";
 
-const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
-const app = fs.readFileSync("src/App.jsx", "utf8");
-const page = fs.readFileSync("src/features/ml-backtests/MLBacktestPage.jsx", "utf8");
-const api = fs.readFileSync("src/api/mlBacktestsApi.js", "utf8");
-const mlClient = fs.readFileSync("src/api/mlClient.js", "utf8");
-const css = fs.readFileSync("src/styles/ml-backtest.css", "utf8");
-const env = fs.readFileSync(".env.example", "utf8");
+const read = path => fs.readFileSync(path, "utf8");
+const packageJson = JSON.parse(read("package.json"));
+const app = read("src/App.jsx");
+const wrapper = read("src/features/ml-backtests/MLBacktestPage.jsx");
+const page = read("src/features/ml-backtests/CleanBTCResearchPage.jsx");
+const api = read("src/api/mlBacktestsApi.js");
+const mlClient = read("src/api/mlClient.js");
+const env = read(".env.example");
+const css = read("src/styles/ml-clean-research.css");
 
 const checks = [
-  [packageJson.version === "0.19.2", "frontend version must be 0.19.2"],
-  [app.includes('currentPath === "/backtests/ml"'), "ML backtest route is required"],
-  [app.includes("<PrimaryNavigation"), "horizontal primary navigation is required"],
-  [page.includes("getMLConfiguration"), "new-execution defaults must come from the ML database"],
-  [page.includes("getMLSettings"), "the database parameter catalog must be loaded"],
-  [page.includes("updateMLSettings"), "the database parameter editor must save through the ML API"],
-  [page.includes("MLParametersDialog"), "the database parameter dialog is required"],
-  [page.includes("mlConfiguration?.ui?.job_poll_interval_ms"), "job polling must come from the ML database"],
-  [page.includes("listMLBacktests()") && !page.includes("listMLBacktests(30)"), "recent-job limits must not be hardcoded in the frontend"],
-  [page.includes("result.execution.parameter_source"), "execution details must display the database snapshot source"],
-  [page.includes("liveExperiment"), "ML page must also consume the main API context"],
-  [page.includes("<EquityChart"), "equity comparison chart is required"],
-  [api.includes("/v1/ml-configuration") && api.includes("/v1/ml-settings"), "ML configuration endpoints are required"],
-  [mlClient.includes("VITE_ML_API_URL"), "separate ML API endpoint is required"],
-  [env.includes("VITE_API_URL=") && env.includes("VITE_ML_API_URL="), "both service endpoints must be documented"],
-  [css.includes(".ml-parameters-dialog"), "database parameter dialog styles are required"],
-  [css.includes("grid-template-columns: repeat(4"), "four service status cards are required"],
+  [packageJson.version === "0.19.2", "front version remains compatible with v0.19.2"],
+  [app.includes('currentPath === "/backtests/ml"'), "ML route remains available"],
+  [app.includes("<PrimaryNavigation"), "primary navigation remains available"],
+  [wrapper.includes("CleanBTCResearchPage"), "ML page routes to new clean workspace"],
+  [page.includes("listMLBacktests()"), "archived BTC jobs must load from database"],
+  [page.includes("getMLBacktest(job.id)"), "source audit must be verified before reuse"],
+  [page.includes("listMLStrategies()"), "saved research campaigns must load"],
+  [page.includes("getMLStrategy(selectedId)"), "status must be refreshed from ML API"],
+  [page.includes("optimizeMLStrategy"), "run action must persist a new research job"],
+  [page.includes("downloadMLStrategyReport"), "export action must use server-side audit"],
+  [page.includes("cash_baseline") && page.includes("buy_hold_baseline"),
+    "cash and buy-hold comparisons must remain visible"],
+  [page.includes("max_drawdown") && page.includes("completed_cycles"),
+    "risk and operations must remain visible"],
+  [(page.match(/<button type="button"/g) || []).length === 3,
+    "only three principal action buttons are permitted"],
+  [api.includes("/v1/ml-strategies") && api.includes("/report.zip"),
+    "ML research API remains integrated"],
+  [mlClient.includes("VITE_ML_API_URL"), "separate ML API endpoint remains required"],
+  [env.includes("VITE_API_URL=") && env.includes("VITE_ML_API_URL="),
+    "both API URLs must remain documented"],
+  [css.includes(".btc-clean-toolbar"), "minimal layout CSS must be included"],
 ];
 
-const failures = checks.filter(([ok]) => !ok).map(([, message]) => message);
+const failures = checks.filter(([pass]) => !pass).map(([, message]) => message);
 if (failures.length) {
   console.error(failures.join("\n"));
   process.exit(1);
 }
-
-console.log("v0.19.2 database-parameter UI checks passed");
+console.log("Clean ML/BTC capital research UI checks passed");
