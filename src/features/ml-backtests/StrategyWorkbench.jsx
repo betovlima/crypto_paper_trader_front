@@ -195,7 +195,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
       setDetail(stopped);
       return;
     }
-    if (detail.status === "OPTIMIZED" && detail.champion && !detail.execution_job_id
+    if (mode !== "EVENTS" && detail.status === "OPTIMIZED" && detail.champion && !detail.execution_job_id
       && Number(detail.champion.metrics?.completed_cycles) > 0) {
       const job = await executeMLStrategy(detail.id);
       setFinalJob(job);
@@ -244,7 +244,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
     <section className="ml-panel strategy-workbench" aria-label={text.title}>
       <header className="strategy-compact-heading">
         <div><span>LIGHTGBM · BTC/CASH</span><h3>{text.title}</h3>
-          <p>Uma estratégia, três horizontes e uma pesquisa completa.</p></div>
+          <p>{mode === "EVENTS" || detail?.mode === "EVENTS" ? "Pesquisa por eventos do Bitcoin, com retornos líquidos e validação cronológica." : "Uma estratégia, três horizontes e uma pesquisa completa."}</p></div>
         <div className="strategy-main-actions" aria-label="Ações da estratégia">
           <button type="button" className="secondary-button" disabled={!apiCompatible || !source || name.trim().length < 3 || running}
             onClick={create}>{text.create}</button>
