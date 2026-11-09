@@ -5,8 +5,8 @@ import {
 } from "../../api/mlBacktestsApi";
 import "../../styles/ml-clean-research.css";
 
-const MODE = "TREND_REGIMES";
-const TRIAL_COUNT = 6;
+const MODE = "INDICATOR_LAB";
+const TRIAL_COUNT = 12;
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
 const fmt = (v, digits = 2) => v == null || !Number.isFinite(Number(v))
   ? "—" : new Intl.NumberFormat("pt-BR", {
@@ -23,6 +23,12 @@ const LABELS = {
   DUAL_4H_DAILY: "Tendência 4h + confirmação diária",
   DAILY_VOL_REGIME: "Regimes diários · exposição variável",
   WEEKLY_TREND_FILTER: "Tendência diária + filtro semanal",
+  DAILY_EMA20_100: "EMA 20/100 · diária",
+  DAILY_ADX_TREND: "Tendência diária · ADX + DI",
+  DAILY_MACD_RSI: "MACD diário + RSI",
+  FOUR_HOUR_BOLLINGER: "Bollinger 4h + filtro diário",
+  FOUR_HOUR_KELTNER: "Keltner 4h + filtro diário",
+  FOUR_HOUR_RSI_REVERSAL: "Recuperação RSI 4h",
 };
 const STATUS = {
   DRAFT: "Pronta para executar", QUEUED: "Na fila",
@@ -38,43 +44,78 @@ function Metric({ title, value, caption }) {
 
 function PriceChart({ chart }) {
   const points = chart?.prices || [];
-  if (points.length < 2) return <p className="btc-clean-muted">O gráfico estará disponível depois da execução.</p>;
-  const width = 940, height = 270, padX = 42, padY = 30;
-  const x0 = Date.parse(points[0].timestamp);
-  const x1 = Date.parse(points[points.length - 1].timestamp);
-  const v = points.map(p => Number(p.close));
-  const trades = (chart.actions || []).filter(a => {
-    const at = Date.parse(a.timestamp);
-    return at >= x0 && at <= x1;
-  });
-  const values = v.concat(trades.map(a => Number(a.execution_price)));
-  const low = Math.min(...values);
-  const high = Math.max(...values);
+  if (points.length < 2) return <p className="btc-clean-muted">O gráfico estará disponível depois da pesquisa.</p>;
+  const width = 940, height = 300, padX = 46, padY = 32;
+  const x0 = Date.parse(points[0].timestamp), x1 = Date.parse(points[points.length - 1].timestamp);
+  const inside = at => Number.isFinite(Date.parse(at)) && Date.parse(at) >= x0 && Date.parse(at) <= x1;
+  const inflections = (chart.inflections || []).filter(p => inside(p.pivot_timestamp));
+  const confirmations = (chart.inflections || []).filter(p => inside(p.confirmed_at));
+  const signals = (chart.signals || []).filter(p => inside(p.timestamp));
+  const trades = (chart.actions || []).filter(p => inside(p.timestamp));
+  const values = points.map(p => Number(p.close))
+    .concat(inflections.map(p => Number(p.pivot_close)),
+      confirmations.map(p => Number(p.confirmed_close)),
+      signals.map(p => Number(p.price)), trades.map(p => Number(p.execution_price)))
+    .filter(Number.isFinite);
+  const low = Math.min(...values), high = Math.max(...values);
   const x = at => padX + (Date.parse(at) - x0) / Math.max(1, x1 - x0) * (width - 2 * padX);
   const y = val => height - padY - (Number(val) - low) / Math.max(1e-8, high - low) * (height - 2 * padY);
-  const path = points.map((p, i) => (i === 0 ? "M" : "L") +
-    x(p.timestamp).toFixed(1) + " " + y(p.close).toFixed(1)).join(" ");
+  const path = points.map((p, i) =>
+    (i === 0 ? "M" : "L") + x(p.timestamp).toFixed(1) + " " + y(p.close).toFixed(1)).join(" ");
+  const triangle = (cx, cy, up, size) => up
+    ? `${cx},${cy-size} ${cx-size},${cy+size} ${cx+size},${cy+size}`
+    : `${cx},${cy+size} ${cx-size},${cy-size} ${cx+size},${cy-size}`;
   return <div className="btc-clean-chart-scroll">
-    <svg role="img" aria-label="Preço do BTC nos últimos 35 dias da validação, com compras e vendas executadas no candle seguinte"
-      viewBox={'0 0 ' + width + ' ' + height} className="btc-clean-svg">
+    <svg role="img"
+      aria-label="Preço do BTC, extremos históricos, confirmação de inflexão, sinais e operações simuladas em instantes diferentes"
+      viewBox={`0 0 ${width} ${height}`} className="btc-clean-svg">
       {[0, .25, .5, .75, 1].map(f => {
-        const price = high - f * (high - low), pos = y(price);
+        const price = high - f*(high-low), pos = y(price);
         return <g key={f}>
-          <line x1={padX} x2={width - padX} y1={pos} y2={pos} className="btc-clean-grid-line"/>
-          <text x={padX + 4} y={pos - 4} className="btc-clean-axis">{fmt(price, 0)}</text>
+          <line x1={padX} x2={width-padX} y1={pos} y2={pos} className="btc-clean-grid-line"/>
+          <text x={padX+4} y={pos-5} className="btc-clean-axis">{fmt(price, 0)}</text>
         </g>;
       })}
       <path d={path} className="btc-clean-price-line"/>
-      {trades.map((trade, i) => <g key={trade.timestamp + trade.action + i}>
-        <circle cx={x(trade.timestamp)} cy={y(trade.execution_price)} r="4.5"
-          className={trade.action === "BUY" ? "btc-clean-buy" : "btc-clean-sell"}/>
-        <title>{trade.action === "BUY" ? "Compra" : "Venda"} em {stamp(trade.timestamp)}
-          : {usd(trade.execution_price)} · {trade.reason}</title>
+      {inflections.map((event, i) => <g key={`pivot-${i}`}>
+        {inside(event.confirmed_at) && <line x1={x(event.pivot_timestamp)} y1={y(event.pivot_close)}
+          x2={x(event.confirmed_at)} y2={y(event.confirmed_close)}
+          className="btc-clean-delay-link"/>}
+        <polygon points={triangle(x(event.pivot_timestamp), y(event.pivot_close),
+          event.kind === "BOTTOM", 5)}
+          className={event.kind === "BOTTOM" ? "btc-clean-pivot-bottom" : "btc-clean-pivot-top"}/>
+        <title>{event.kind === "BOTTOM" ? "Fundo histórico" : "Topo histórico"} em {stamp(event.pivot_timestamp)},
+          preço {usd(event.pivot_close)}. Detectado somente em {stamp(event.confirmed_at)}.
+          Não é ordem de compra ou venda.</title>
       </g>)}
-      {[0, .5, 1].map(f => <text key={f}
-        x={padX + f * (width - 2 * padX)} y={height - 6}
-        textAnchor={f === 0 ? "start" : f === 1 ? "end" : "middle"}
-        className="btc-clean-axis">{new Date(x0 + f * (x1 - x0)).toLocaleDateString("pt-BR")}</text>)}
+      {confirmations.map((event, i) => <g key={`confirmation-${i}`}>
+        <circle cx={x(event.confirmed_at)} cy={y(event.confirmed_close)} r="4"
+          className="btc-clean-confirmation"/>
+        <title>Inflexão {event.kind === "BOTTOM" ? "de fundo" : "de topo"} confirmada em
+          {stamp(event.confirmed_at)}, {event.lag_candles} candles após o extremo.
+          Confirmação independente da estratégia.</title>
+      </g>)}
+      {signals.map((signal, i) => <g key={`signal-${i}`}>
+        {inside(signal.execution_at) && <line x1={x(signal.timestamp)} y1={y(signal.price)}
+          x2={x(signal.execution_at)} y2={y(trades.find(t => t.timestamp === signal.execution_at)?.execution_price ?? signal.price)}
+          className="btc-clean-fill-link"/>}
+        <circle cx={x(signal.timestamp)} cy={y(signal.price)} r="6.5"
+          className={signal.action === "BUY" ? "btc-clean-signal-buy" : "btc-clean-signal-sell"}/>
+        <title>Sinal {signal.action === "BUY" ? "de compra" : "de venda"} confirmado
+          em {stamp(signal.timestamp)} a {usd(signal.price)}.
+          Execução somente em {stamp(signal.execution_at)}. {signal.reason}</title>
+      </g>)}
+      {trades.map((trade, i) => <g key={`fill-${i}`}>
+        <polygon points={triangle(x(trade.timestamp), y(trade.execution_price),
+          trade.action === "BUY", 7)}
+          className={trade.action === "BUY" ? "btc-clean-buy" : "btc-clean-sell"}/>
+        <title>{trade.action === "BUY" ? "Compra" : "Venda"} SIMULADA em
+          {stamp(trade.timestamp)}, {usd(trade.execution_price)} · {trade.reason}.
+          Sinal em {stamp(trade.signal_at)}.</title>
+      </g>)}
+      {[0, .5, 1].map(f => <text key={f} x={padX+f*(width-2*padX)}
+        y={height-6} textAnchor={f===0 ? "start" : f===1 ? "end" : "middle"}
+        className="btc-clean-axis">{new Date(x0+f*(x1-x0)).toLocaleDateString("pt-BR")}</text>)}
     </svg>
   </div>;
 }
@@ -92,7 +133,7 @@ export function CleanBTCResearchPage() {
 
   const refreshList = useCallback(async (keepId = null) => {
     const rows = (await listMLStrategies()).filter(row =>
-      row.mode === MODE || row.name?.startsWith("BTC · Tendências e regimes ·"));
+      row.mode === MODE || row.name?.startsWith("BTC · Laboratório V15 ·"));
     setStrategies(rows);
     setSelectedId(previous => {
       const candidate = keepId || previous;
@@ -167,7 +208,7 @@ export function CleanBTCResearchPage() {
     if (!historyId) throw new Error(
       sourceCount ? "Nenhuma auditoria BTC disponível. Conclua uma execução com auditoria na API."
         : "Não há histórico BTC arquivado na API. Crie primeiro uma auditoria histórica.");
-    const name = "BTC · Tendências e regimes · " + new Date().toLocaleString("pt-BR");
+    const name = "BTC · Laboratório V15 · " + new Date().toLocaleString("pt-BR");
     const created = await createMLStrategy({ name, source_job_id: historyId });
     await refreshList(created.id);
     setSelectedId(created.id);
@@ -179,7 +220,7 @@ export function CleanBTCResearchPage() {
       const historyId = detail?.source_job_id || sourceId;
       if (!historyId) throw new Error("Crie uma estratégia com uma auditoria BTC disponível.");
       working = await createMLStrategy({
-        name: "BTC · Tendências e regimes · " + new Date().toLocaleString("pt-BR"),
+        name: "BTC · Laboratório V15 · " + new Date().toLocaleString("pt-BR"),
         source_job_id: historyId,
       });
       await refreshList(working.id);
@@ -196,7 +237,7 @@ export function CleanBTCResearchPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "btc-trend-regimes-" + detail.id + ".zip";
+    link.download = "btc-indicator-lab-v15-" + detail.id + ".zip";
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -224,7 +265,7 @@ export function CleanBTCResearchPage() {
       <div>
         <span>BTC / USDT · PESQUISA DE CAPITALIZAÇÃO</span>
         <h2>Estratégias e resultados</h2>
-        <p>Pesquisamos tendências de 4 horas, 1 dia e 1 semana, com custos e proteção por volatilidade. Estratégias sem aprovação ficam apenas na auditoria.</p>
+        <p>Doze hipóteses técnicas, execução 30 minutos após confirmação e análise de inflexões históricas. Rejeitadas ficam somente na auditoria.</p>
       </div>
       <span className="btc-clean-simulation">Simulação</span>
     </header>
@@ -265,14 +306,14 @@ export function CleanBTCResearchPage() {
       {detail.error_message || "A execução falhou."}
     </p>}
     {isRunning && <div className="btc-clean-progress" role="status">
-      <div><span>Comparando seis hipóteses de tendência e proteção</span><strong>{detail?.progress || 0}%</strong></div>
+      <div><span>Comparando doze hipóteses com custos e execução conservadora</span><strong>{detail?.progress || 0}%</strong></div>
       <progress max="100" value={detail?.progress || 0}/>
       <small>O resultado e o relatório serão disponibilizados nesta tela quando a pesquisa terminar.</small>
     </div>}
 
     {!policies.length ? <section className="btc-clean-empty">
       <h3>{detail ? "Pesquisa pronta" : "Comece uma nova pesquisa"}</h3>
-      <p>{detail ? "Execute a comparação de seis hipóteses de tendência, horizonte e exposição."
+      <p>{detail ? "Execute a comparação de doze hipóteses técnicas, com gráfico de inflexões e operações."
         : "Crie uma estratégia ou execute diretamente com a última auditoria BTC armazenada."}</p>
     </section> : <>
       {approved ? <section className="btc-clean-metrics" aria-label="Resultado de validação">
@@ -316,14 +357,24 @@ export function CleanBTCResearchPage() {
           </tbody>
         </table></div>
       </section>
-      {approved && <section className="btc-clean-panel">
-        <div className="btc-clean-panel-title"><div><span>COMPRAS E VENDAS EXECUTÁVEIS · ESTRATÉGIA APROVADA</span>
+      {summary.chart?.prices?.length > 1 && <section className="btc-clean-panel">
+        <div className="btc-clean-panel-title"><div>
+          <span>INFLEXÃO HISTÓRICA · CONFIRMAÇÃO · SINAL · EXECUÇÃO SIMULADA</span>
           <h3>Preço do BTC · últimos 35 dias da validação</h3>
-        </div><small>Fechamento do sinal → próxima abertura</small></div>
+        </div><small>Confirmação T → execução T+30min</small></div>
+        <p className="btc-clean-chart-context">{summary.chart?.diagnostic_only
+          ? "Apenas diagnóstico: a política selecionada no desenvolvimento foi rejeitada na validação."
+          : "Operações da política aprovada."}
+          {" "}Inflexões de 2% são reconhecidas somente após a reversão; não representam negócios naquele extremo.
+          {" "}{LABELS[summary.chart?.diagnostic_policy] || ""}</p>
         <PriceChart chart={summary.chart}/>
         <div className="btc-clean-legend"><span><i className="btc-clean-legend-price"/>Preço BTC</span>
-          <span><i className="btc-clean-legend-buy"/>Compra</span>
-          <span><i className="btc-clean-legend-sell"/>Venda</span></div>
+          <span><i className="btc-clean-legend-pivot-bottom"/>Fundo histórico</span>
+          <span><i className="btc-clean-legend-pivot-top"/>Topo histórico</span>
+          <span><i className="btc-clean-legend-confirmation"/>Inflexão confirmada</span>
+          <span><i className="btc-clean-legend-signal"/>Sinal</span>
+          <span><i className="btc-clean-legend-buy"/>Compra simulada</span>
+          <span><i className="btc-clean-legend-sell"/>Venda simulada</span></div>
       </section>}
       <p className="btc-clean-disclaimer">
         {summary.research_warning || "Pesquisa histórica, sem execução real."}
