@@ -5,7 +5,7 @@ import {
 } from "../../api/mlBacktestsApi";
 import "../../styles/ml-clean-research.css";
 
-const MODE = "INDICATOR_LAB";
+const MODE = "EXPOSURE_RESEARCH";
 const TRIAL_COUNT = 12;
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
 const fmt = (v, digits = 2) => v == null || !Number.isFinite(Number(v))
@@ -43,7 +43,11 @@ function Metric({ title, value, caption }) {
 }
 
 function PriceChart({ chart }) {
-  const points = chart?.prices || [];
+  const [windowDays, setWindowDays] = useState(35);
+  const allPoints = chart?.prices || [];
+  const lastTime = allPoints.length ? Date.parse(allPoints[allPoints.length - 1].timestamp) : 0;
+  const windowStart = lastTime - windowDays * 86400000;
+  const points = allPoints.filter(p => Date.parse(p.timestamp) >= windowStart);
   if (points.length < 2) return <p className="btc-clean-muted">O gráfico estará disponível depois da pesquisa.</p>;
   const width = 940, height = 300, padX = 46, padY = 32;
   const x0 = Date.parse(points[0].timestamp), x1 = Date.parse(points[points.length - 1].timestamp);
@@ -65,7 +69,15 @@ function PriceChart({ chart }) {
   const triangle = (cx, cy, up, size) => up
     ? `${cx},${cy-size} ${cx-size},${cy+size} ${cx+size},${cy+size}`
     : `${cx},${cy+size} ${cx-size},${cy-size} ${cx+size},${cy-size}`;
-  return <div className="btc-clean-chart-scroll">
+  return <section className="btc-clean-chart-container">
+    <label className="btc-clean-chart-period">Período exibido
+      <select aria-label="Período do gráfico" value={windowDays}
+        onChange={event => setWindowDays(Number(event.target.value))}>
+        <option value={10}>Últimos 10 dias</option>
+        <option value={35}>Últimos 35 dias</option>
+      </select>
+    </label>
+    <div className="btc-clean-chart-scroll">
     <svg role="img"
       aria-label="Preço do BTC, extremos históricos, confirmação de inflexão, sinais e operações simuladas em instantes diferentes"
       viewBox={`0 0 ${width} ${height}`} className="btc-clean-svg">
@@ -117,7 +129,8 @@ function PriceChart({ chart }) {
         y={height-6} textAnchor={f===0 ? "start" : f===1 ? "end" : "middle"}
         className="btc-clean-axis">{new Date(x0+f*(x1-x0)).toLocaleDateString("pt-BR")}</text>)}
     </svg>
-  </div>;
+    </div>
+  </section>;
 }
 
 export function CleanBTCResearchPage() {
@@ -133,7 +146,7 @@ export function CleanBTCResearchPage() {
 
   const refreshList = useCallback(async (keepId = null) => {
     const rows = (await listMLStrategies()).filter(row =>
-      row.mode === MODE || row.name?.startsWith("BTC · Laboratório V15 ·"));
+      row.mode === MODE || row.name?.startsWith("BTC · Exposição V16 ·"));
     setStrategies(rows);
     setSelectedId(previous => {
       const candidate = keepId || previous;
@@ -208,7 +221,7 @@ export function CleanBTCResearchPage() {
     if (!historyId) throw new Error(
       sourceCount ? "Nenhuma auditoria BTC disponível. Conclua uma execução com auditoria na API."
         : "Não há histórico BTC arquivado na API. Crie primeiro uma auditoria histórica.");
-    const name = "BTC · Laboratório V15 · " + new Date().toLocaleString("pt-BR");
+    const name = "BTC · Exposição V16 · " + new Date().toLocaleString("pt-BR");
     const created = await createMLStrategy({ name, source_job_id: historyId });
     await refreshList(created.id);
     setSelectedId(created.id);
@@ -220,7 +233,7 @@ export function CleanBTCResearchPage() {
       const historyId = detail?.source_job_id || sourceId;
       if (!historyId) throw new Error("Crie uma estratégia com uma auditoria BTC disponível.");
       working = await createMLStrategy({
-        name: "BTC · Laboratório V15 · " + new Date().toLocaleString("pt-BR"),
+        name: "BTC · Exposição V16 · " + new Date().toLocaleString("pt-BR"),
         source_job_id: historyId,
       });
       await refreshList(working.id);
@@ -237,7 +250,7 @@ export function CleanBTCResearchPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "btc-indicator-lab-v15-" + detail.id + ".zip";
+    link.download = "btc-exposure-research-v16-" + detail.id + ".zip";
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -250,6 +263,7 @@ export function CleanBTCResearchPage() {
   const approved = approvedPolicies.length > 0;
   const selectedMetrics = approved ? summary.approved_validation : null;
   const buyHold = summary.buy_hold_baseline?.validation || null;
+  const diagnosticExposure = summary.chart?.diagnostic_exposure || null;
   const eligibleStrategies = useMemo(() => strategies.filter(s =>
     ["DRAFT", "QUEUED", "RUNNING"].includes(s.status) ||
     (s.status === "RESEARCH_COMPLETE" && s.summary?.approved_policies?.length > 0)),
@@ -265,7 +279,7 @@ export function CleanBTCResearchPage() {
       <div>
         <span>BTC / USDT · PESQUISA DE CAPITALIZAÇÃO</span>
         <h2>Estratégias e resultados</h2>
-        <p>Doze hipóteses técnicas, execução 30 minutos após confirmação e análise de inflexões históricas. Rejeitadas ficam somente na auditoria.</p>
+        <p>Doze hipóteses técnicas com filtro do Buy and Hold no desenvolvimento, análise do tempo em cash e inflexões históricas. Rejeitadas ficam na auditoria.</p>
       </div>
       <span className="btc-clean-simulation">Simulação</span>
     </header>
@@ -327,7 +341,10 @@ export function CleanBTCResearchPage() {
           ? "—" : fmt(selectedMetrics.operation_count, 0)} caption="Compras, vendas e rebalanceamentos"/>
       </section> : <section className="btc-clean-empty" role="status">
         <h3>Nenhuma estratégia aprovada</h3>
-        <p>As {summary.candidate_count ?? policies.length} hipóteses foram verificadas. Nenhuma atendeu aos critérios de patrimônio líquido e risco. Os testes rejeitados não ficam na lista de estratégias; o relatório completo continua disponível em Exportar resultados.</p>
+        <p>{summary.development_none_eligible
+          ? "Nenhuma das hipóteses superou o Buy and Hold no desenvolvimento. Nenhuma foi promovida à validação como candidata vencedora."
+          : "Nenhuma hipótese selecionada atendeu aos critérios de patrimônio líquido e risco."}
+          {" "}Os experimentos rejeitados permanecem somente no relatório exportável.</p>
       </section>}
       <section className="btc-clean-panel">
         <div className="btc-clean-panel-title"><div>
@@ -360,13 +377,22 @@ export function CleanBTCResearchPage() {
       {summary.chart?.prices?.length > 1 && <section className="btc-clean-panel">
         <div className="btc-clean-panel-title"><div>
           <span>INFLEXÃO HISTÓRICA · CONFIRMAÇÃO · SINAL · EXECUÇÃO SIMULADA</span>
-          <h3>Preço do BTC · últimos 35 dias da validação</h3>
+          <h3>Preço do BTC · inflexões e operações</h3>
         </div><small>Confirmação T → execução T+30min</small></div>
         <p className="btc-clean-chart-context">{summary.chart?.diagnostic_only
-          ? "Apenas diagnóstico: a política selecionada no desenvolvimento foi rejeitada na validação."
+          ? "Apenas diagnóstico: esta política não foi aprovada e não aparece como estratégia ativa."
           : "Operações da política aprovada."}
           {" "}Inflexões de 2% são reconhecidas somente após a reversão; não representam negócios naquele extremo.
           {" "}{LABELS[summary.chart?.diagnostic_policy] || ""}</p>
+        {diagnosticExposure && <p className="btc-clean-exposure-note">
+          <strong>Exposição e oportunidades:</strong>{" "}
+          {fmt(diagnosticExposure.fully_cash_hours, 0)} horas totalmente em cash.{" "}
+          {fmt(diagnosticExposure.missed_upside_share * 100, 1)}% da soma dos movimentos positivos intrabar
+          ocorreu sobre a parcela não investida.{" "}
+          {fmt(diagnosticExposure.avoided_downside_share * 100, 1)}% da soma dos movimentos negativos
+          intrabar foi evitada pela ausência de exposição.
+          <small>Indicadores descritivos, não equivalem a lucro perdido nem incluem variações entre candles e custos.</small>
+        </p>}
         <PriceChart chart={summary.chart}/>
         <div className="btc-clean-legend"><span><i className="btc-clean-legend-price"/>Preço BTC</span>
           <span><i className="btc-clean-legend-pivot-bottom"/>Fundo histórico</span>
