@@ -1,5 +1,28 @@
 # Crypto Paper Trader Front
 
+## V15 · clean causal BTC chart and expanded research
+
+The main ML page keeps exactly three actions: Criar estratégia, Executar
+estratégia and Exportar resultados. Execute launches the 12-policy
+`INDICATOR_LAB` on an already archived BTC audit, avoiding repeated history
+downloads and standalone CLI scripts.
+
+The price chart has separate hoverable markers for historical turning points
+(red top, green bottom), their **later** 2% causal confirmation (cyan),
+strategy BUY/SELL signals (outlined points) and actual simulated fills
+(solid arrows). Thin connectors visualize the observation and execution lag.
+An order signal at T fills at T+30 minutes when a continuous source candle is
+present, never at an already-known retrospective price.
+
+Only strategies passing economic and drawdown criteria remain selectable.
+When all fail, the latest study is visible *only as a labeled diagnostic chart*
+and rejection summary, with full audit export. The rejected candidate never
+becomes a tradeable/approved strategy. Existing legacy research is hidden
+from the primary page and remains in historical ZIPs.
+
+Requires the corresponding V15 ML API branch. Simulations do not place orders.
+
+
 ## V14 · BTC trend research: approved strategies only
 
 The primary \`/backtests/ml\` page remains minimal with exactly THREE main
