@@ -147,3 +147,21 @@
 @media (max-width: 800px) {
   .strategy-mode-options { grid-template-columns: 1fr; }
 }
+
+/* V12: BTC reversal-confirmed historical extrema, not fictional pivot fills. */
+.strategy-mode-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.strategy-dc-results { padding: 6px 0 18px; }
+.strategy-dc-results h4 { margin: 12px 0 8px; }
+.strategy-dc-chart { margin: 12px 0 18px; }
+.strategy-dc-chart > strong { display: block; margin-bottom: 6px; }
+.strategy-dc-chart svg { width: 100%; height: auto; max-height: 360px; }
+.strategy-dc-grid { stroke: rgba(130,145,165,.20); stroke-width: 1; stroke-dasharray: 3 4; }
+.strategy-dc-price { fill: none; stroke: #6a87b4; stroke-width: 1.8; stroke-linejoin: round; }
+.strategy-dc-delay { stroke: #8a6ed0; stroke-width: 1.4; stroke-dasharray: 4 3; }
+.strategy-dc-bottom { fill: #16a34a; stroke: var(--surface, #fff); stroke-width: 1.3; }
+.strategy-dc-top { fill: #d84f55; stroke: var(--surface, #fff); stroke-width: 1.3; }
+.strategy-dc-confirmed { fill: #8a6ed0; stroke: var(--surface, #fff); stroke-width: 1; }
+.strategy-dc-axis { fill: var(--text-muted, #9ca9bd); font-size: 11px; }
+@media (max-width: 800px) {
+  .strategy-mode-options { grid-template-columns: 1fr; }
+}
