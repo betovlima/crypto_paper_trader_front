@@ -184,7 +184,10 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
     action(async () => {
       const row = await createMLStrategy({ name: name.trim(), source_job_id: source });
       setStrategies(await listMLStrategies());
-      setChosen(row.id); setDetail(row); setName("BTC/CASH LightGBM 2h+6h+24h");
+      setChosen(row.id); setDetail(row);
+      setName(mode === "DIRECTIONAL_CHANGE"
+        ? "BTC · máximas e mínimas · Directional Change"
+        : "BTC/CASH LightGBM 2h+6h+24h");
     });
   };
 
@@ -195,7 +198,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
       setDetail(stopped);
       return;
     }
-    if (mode !== "EVENTS" && detail.status === "OPTIMIZED" && detail.champion && !detail.execution_job_id
+    if (!["EVENTS", "DIRECTIONAL_CHANGE"].includes(mode) && detail.status === "OPTIMIZED" && detail.champion && !detail.execution_job_id
       && Number(detail.champion.metrics?.completed_cycles) > 0) {
       const job = await executeMLStrategy(detail.id);
       setFinalJob(job);
@@ -243,14 +246,19 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
   return (
     <section className="ml-panel strategy-workbench" aria-label={text.title}>
       <header className="strategy-compact-heading">
-        <div><span>{mode === "EVENTS" ? "EVENTOS BTC · CUSUM / TRIPLE BARRIER" : "LIGHTGBM · BTC/CASH"}</span><h3>{text.title}</h3>
-          <p>{mode === "EVENTS" || detail?.mode === "EVENTS" ? "Pesquisa por eventos do Bitcoin, com retornos líquidos e validação cronológica." : "Uma estratégia, três horizontes e uma pesquisa completa."}</p></div>
+        <div><span>{mode === "DIRECTIONAL_CHANGE" ? "EXTREMOS BTC · DIRECTIONAL CHANGE"
+          : mode === "EVENTS" ? "EVENTOS BTC · CUSUM / TRIPLE BARRIER" : "LIGHTGBM · BTC/CASH"}</span><h3>{text.title}</h3>
+          <p>{mode === "DIRECTIONAL_CHANGE" || detail?.mode === "DIRECTIONAL_CHANGE"
+            ? "Topos e fundos confirmados, entradas e saídas reais de simulação no próximo candle."
+            : mode === "EVENTS" || detail?.mode === "EVENTS"
+              ? "Pesquisa por eventos do Bitcoin, com retornos líquidos e validação cronológica."
+              : "Uma estratégia, três horizontes e uma pesquisa completa."}</p></div>
         <div className="strategy-main-actions" aria-label="Ações da estratégia">
           <button type="button" className="secondary-button" disabled={!apiCompatible || !source || name.trim().length < 3 || running}
             onClick={create}>{text.create}</button>
           <button type="button" className="primary-button" disabled={optimizationUnavailable}
             onClick={optimize}>{detail?.status === "RUNNING" ? text.cancel
-              : mode === "EVENTS" ? "Pesquisar eventos BTC" : "Otimizar e executar"}</button>
+              : ["EVENTS", "DIRECTIONAL_CHANGE"].includes(mode) ? "Pesquisar extremos BTC" : "Otimizar e executar"}</button>
           <button type="button" className="secondary-button" disabled={running || !chosen}
             onClick={download}>{text.report}</button>
         </div>
@@ -286,14 +294,29 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               checked={mode === "EVENTS"} onChange={() => setMode("EVENTS")} />
             <span><strong>BTC · eventos CUSUM + Triple Barrier</strong><small>4 políticas · pesquisa sem execução OOS</small></span>
           </label>
+          <label className={`strategy-mode-option ${mode === "DIRECTIONAL_CHANGE" ? "is-selected" : ""}`}>
+            <input type="radio" name="btc-research-mode" value="DIRECTIONAL_CHANGE"
+              checked={mode === "DIRECTIONAL_CHANGE"}
+              onChange={() => {
+                setMode("DIRECTIONAL_CHANGE");
+                setName((value) => value === "BTC/CASH LightGBM 2h+6h+24h"
+                  ? "BTC · máximas e mínimas · Directional Change" : value);
+              }} />
+            <span><strong>BTC · máximas e mínimas · Directional Change</strong>
+              <small>1%, 2%, 3% e limite variável · 4 políticas</small></span>
+          </label>
         </div>
       </fieldset>
       <div className="strategy-workflow strategy-workflow-compact" aria-label="Etapas automáticas">
-        {mode === "EVENTS"
-          ? <><span>1. Detectar eventos BTC</span><span>2. Validar antes do OOS</span><span>3. Auditar resultados</span></>
+        {mode === "DIRECTIONAL_CHANGE"
+          ? <><span>1. Identificar extremos</span><span>2. Confirmar reversões</span><span>3. Comparar patrimônio</span></>
+          : mode === "EVENTS"
+            ? <><span>1. Detectar eventos BTC</span><span>2. Validar antes do OOS</span><span>3. Auditar resultados</span></>
           : <><span>1. Otimização</span><span>2. LightGBM OOS</span><span>3. Resultados</span></>}
       </div>
-      <p className="strategy-note">{mode === "EVENTS"
+      <p className="strategy-note">{mode === "DIRECTIONAL_CHANGE"
+        ? "Pesquisa histórica de topos e fundos por fechamento. Apenas reversões confirmadas geram compras ou vendas simuladas na abertura seguinte; sem previsão da mínima ou máxima exata, sem LightGBM, OOS ou ordens reais."
+        : mode === "EVENTS"
         ? "Pesquisa matemática só com candles BTC arquivados: CUSUM, Triple Barrier, reversão e continuação, com validação cronológica e taxas da Alpaca. Não treina LightGBM nem executa negociação/OOS automaticamente."
         : "Após a otimização, o OOS começa automaticamente somente se houver um candidato com operações suficientes, lucro líquido estável e resistência a custos maiores."}</p>
       <div className="strategy-create-grid">
@@ -310,9 +333,12 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           </select>
         </label>
         <div className="strategy-horizon-summary" role="note">
-          <span>{mode === "EVENTS" ? "Pesquisa de eventos BTC" : text.horizon}</span>
-          <strong>{mode === "EVENTS" ? "CUSUM + Triple Barrier" : "2h + 6h + 24h"}</strong>
-          <small>{mode === "EVENTS" ? "4 políticas · sem LightGBM ou OOS" : "1 estratégia · 3 horizontes · 1 otimização"}</small>
+          <span>{mode === "DIRECTIONAL_CHANGE" ? "Topos e fundos BTC"
+          : mode === "EVENTS" ? "Pesquisa de eventos BTC" : text.horizon}</span>
+          <strong>{mode === "DIRECTIONAL_CHANGE" ? "Directional Change"
+          : mode === "EVENTS" ? "CUSUM + Triple Barrier" : "2h + 6h + 24h"}</strong>
+          <small>{["EVENTS", "DIRECTIONAL_CHANGE"].includes(mode)
+            ? "4 políticas · sem LightGBM ou OOS" : "1 estratégia · 3 horizontes · 1 otimização"}</small>
         </div>
       </div>
       <p className="strategy-note">{text.noDownload}</p>
