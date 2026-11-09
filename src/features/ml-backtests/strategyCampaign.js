@@ -8,8 +8,8 @@ export function needsFreshCampaign(strategy) {
 }
 
 export function nextCampaignName(strategy, strategies, mode) {
-  const kind = mode === "BAYESIAN" ? "CARO" : mode === "EVENTS" ? "EVENTOS" : "LHS";
-  const root = strategy.name.replace(/ · (?:CARO|LHS|EVENTOS) \d+$/, "");
+  const kind = mode === "BAYESIAN" ? "CARO" : mode === "EVENTS" ? "EVENTOS" : mode === "DIRECTIONAL_CHANGE" ? "EXTREMOS" : "LHS";
+  const root = strategy.name.replace(/ · (?:CARO|LHS|EVENTOS|EXTREMOS) \d+$/, "");
   const used = new Set(strategies.map((item) => item.name));
   for (let i = 2; i < 10000; i += 1) {
     const suffix = ` · ${kind} ${i}`;
@@ -26,10 +26,10 @@ export async function launchResearchCampaign({
   if (!strategy?.id || !strategy?.source_job_id) {
     throw new Error("Selecione uma estratégia válida antes de otimizar");
   }
-  if (!["QUICK", "BAYESIAN", "EVENTS"].includes(mode)) {
+  if (!["QUICK", "BAYESIAN", "EVENTS", "DIRECTIONAL_CHANGE"].includes(mode)) {
     throw new Error("Modo de otimização inválido");
   }
-  const trials = mode === "BAYESIAN" ? 24 : mode === "EVENTS" ? 4 : 8;
+  const trials = mode === "BAYESIAN" ? 24 : ["EVENTS", "DIRECTIONAL_CHANGE"].includes(mode) ? 4 : 8;
   let strategyId = strategy.id;
   if (needsFreshCampaign(strategy)) {
     const created = await createStrategy({
