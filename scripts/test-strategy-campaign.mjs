@@ -99,3 +99,25 @@ test("if optimization fails, the new DRAFT remains visible and recoverable", asy
   assert.equal(shown.id, "recoverable");
   assert.equal(shown.status, "DRAFT");
 });
+
+test("fixed four-policy BTC event experiment launches from existing three-button action", async () => {
+  const calls = [];
+  const result = await launchResearchCampaign({
+    strategy: completed, strategies: [completed], mode: "EVENTS",
+    autoExecute: true,
+    createStrategy: async (payload) => {
+      calls.push({ kind: "create", payload });
+      return { ...payload, id: "events-campaign", status: "DRAFT" };
+    },
+    optimizeStrategy: async (id, payload) => {
+      calls.push({ kind: "optimize", id, payload });
+      return { id, status: "RUNNING" };
+    },
+  });
+  assert.equal(result.id, "events-campaign");
+  assert.match(calls[0].payload.name, /EVENTOS 2$/);
+  assert.deepEqual(calls[1].payload, {
+    mode: "EVENTS", trials: 4, auto_execute: true,
+  });
+  assert.equal(calls[0].payload.source_job_id, completed.source_job_id);
+});
