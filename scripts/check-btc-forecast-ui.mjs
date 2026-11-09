@@ -12,7 +12,7 @@ const forecast = read("src/features/btc-forecast/BTCForecastPage.jsx");
 
 assert.ok(app.includes('currentPath === "/backtests/ml"'), "The ML workspace route must remain");
 assert.ok(route.includes("CleanBTCResearchPage"), "The live screen must use the clean workspace");
-assert.ok(page.includes('const MODE = "INDICATOR_LAB"'), "Research must use V15 expanded causal indicator lab");
+assert.ok(page.includes('const MODE = "EXPOSURE_RESEARCH"'), "Research must use V16 predevelopment benchmark-gated exposure study");
 assert.equal((page.match(/<button type="button"/g) || []).length, 3,
   "The visible workspace must have only Create, Execute, Export buttons");
 for (const name of ["Criar estratégia", "Executar estratégia", "Exportar resultados"]) {
@@ -45,6 +45,12 @@ assert.ok(page.includes("Confirmação T → execução T+30min"),
   "Execution delay must be explicitly visible");
 assert.ok(page.includes("summary.chart?.prices?.length > 1"),
   "Diagnostic chart must remain visible even if every strategy is rejected");
+assert.ok(page.includes("Últimos 10 dias") && page.includes("Últimos 35 dias") && page.includes("windowDays"),
+  "Full-resolution chart must expose 10/35 day selection");
+assert.ok(page.includes("development_none_eligible") && page.includes("diagnosticExposure"),
+  "New version must explain strict development gate and missed upside");
+assert.ok(css.includes(".btc-clean-exposure-note") && css.includes(".btc-clean-chart-period"),
+  "Exposure annotation and time window selection need clean styles");
 assert.ok(css.includes(".btc-clean-signal-buy") && css.includes(".btc-clean-pivot-bottom"),
   "Distinct signals, inflection and simulated fill styles required");
 assert.ok(page.includes("RESEARCH_COMPLETE") && page.includes("RUNNING"),
