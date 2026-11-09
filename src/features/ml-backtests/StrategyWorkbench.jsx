@@ -249,7 +249,8 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
           <button type="button" className="secondary-button" disabled={!apiCompatible || !source || name.trim().length < 3 || running}
             onClick={create}>{text.create}</button>
           <button type="button" className="primary-button" disabled={optimizationUnavailable}
-            onClick={optimize}>{detail?.status === "RUNNING" ? text.cancel : "Otimizar e executar"}</button>
+            onClick={optimize}>{detail?.status === "RUNNING" ? text.cancel
+              : mode === "EVENTS" ? "Pesquisar eventos BTC" : "Otimizar e executar"}</button>
           <button type="button" className="secondary-button" disabled={running || !chosen}
             onClick={download}>{text.report}</button>
         </div>
@@ -270,6 +271,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             disabled={running || detail?.status === "RUNNING"}>
             <option value="QUICK">Padrão · 8 candidatos</option>
             <option value="BAYESIAN">CARO bayesiana · 24 candidatos</option>
+            <option value="EVENTS">BTC · eventos CUSUM + Triple Barrier · 4 políticas</option>
           </select>
         </label>
         <strong>{text.status}: {detail?.status || "—"}</strong>
@@ -277,7 +279,9 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
       <div className="strategy-workflow strategy-workflow-compact" aria-label="Etapas automáticas">
         <span>1. Otimização</span><span>2. LightGBM OOS</span><span>3. Resultados</span>
       </div>
-      <p className="strategy-note">Após a otimização, o OOS começa automaticamente somente se houver um candidato com operações suficientes, lucro líquido estável e resistência a custos maiores.</p>
+      <p className="strategy-note">{mode === "EVENTS"
+        ? "Pesquisa matemática só com candles BTC arquivados: CUSUM, Triple Barrier, reversão e continuação, com validação cronológica e taxas da Alpaca. Não treina LightGBM nem executa negociação/OOS automaticamente."
+        : "Após a otimização, o OOS começa automaticamente somente se houver um candidato com operações suficientes, lucro líquido estável e resistência a custos maiores."}</p>
       <div className="strategy-create-grid">
         <label><span>{text.name}</span>
           <input required minLength={3} maxLength={120} value={name}
@@ -371,6 +375,86 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
               </div>
             </details>
           )}
+          {detail.mode === "EVENTS" && detail.summary && (
+            <section className="strategy-event-research" aria-label="Resultado da pesquisa de eventos Bitcoin">
+              <h4>Pesquisa CUSUM + Triple Barrier · Bitcoin</h4>
+              <p className="strategy-note">
+                {detail.summary.result_status === "PRE_OOS_PROMISING_NEEDS_NEW_DATA"
+                  ? "Alguma política apresentou sinais promissores apenas na validação interna. Ainda não foi demonstrada vantagem fora da amostra."
+                  : "Nenhuma política apresentou evidência consistente de vantagem econômica. Não há sinal aprovado para operar."}
+                {" "}Os resultados usam dados anteriores a {new Date(detail.summary.first_oos_untouched_from).toLocaleDateString("pt-BR")}.
+                O teste OOS não foi executado nesta pesquisa.
+              </p>
+              <div className="strategy-entry-diagnostics">
+                <strong>Desenho do experimento</strong>
+                <span>Dados: {detail.summary.source_symbol} · {detail.summary.decision_timeframe} · {detail.summary.source_exchange}</span>
+                <span>Desenvolvimento: {detail.summary.development_period?.map((x) => new Date(x).toLocaleDateString("pt-BR")).join(" a ")}</span>
+                <span>Validação pré-OOS: {detail.summary.validation_period?.map((x) => new Date(x).toLocaleDateString("pt-BR")).join(" a ")}</span>
+                <span>Embargo temporal: {detail.summary.embargo_bars ?? "—"} candles</span>
+                <span>Política escolhida exclusivamente no desenvolvimento: {detail.summary.best_policy_selected_by_development_only || "Nenhuma"}</span>
+                <span>Modelo de custos: Alpaca Taker por faixa de volume, mais slippage estimado</span>
+              </div>
+              <div className="ml-table-wrap">
+                <table className="ml-table">
+                  <thead><tr>
+                    <th>Política</th><th>Lucro na descoberta</th><th>Lucro na validação</th>
+                    <th>Ciclos na validação</th><th>Drawdown na validação</th>
+                    <th>Taxas Alpaca</th><th>Ambiguidades</th><th>Critérios</th>
+                  </tr></thead>
+                  <tbody>
+                    {(detail.trials || []).map((trial) => (
+                      <tr key={trial.trial}>
+                        <td>{trial.parameters?.description || trial.parameters?.policy}</td>
+                        <td>{fmt(trial.metrics?.development?.net_profit_usd)} USD eq.</td>
+                        <td>{fmt(trial.metrics?.net_profit_usd)} USD eq.</td>
+                        <td>{trial.metrics?.completed_cycles ?? 0}</td>
+                        <td>{trial.metrics?.max_drawdown == null ? "—" : fmt(trial.metrics.max_drawdown * 100) + "%"}</td>
+                        <td>{fmt(trial.metrics?.fees_paid)} USD eq.</td>
+                        <td>{trial.metrics?.ambiguous_barrier_exits ?? 0}</td>
+                        <td>{trial.metrics?.passed_quality_checks ? "Passou nos filtros internos" : "Não demonstrado"}</td>
+                      </tr>
+                    ))}
+                    {["CASH", "BUY_HOLD"].map((name) => {
+                      const data = name === "CASH" ? detail.summary.cash_baseline : detail.summary.buy_hold_baseline;
+                      return <tr key={name}>
+                        <td>{name === "CASH" ? "Capital em CASH" : "Comprar e manter BTC"}</td>
+                        <td>{fmt(data?.development?.net_profit_usd)} USD eq.</td>
+                        <td>{fmt(data?.validation?.net_profit_usd)} USD eq.</td>
+                        <td>{data?.validation?.completed_cycles ?? 0}</td>
+                        <td>{data?.validation?.max_drawdown == null ? "—" : fmt(data.validation.max_drawdown * 100) + "%"}</td>
+                        <td>{fmt(data?.validation?.fees_paid)} USD eq.</td><td>—</td><td>Referência</td>
+                      </tr>;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <details className="strategy-technical-details">
+                <summary>Barreiras, eventos e limitações da auditoria</summary>
+                <p className="strategy-note">CUSUM detecta movimentos relevantes no fechamento. Entradas e saídas são simuladas na abertura do candle seguinte. Uma máxima ou mínima não autoriza preencher uma ordem ao preço da barreira. Se ambas forem tocadas dentro dos mesmos 30 minutos, não conhecemos sua ordem; a classificação estatística registra o caso como ambíguo e conservador.</p>
+                <p className="strategy-note">{detail.summary.event_threshold_rule}</p>
+                <p className="strategy-note">{detail.summary.triple_barrier_rule}</p>
+                <p className="strategy-note">{detail.summary.research_warning}</p>
+                <div className="ml-table-wrap">
+                  <table className="ml-table">
+                    <thead><tr><th>Janela</th><th>Evento</th><th>Barreira superior antes</th><th>Inferior antes</th><th>Ambíguos</th><th>Encerrados pelo tempo</th></tr></thead>
+                    <tbody>{["development", "validation"].flatMap((period) =>
+                      ["UP", "DOWN"].map((direction) => {
+                        const row = detail.summary.labels?.[period]?.[direction] || {};
+                        return <tr key={period + direction}>
+                          <td>{period === "development" ? "Desenvolvimento" : "Validação"}</td>
+                          <td>{direction === "UP" ? "Salto de alta" : "Queda forte"}</td>
+                          <td>{row.UPPER_FIRST ?? 0}</td><td>{row.LOWER_FIRST ?? 0}</td>
+                          <td>{row.AMBIGUOUS_BOTH_CONSERVATIVE_LOSS ?? 0}</td>
+                          <td>{row.TIMEOUT ?? 0}</td>
+                        </tr>;
+                      })
+                    )}</tbody>
+                  </table>
+                </div>
+              </details>
+            </section>
+          )}
+          {detail.mode !== "EVENTS" && (<>
           <div className="strategy-brief-results">
             <div><small>Patrimônio na validação</small><strong>{fmt(metrics.capital_final)} USDT</strong></div>
             <div><small>Lucro líquido na validação</small><strong>{metrics.net_profit_usd == null ? "—" : fmt(metrics.net_profit_usd) + " USD eq."}</strong></div>
@@ -499,6 +583,7 @@ export function StrategyWorkbench({ jobs = [], selectedJob, onOpenExecution, lan
             </div>
           </details>}
           </details>
+          </>)}
         </>
       )}
     </section>
