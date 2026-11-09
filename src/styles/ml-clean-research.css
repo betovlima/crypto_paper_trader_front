@@ -96,6 +96,19 @@
 .btc-clean-price-line { stroke: #60a5fa; stroke-width: 2.4; fill: none; }
 .btc-clean-buy { fill: #34d399; stroke: var(--surface, #111a2b); stroke-width: 2; }
 .btc-clean-sell { fill: #fb7185; stroke: var(--surface, #111a2b); stroke-width: 2; }
+.btc-clean-delay-link { stroke: #64748b; opacity: .48; stroke-width: 1.2; stroke-dasharray: 2 5; }
+.btc-clean-fill-link { stroke: #a78bfa; opacity: .65; stroke-width: 1.5; stroke-dasharray: 4 3; }
+.btc-clean-pivot-bottom { fill: #22c55e; stroke: var(--surface, #111a2b); stroke-width: 1.4; }
+.btc-clean-pivot-top { fill: #ef4444; stroke: var(--surface, #111a2b); stroke-width: 1.4; }
+.btc-clean-confirmation { fill: #22d3ee; stroke: var(--surface, #111a2b); stroke-width: 1.5; }
+.btc-clean-signal-buy { fill: none; stroke: #a78bfa; stroke-width: 2.5; }
+.btc-clean-signal-sell { fill: none; stroke: #fbbf24; stroke-width: 2.5; }
+.btc-clean-chart-context { margin: 0 0 12px; font-size: 12px; line-height: 1.5;
+  color: var(--muted, #94a3b8); }
+.btc-clean-legend-pivot-bottom { background: #22c55e; }
+.btc-clean-legend-pivot-top { background: #ef4444; }
+.btc-clean-legend-confirmation { background: #22d3ee; }
+.btc-clean-legend-signal { background: transparent; border: 2px solid #a78bfa; }
 .btc-clean-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; color: var(--muted, #94a3b8); font-size: 12px; }
 .btc-clean-legend span { display: inline-flex; align-items: center; gap: 7px; }
 .btc-clean-legend i { display: inline-block; height: 9px; width: 9px; border-radius: 50%; }

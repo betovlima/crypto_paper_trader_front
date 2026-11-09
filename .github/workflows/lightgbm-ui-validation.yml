@@ -15,6 +15,7 @@ on:
       - feature/btc-directional-change-ui-v12-20261108
       - feature/btc-clean-technical-ui-v13-20261109
       - feature/btc-clean-trend-regimes-ui-v14-20261109
+      - feature/btc-clean-inflexion-ui-v15-20261109
   workflow_dispatch:
 
 jobs:
