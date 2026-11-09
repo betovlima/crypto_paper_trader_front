@@ -161,4 +161,10 @@ assert.ok(strategy.includes("BTC · eventos CUSUM + Triple Barrier"),
   "Bitcoin event research must be explicitly labeled in the page");
 assert.ok(!strategy.includes('<select value={mode}'),
   "Do not conceal the event research mode inside a default Padrão dropdown");
+assert.ok(strategy.includes('type="radio" name="btc-research-mode" value="DIRECTIONAL_CHANGE"'),
+  "Historical BTC maxima and minima research must appear in a visible option");
+assert.ok(strategy.includes("DirectionalChangeChart") && strategy.includes("chart_2pct"),
+  "The interface must distinguish extrema from later confirmations in a price chart");
+assert.ok(strategy.includes("directional_change_trades.csv"),
+  "Detailed BTC pivot confirmations and actual fills must be available in the ZIP");
 console.log("Unified ML strategies, Bayesian tuning, BTC/CASH reports and audit checks passed");
